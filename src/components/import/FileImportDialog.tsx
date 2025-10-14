@@ -17,8 +17,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { useParseFile, useImportData } from '@/hooks/useFiles';
 import { suggestColumnMapping } from '@/utils/columnMapper';
-import { MLMapper } from '@/utils/mlMapper';
-import { MappingMemory } from '@/utils/mappingMemory';
+import { mlMapper } from '@/utils/mlMapper';
+import { mappingMemory } from '@/utils/mappingMemory';
 import { validateData, analyzeDataQuality } from '@/utils/advancedValidation';
 import type { TableSchema, ParsedFileData, ColumnMapping } from '@/types/database';
 
@@ -58,9 +58,7 @@ export const FileImportDialog: React.FC<FileImportDialogProps> = ({
   const [mappingFeedback, setMappingFeedback] = useState<Record<string, boolean>>({});
 
   const parseFileMutation = useParseFile();
-  const importDataMutation = useImportData();
-  const mlMapper = React.useMemo(() => new MLMapper(), []);
-  const mappingMemoryInstance = React.useMemo(() => new MappingMemory(), []);
+  const importDataMutation = useImportData(databaseId);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -121,10 +119,7 @@ export const FileImportDialog: React.FC<FileImportDialogProps> = ({
     }
 
     try {
-      const result = await parseFileMutation.mutateAsync({
-        file: selectedFile,
-        format,
-      });
+      const result = await parseFileMutation.mutateAsync(selectedFile);
 
       setParsedData(result);
 
@@ -133,7 +128,7 @@ export const FileImportDialog: React.FC<FileImportDialogProps> = ({
       
       if (useMLMapping) {
         // Сначала пробуем найти похожие маппинги из истории
-        const historicalMappings = mappingMemoryInstance.suggestFromHistory(
+        const historicalMappings = mappingMemory.suggestFromHistory(
           result.headers,
           existingColumns.map(c => c.column_name),
           databaseId
@@ -277,17 +272,9 @@ export const FileImportDialog: React.FC<FileImportDialogProps> = ({
         return acc;
       }, {} as Record<string, string>);
 
-      // Создаем единый объект ColumnMapping для API
-      const mappingForAPI: ColumnMapping = {
-        sourceColumn: columnMappings[0]?.sourceColumn || '',
-        targetColumn: columnMappings[0]?.targetColumn || '',
-        confidence: columnMappings[0]?.confidence || 0,
-      };
-
       await importDataMutation.mutateAsync({
         data: parsedData.rows,
-        columnMapping: mappingForAPI,
-        updateExisting: false,
+        columnMapping: columnMappings,
       });
 
       clearInterval(progressInterval);
@@ -307,7 +294,7 @@ export const FileImportDialog: React.FC<FileImportDialogProps> = ({
           return acc;
         }, {} as Record<string, string>);
 
-        mappingMemoryInstance.saveMapping({
+        mappingMemory.saveMapping({
           sourceColumns: parsedData.headers,
           targetColumns: existingColumns.map(c => c.column_name),
           mapping: mappingObj,
