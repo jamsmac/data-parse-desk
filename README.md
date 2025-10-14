@@ -1,73 +1,323 @@
-# Welcome to your Lovable project
+# 📊 VHData - Universal Data Management Platform
 
-## Project info
+**Полноценная платформа для работы с табличными данными**
 
-**URL**: https://lovable.dev/projects/509bf00c-0cc7-4346-91e6-7b7317bcd7af
+![Status](https://img.shields.io/badge/status-Phase%201%20Ready-success)
+![Version](https://img.shields.io/badge/version-1.0.0--beta-blue)
 
-## How can I edit this code?
+## 🎯 Что это?
 
-There are several ways of editing your application.
+VHData - это мощная платформа для людей без технических навыков, которая позволяет:
+- 📂 Создавать неограниченное количество баз данных
+- 📤 Загружать Excel/CSV файлы с умным маппингом колонок  
+- 🔍 Фильтровать, группировать и анализировать данные
+- 📊 Строить графики и отчеты
+- 👥 Работать в команде над данными
+- ⚡ Автоматизировать повторяющиеся задачи
 
-**Use Lovable**
+## ⚡ Быстрый старт
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/509bf00c-0cc7-4346-91e6-7b7317bcd7af) and start prompting.
+```bash
+# Установка
+npm install
 
-Changes made via Lovable will be committed automatically to this repo.
+# Настройка окружения
+cp .env.example .env.local
+# Добавьте VITE_SUPABASE_URL и VITE_SUPABASE_ANON_KEY
 
-**Use your preferred IDE**
+# Запуск миграций в Supabase SQL Editor:
+# supabase/migrations/20251014100000_multiple_databases_system.sql
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Запуск
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Откройте http://localhost:5173/dashboard
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## 🏗️ Архитектура
 
-**Use GitHub Codespaces**
+### Стек технологий
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```
+Frontend:  React 18 + TypeScript + Vite
+UI:        Tailwind CSS + shadcn/ui
+State:     React Query (TanStack Query)
+Backend:   Supabase (PostgreSQL + Auth + Storage)
+Parsing:   SheetJS (xlsx) + DayJS
+Charts:    Recharts
+Forms:     React Hook Form + Zod
+```
 
-## What technologies are used for this project?
+### Структура проекта
 
-This project is built with:
+```
+src/
+├── api/              # API слой (Supabase)
+│   ├── databaseAPI.ts
+│   ├── fileAPI.ts
+│   ├── relationAPI.ts
+│   └── analyticsAPI.ts
+├── components/       # React компоненты
+│   ├── ui/          # shadcn/ui базовые
+│   ├── DatabaseCard.tsx
+│   ├── ColumnMapper.tsx
+│   └── ...
+├── hooks/           # Custom hooks
+│   ├── useDatabases.ts
+│   ├── useTableData.ts
+│   └── useFiles.ts
+├── pages/           # Страницы (роуты)
+│   ├── Dashboard.tsx
+│   ├── DatabaseView.tsx
+│   ├── Analytics.tsx
+│   └── Reports.tsx
+├── types/           # TypeScript типы
+├── utils/           # Утилиты
+└── integrations/    # Внешние сервисы
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+### Notion-подобная модель данных
 
-## How can I deploy this project?
+- Relation, Rollup, Lookup и Formula колонки для построения графа данных
+- Производные базы с режимами синхронизации (snapshot, live, scheduled, two-way)
+- Объединение баз через визуальный Merge/Join конструктор
+- Relationship Graph для интерактивного анализа взаимосвязей
+- Расширенные пользовательские сценарии (CRM, инвентаризация, проекты)
 
-Simply open [Lovable](https://lovable.dev/projects/509bf00c-0cc7-4346-91e6-7b7317bcd7af) and click on Share -> Publish.
+📖 [Подробнее в документации](docs/NOTION_ARCHITECTURE.md)
 
-## Can I connect a custom domain to my Lovable project?
+## 📋 Реализованные фазы
 
-Yes, you can!
+### ✅ Фаза 1: Множественные БД (100%)
+- Создание неограниченного кол-ва баз данных
+- Кастомные схемы с разными типами колонок
+- Загрузка CSV/Excel файлов
+- Умный маппинг колонок (AI-powered)
+- Фильтрация и поиск
+- Экспорт в CSV/Excel
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+**Файлы**: 18 | **Строк кода**: ~6,000
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+### 🔄 Фаза 1.5: Relations & Rollups (В плане)
+- Связи между базами (1:1, 1:N, N:M)
+- Rollup агрегации
+- Lookup поля
+- Визуальный граф связей
+
+**Файлы**: 9 | **Строк кода**: ~3,000
+
+### 📊 Фаза 2: Интеллектуальная загрузка (В плане)
+- ML-алгоритмы для маппинга
+- История маппингов
+- Продвинутая валидация
+- Детальные отчеты об ошибках
+
+**Файлы**: 7 | **Строк кода**: ~2,000
+
+### 📈 Фаза 3: Аналитика (В плане)
+- Конструктор графиков
+- Pivot таблицы
+- Сохраненные отчеты
+- Экспорт в PDF
+- Шаблоны отчетов
+
+**Файлы**: 10 | **Строк кода**: ~4,000
+
+### 👥 Фаза 4: Коллаборация (В плане)
+- Аутентификация пользователей
+- Роли и права доступа
+- Комментарии
+- Лента активности
+- Email уведомления
+
+**Файлы**: 13 | **Строк кода**: ~3,500
+
+### ⚡ Фаза 5: Автоматизация (В плане)
+- Расписания импорта
+- Workflow builder
+- Webhooks
+- REST API
+- Интеграции (Google Drive, Dropbox, FTP)
+
+**Файлы**: 13 | **Строк кода**: ~4,000
+
+## 🗄️ База данных
+
+### Основные таблицы
+
+**databases** - Реестр баз данных пользователя
+```sql
+id, system_name, display_name, table_name, 
+icon_name, color_hex, cached_record_count
+```
+
+**table_schemas** - Схемы колонок для каждой БД
+```sql
+database_id, column_name, data_type, display_name,
+is_required, is_unique, validation_rules
+```
+
+**files** - История загрузок
+```sql
+database_id, original_filename, processing_status,
+total_rows, inserted_rows, rejected_rows
+```
+
+**audit_log** - Полный аудит всех операций
+```sql
+user_id, action_type, entity_type, entity_id,
+old_values, new_values, timestamp
+```
+
+### Динамические таблицы
+
+Каждая БД получает свою таблицу:
+- Стандартные поля: id, created_at, updated_at
+- Кастомные поля по схеме
+- Автоматические индексы
+- Row Level Security
+
+## 🎨 Пользовательский интерфейс
+
+### Главные страницы
+
+**Dashboard** (`/dashboard`)
+- Карточки всех баз данных
+- Статистика: кол-во БД, записей, активность
+- Поиск по базам
+- Создание новой БД
+
+**Database View** (`/database/:id`)
+- Таблица данных с фильтрами
+- Загрузка файлов
+- Экспорт данных
+- Детальный просмотр записей
+
+**Analytics** (`/analytics`) - Фаза 3
+- Графики и диаграммы
+- Pivot таблицы
+- Конструктор отчетов
+
+### Ключевые компоненты
+
+**DatabaseFormDialog** - Создание/редактирование БД
+- Выбор иконки (20+ вариантов)
+- Выбор цвета (16 пресетов + custom)
+- Автогенерация system_name
+
+**UploadFileDialog** - Загрузка файлов
+- Drag & drop support
+- Авто-маппинг колонок
+- Превью и валидация
+- Прогресс загрузки
+
+**ColumnMapper** - Маппинг колонок
+- Автоматическое сопоставление
+- Confidence score для каждого маппинга
+- Превью образцов данных
+- Валидация обязательных полей
+
+## 🔧 API Reference
+
+### Databases
+
+```typescript
+// Получить все БД
+const dbs = await getAllDatabases();
+
+// Создать БД
+const db = await createDatabase({
+  display_name: "Sales 2024",
+  system_name: "sales_2024",
+  table_name: "user_sales_2024"
+});
+
+// Обновить
+await updateDatabase(id, { display_name: "New Name" });
+
+// Удалить
+await deleteDatabase(id);
+```
+
+### File Import
+
+```typescript
+// Авто-маппинг
+const mapping = await autoMapColumns(file, schemas);
+
+// Импорт
+const result = await importFileData({
+  database_id: id,
+  file: fileObject,
+  column_mappings: mappings,
+  duplicate_handling: 'skip',
+  batch_size: 1000
+});
+```
+
+### Table Data
+
+```typescript
+// Запрос данных
+const data = await getTableData({
+  table_name: "user_sales",
+  page: 0,
+  page_size: 50,
+  filters: [
+    { column: "date", operator: "gte", value: "2024-01-01" }
+  ]
+});
+```
+
+## 🧪 Разработка
+
+### Команды
+
+```bash
+npm run dev      # Dev сервер
+npm run build    # Production build
+npm run preview  # Preview build
+npm run lint     # ESLint
+```
+
+### Добавление нового типа колонки
+
+1. Добавить в `DataType` (types/database.ts)
+2. Обновить `detectDataType` (utils/columnMapper.ts)
+3. Добавить обработку в `createPhysicalTable` (api/databaseAPI.ts)
+4. Добавить UI в `ColumnMapper.tsx`
+
+## 📖 Подробная документация
+
+- [Полный план реализации](FULL_IMPLEMENTATION_PLAN.md)
+- [Notion-подобная архитектура](docs/NOTION_ARCHITECTURE.md)
+- [Документация API](docs/API.md) - TODO
+- [Руководство пользователя](docs/USER_GUIDE.md) - TODO
+- [Архитектура](docs/ARCHITECTURE.md) - TODO
+
+## 🤝 Вклад в проект
+
+Приветствуем вклад! Процесс:
+1. Fork репозитория
+2. Создайте feature branch
+3. Commit изменения
+4. Push в branch  
+5. Создайте Pull Request
+
+## 📝 Лицензия
+
+MIT License - см. LICENSE файл
+
+## 🙏 Благодарности
+
+- [Supabase](https://supabase.com) - Backend
+- [shadcn/ui](https://ui.shadcn.com) - UI components
+- [Lucide](https://lucide.dev) - Icons
+- [Recharts](https://recharts.org) - Charts
+- [SheetJS](https://sheetjs.com) - Excel parsing
+
+---
+
+**Создано с ❤️ для работы с данными**
+
+[Документация](FULL_IMPLEMENTATION_PLAN.md) | [Issues](../../issues) | [Roadmap](../../projects)

@@ -1,0 +1,141 @@
+import { useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Loader2, Database, Eye, EyeOff } from 'lucide-react';
+import { LoginCredentials } from '@/types/auth';
+import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+
+export default function LoginPage() {
+  const { login } = useAuth();
+  const [credentials, setCredentials] = useState<LoginCredentials>({
+    email: '',
+    password: '',
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setIsLoading(true);
+
+    try {
+      await login(credentials);
+    } catch (err: any) {
+      setError(err.message || 'Ошибка входа. Проверьте данные.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const isValid = credentials.email && credentials.password;
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader className="space-y-1">
+          <div className="flex items-center justify-center mb-4">
+            <div className="p-3 bg-primary/10 rounded-full">
+              <Database className="h-8 w-8 text-primary" />
+            </div>
+          </div>
+          <CardTitle className="text-2xl text-center">Вход в VHData</CardTitle>
+          <CardDescription className="text-center">
+            Введите свои учетные данные для входа
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <Alert variant="destructive">
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="you@example.com"
+                value={credentials.email}
+                onChange={(e) =>
+                  setCredentials((prev) => ({ ...prev, email: e.target.value }))
+                }
+                disabled={isLoading}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="password">Пароль</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={credentials.password}
+                  onChange={(e) =>
+                    setCredentials((prev) => ({ ...prev, password: e.target.value }))
+                  }
+                  disabled={isLoading}
+                  required
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 hover:bg-transparent"
+                  onClick={() => setShowPassword(!showPassword)}
+                  disabled={isLoading}
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between text-sm">
+              <Link to="/forgot-password" className="text-primary hover:underline">
+                Забыли пароль?
+              </Link>
+            </div>
+
+            <Button type="submit" className="w-full" disabled={!isValid || isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Вход...
+                </>
+              ) : (
+                'Войти'
+              )}
+            </Button>
+
+            <div className="text-center text-sm text-muted-foreground">
+              Нет аккаунта?{' '}
+              <Link to="/register" className="text-primary hover:underline">
+                Зарегистрироваться
+              </Link>
+            </div>
+          </form>
+
+          <div className="mt-6 pt-6 border-t">
+            <div className="text-center text-xs text-muted-foreground space-y-1">
+              <p>Безопасный вход через Supabase Auth</p>
+              <p>Все данные защищены шифрованием</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
