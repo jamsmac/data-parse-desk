@@ -1,4 +1,4 @@
-import * as XLSX from 'xlsx';
+import * as ExcelJS from 'exceljs';
 import { detectColumns, normalizeRow, NormalizedRow } from './parseData';
 
 export interface ParseResult {
@@ -65,24 +65,46 @@ async function parseCSV(file: File, fileName: string): Promise<ParseResult> {
 
 async function parseExcel(file: File, fileName: string): Promise<ParseResult> {
   const buffer = await file.arrayBuffer();
-  const workbook = XLSX.read(buffer, { type: 'array' });
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer);
 
   // Use first sheet
-  const sheetName = workbook.SheetNames[0];
-  const worksheet = workbook.Sheets[sheetName];
-
-  // Convert to JSON
-  const jsonData: any[] = XLSX.utils.sheet_to_json(worksheet, { 
-    raw: false,
-    defval: '',
-  });
-
-  if (jsonData.length === 0) {
+  const worksheet = workbook.worksheets[0];
+  
+  if (!worksheet || worksheet.rowCount === 0) {
     throw new Error('Excel file is empty');
   }
 
-  const headers = Object.keys(jsonData[0]);
+  // Get headers from first row
+  const headerRow = worksheet.getRow(1);
+  const headers: string[] = [];
+  headerRow.eachCell((cell, colNumber) => {
+    headers.push(String(cell.value || `Column${colNumber}`));
+  });
+
   const { dateColumns, amountColumns } = detectColumns(headers);
+
+  // Parse data rows
+  const jsonData: any[] = [];
+  worksheet.eachRow((row, rowNumber) => {
+    if (rowNumber === 1) return; // Skip header row
+    
+    const rowData: any = {};
+    row.eachCell((cell, colNumber) => {
+      const header = headers[colNumber - 1];
+      if (header) {
+        rowData[header] = cell.value !== null ? String(cell.value) : '';
+      }
+    });
+    
+    if (Object.keys(rowData).length > 0) {
+      jsonData.push(rowData);
+    }
+  });
+
+  if (jsonData.length === 0) {
+    throw new Error('Excel file contains no data rows');
+  }
 
   const data = jsonData.map(row => 
     normalizeRow(row, dateColumns, amountColumns, fileName)
