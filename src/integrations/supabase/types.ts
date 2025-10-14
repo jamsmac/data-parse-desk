@@ -14,36 +14,144 @@ export type Database = {
   }
   public: {
     Tables: {
-      transactions: {
+      database_metadata: {
         Row: {
-          amount_num: number | null
-          created_at: string
-          date_iso: string | null
-          date_only: string | null
-          file_name: string
-          id: string
-          row_data: Json
-          row_hash: string
+          description: string | null
+          key: string
+          updated_at: string | null
+          value: string | null
         }
         Insert: {
-          amount_num?: number | null
-          created_at?: string
-          date_iso?: string | null
-          date_only?: string | null
-          file_name: string
-          id?: string
-          row_data: Json
-          row_hash: string
+          description?: string | null
+          key: string
+          updated_at?: string | null
+          value?: string | null
         }
         Update: {
-          amount_num?: number | null
+          description?: string | null
+          key?: string
+          updated_at?: string | null
+          value?: string | null
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          address: string | null
+          brew_status: string | null
+          brewing_time: string | null
+          created_at: string
+          creation_time: string | null
+          cup_type: number | null
+          delivery_time: string | null
+          flavour_name: string | null
+          goods_name: string | null
+          id: string
+          machine_code: string | null
+          operator_code: string | null
+          order_number: string
+          order_price: number | null
+          order_resource: string | null
+          order_status: string | null
+          order_type: string | null
+          pay_card: string | null
+          paying_time: string | null
+          reason: string | null
+          refund_time: string | null
+          remark: string | null
+        }
+        Insert: {
+          address?: string | null
+          brew_status?: string | null
+          brewing_time?: string | null
           created_at?: string
-          date_iso?: string | null
-          date_only?: string | null
-          file_name?: string
+          creation_time?: string | null
+          cup_type?: number | null
+          delivery_time?: string | null
+          flavour_name?: string | null
+          goods_name?: string | null
           id?: string
-          row_data?: Json
-          row_hash?: string
+          machine_code?: string | null
+          operator_code?: string | null
+          order_number: string
+          order_price?: number | null
+          order_resource?: string | null
+          order_status?: string | null
+          order_type?: string | null
+          pay_card?: string | null
+          paying_time?: string | null
+          reason?: string | null
+          refund_time?: string | null
+          remark?: string | null
+        }
+        Update: {
+          address?: string | null
+          brew_status?: string | null
+          brewing_time?: string | null
+          created_at?: string
+          creation_time?: string | null
+          cup_type?: number | null
+          delivery_time?: string | null
+          flavour_name?: string | null
+          goods_name?: string | null
+          id?: string
+          machine_code?: string | null
+          operator_code?: string | null
+          order_number?: string
+          order_price?: number | null
+          order_resource?: string | null
+          order_status?: string | null
+          order_type?: string | null
+          pay_card?: string | null
+          paying_time?: string | null
+          reason?: string | null
+          refund_time?: string | null
+          remark?: string | null
+        }
+        Relationships: []
+      }
+      upload_log: {
+        Row: {
+          duplicate_records: number | null
+          error_message: string | null
+          error_records: number | null
+          file_size_bytes: number | null
+          filename: string
+          id: string
+          new_records: number | null
+          notes: string | null
+          processing_time_seconds: number | null
+          status: string | null
+          total_rows: number | null
+          upload_date: string
+        }
+        Insert: {
+          duplicate_records?: number | null
+          error_message?: string | null
+          error_records?: number | null
+          file_size_bytes?: number | null
+          filename: string
+          id?: string
+          new_records?: number | null
+          notes?: string | null
+          processing_time_seconds?: number | null
+          status?: string | null
+          total_rows?: number | null
+          upload_date?: string
+        }
+        Update: {
+          duplicate_records?: number | null
+          error_message?: string | null
+          error_records?: number | null
+          file_size_bytes?: number | null
+          filename?: string
+          id?: string
+          new_records?: number | null
+          notes?: string | null
+          processing_time_seconds?: number | null
+          status?: string | null
+          total_rows?: number | null
+          upload_date?: string
         }
         Relationships: []
       }

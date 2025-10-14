@@ -41,48 +41,92 @@ const Index = () => {
     try {
       const result = await parseFile(file);
       
-      // Check for duplicates and save to database
-      const existingHashes = new Set<string>();
-      const { data: existingData } = await supabase
-        .from('transactions')
-        .select('row_hash');
+      // Check for duplicates using order_number
+      const orderNumbers = result.data
+        .map(row => row["Order number"])
+        .filter(Boolean);
       
-      if (existingData) {
-        existingData.forEach(row => existingHashes.add(row.row_hash));
-      }
+      const { data: existingOrders } = await supabase
+        .from('orders')
+        .select('order_number')
+        .in('order_number', orderNumbers);
+      
+      const existingOrderSet = new Set(
+        existingOrders?.map(row => row.order_number) || []
+      );
 
       const newRows: NormalizedRow[] = [];
       let duplicateCount = 0;
 
       for (const row of result.data) {
-        if (row.row_hash && existingHashes.has(row.row_hash)) {
+        if (row["Order number"] && existingOrderSet.has(row["Order number"])) {
           duplicateCount++;
         } else {
           newRows.push(row);
-          if (row.row_hash) {
-            existingHashes.add(row.row_hash);
-          }
         }
       }
 
+      const startTime = Date.now();
+
       // Save new rows to database
       if (newRows.length > 0) {
-        const rowsToInsert = newRows.map(row => ({
-          file_name: result.fileName,
-          row_hash: row.row_hash || '',
-          row_data: row,
-          date_iso: row.date_iso,
-          date_only: row.date_only,
-          amount_num: row.amount_num
+        const ordersToInsert = newRows.map(row => ({
+          order_number: row["Order number"] || '',
+          operator_code: row["Operator Code"] || null,
+          goods_name: row["Goods name"] || null,
+          flavour_name: row["Flavour name"] || null,
+          order_resource: row["Order resource"] || null,
+          order_type: row["Order type"] || null,
+          order_status: row["Order status"] || null,
+          cup_type: row["Cup type"] ? parseInt(row["Cup type"]) : null,
+          machine_code: row["Machine Code"] || null,
+          address: row["Address"] || null,
+          order_price: row["Order price"] ? parseFloat(row["Order price"]) : null,
+          brew_status: row["Brew status"] || null,
+          creation_time: row["Creation time"] || null,
+          paying_time: row["Paying time"] || null,
+          brewing_time: row["Brewing time"] || null,
+          delivery_time: row["Delivery time"] || null,
+          refund_time: row["Refund time"] || null,
+          pay_card: row["Pay Card"] || null,
+          reason: row["Reason"] || null,
+          remark: row["Remark"] || null,
         }));
 
         const { error } = await supabase
-          .from('transactions')
-          .insert(rowsToInsert);
+          .from('orders')
+          .insert(ordersToInsert);
 
         if (error) {
           console.error('Error saving to database:', error);
           toast.error('Failed to save data to database');
+        } else {
+          const processingTime = (Date.now() - startTime) / 1000;
+
+          // Log upload to upload_log table
+          await supabase.from('upload_log').insert({
+            filename: result.fileName,
+            total_rows: result.data.length,
+            new_records: newRows.length,
+            duplicate_records: duplicateCount,
+            error_records: 0,
+            processing_time_seconds: processingTime,
+            status: 'success',
+            file_size_bytes: file.size,
+          });
+
+          // Update total_orders in metadata
+          const { count } = await supabase
+            .from('orders')
+            .select('*', { count: 'exact', head: true });
+          
+          await supabase
+            .from('database_metadata')
+            .upsert({
+              key: 'total_orders',
+              value: String(count || 0),
+              description: 'Total number of orders in database',
+            });
         }
       }
 
