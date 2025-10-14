@@ -70,18 +70,7 @@ export const FileImportDialog: React.FC<FileImportDialogProps> = ({
     }
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-
-    const droppedFile = e.dataTransfer.files?.[0];
-    if (droppedFile) {
-      handleFileSelect(droppedFile);
-    }
-  }, [databaseId, existingColumns]);
-
-  const handleFileSelect = async (selectedFile: File) => {
+  const handleFileSelect = useCallback(async (selectedFile: File) => {
     // Validate file type
     const validTypes = [
       'text/csv',
@@ -213,7 +202,18 @@ export const FileImportDialog: React.FC<FileImportDialogProps> = ({
         variant: 'destructive',
       });
     }
-  };
+  }, [databaseId, existingColumns, parseFileMutation, toast, useMLMapping]);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    const droppedFile = e.dataTransfer.files?.[0];
+    if (droppedFile) {
+      handleFileSelect(droppedFile);
+    }
+  }, [handleFileSelect]);
 
   // Обработка feedback для улучшения ML
   const handleMappingFeedback = (sourceColumn: string, isCorrect: boolean) => {

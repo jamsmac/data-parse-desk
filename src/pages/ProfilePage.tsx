@@ -23,6 +23,21 @@ import { useAuth } from '@/contexts/AuthContext';
 export default function ProfilePage() {
   const { user, updateProfile, updatePassword } = useAuth();
   
+  // All hooks must be at the top, before any early returns
+  const [profileData, setProfileData] = useState({
+    full_name: (user?.user_metadata?.full_name as string) || '',
+    email: user?.email || '',
+  });
+  const [passwordData, setPasswordData] = useState({
+    current: '',
+    new: '',
+    confirm: '',
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [success, setSuccess] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Early return after all hooks
   if (!user) {
     return (
       <div className="container mx-auto p-6 max-w-4xl">
@@ -34,18 +49,6 @@ export default function ProfilePage() {
       </div>
     );
   }
-  const [profileData, setProfileData] = useState({
-    full_name: (user.user_metadata?.full_name as string) || '',
-    email: user.email || '',
-  });
-  const [passwordData, setPasswordData] = useState({
-    current: '',
-    new: '',
-    confirm: '',
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [success, setSuccess] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const handleProfileUpdate = async () => {
     setError(null);
