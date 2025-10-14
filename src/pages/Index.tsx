@@ -7,6 +7,7 @@ import { DataTable } from '@/components/DataTable';
 import { parseFile, ParseResult } from '@/utils/fileParser';
 import { NormalizedRow, GroupBy, groupRows } from '@/utils/parseData';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 const Index = () => {
   const [isDark, setIsDark] = useState(() => {
@@ -39,8 +40,68 @@ const Index = () => {
     setIsLoading(true);
     try {
       const result = await parseFile(file);
-      setParseResult(result);
-      toast.success(`Loaded ${result.rowCount} rows from ${result.fileName}`);
+      
+      // Check for duplicates and save to database
+      const existingHashes = new Set<string>();
+      const { data: existingData } = await supabase
+        .from('transactions')
+        .select('row_hash');
+      
+      if (existingData) {
+        existingData.forEach(row => existingHashes.add(row.row_hash));
+      }
+
+      const newRows: NormalizedRow[] = [];
+      let duplicateCount = 0;
+
+      for (const row of result.data) {
+        if (row.row_hash && existingHashes.has(row.row_hash)) {
+          duplicateCount++;
+        } else {
+          newRows.push(row);
+          if (row.row_hash) {
+            existingHashes.add(row.row_hash);
+          }
+        }
+      }
+
+      // Save new rows to database
+      if (newRows.length > 0) {
+        const rowsToInsert = newRows.map(row => ({
+          file_name: result.fileName,
+          row_hash: row.row_hash || '',
+          row_data: row,
+          date_iso: row.date_iso,
+          date_only: row.date_only,
+          amount_num: row.amount_num
+        }));
+
+        const { error } = await supabase
+          .from('transactions')
+          .insert(rowsToInsert);
+
+        if (error) {
+          console.error('Error saving to database:', error);
+          toast.error('Failed to save data to database');
+        }
+      }
+
+      // Update result with only new rows
+      const updatedResult = {
+        ...result,
+        data: newRows,
+        rowCount: newRows.length
+      };
+
+      setParseResult(updatedResult);
+
+      if (duplicateCount > 0) {
+        toast.success(
+          `Loaded ${newRows.length} new rows. Skipped ${duplicateCount} duplicates.`
+        );
+      } else {
+        toast.success(`Loaded ${newRows.length} rows from ${result.fileName}`);
+      }
     } catch (error) {
       console.error('Parse error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to parse file');

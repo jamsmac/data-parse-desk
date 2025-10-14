@@ -50,8 +50,25 @@ export interface NormalizedRow {
   date_only?: string;
   epoch_ms?: number;
   amount_num?: number;
+  row_hash?: string;
   _rawData: any;
   _fileName: string;
+}
+
+// Create hash from row data for duplicate detection
+export function createRowHash(row: any): string {
+  const sortedKeys = Object.keys(row).sort();
+  const values = sortedKeys.map(key => String(row[key] ?? ''));
+  const hashString = values.join('|');
+  
+  // Simple hash function
+  let hash = 0;
+  for (let i = 0; i < hashString.length; i++) {
+    const char = hashString.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return hash.toString(36);
 }
 
 export function detectColumns(headers: string[]): {
@@ -186,6 +203,9 @@ export function normalizeRow(
     const { amount_num } = normalizeAmount(amountValue);
     normalized.amount_num = amount_num || undefined;
   }
+
+  // Add row hash for duplicate detection
+  normalized.row_hash = createRowHash(row);
 
   return normalized;
 }
