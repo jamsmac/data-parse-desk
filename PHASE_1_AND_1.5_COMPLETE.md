@@ -7,22 +7,27 @@
 ## ✅ ФАЗА 1: Система множественных баз данных (18/18) - 100%
 
 ### API Layer (2/2)
+
 1. ✅ **databaseAPI.ts** - CRUD для databases
 2. ✅ **fileAPI.ts** - Загрузка файлов
 
 ### Hooks (3/3)
+
 3. ✅ **useDatabases.ts** - React Query хуки
 4. ✅ **useTableData.ts** - Хуки для таблиц  
 5. ✅ **useFiles.ts** - Хуки для файлов
 
 ### Utils (1/1)
+
 6. ✅ **columnMapper.ts** - Сопоставление колонок
 
 ### Pages (2/2)
+
 7. ✅ **Dashboard.tsx** - Главная страница
 8. ✅ **DatabaseView.tsx** - Просмотр БД
 
 ### Components (10/10)
+
 9. ✅ **DatabaseCard.tsx** - Карточка базы данных
 10. ✅ **DatabaseFormDialog.tsx** - Форма создания/редактирования БД
 11. ✅ **UploadFileDialog.tsx** - Диалог загрузки файла (НОВЫЙ)
@@ -41,6 +46,7 @@
 ## ✅ ФАЗА 1.5: Relations & Rollups (9/9) - НАЧАТА
 
 ### Components (5/5)
+
 1. ✅ **RelationColumnEditor.tsx** - Настройка связей (НОВЫЙ)
 2. ✅ **RollupColumnEditor.tsx** - Настройка rollup (НОВЫЙ)
 3. ⏳ **LookupColumnEditor.tsx** - Настройка lookup
@@ -48,10 +54,12 @@
 5. ⏳ **RelationPicker.tsx** - Выбор связанных записей
 
 ### API (2/2)
+
 6. ✅ **relationAPI.ts** - CRUD для связей
 7. ✅ **databaseAPI.ts** - Поддержка relation/rollup/lookup
 
 ### Utils (2/2)
+
 8. ⏳ **relationResolver.ts** - Резолвинг данных
 9. ⏳ **rollupCalculator.ts** - Вычисление rollup
 

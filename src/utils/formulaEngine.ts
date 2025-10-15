@@ -4,6 +4,7 @@
  */
 
 import type { FormulaConfig, ColumnType } from '../types/database';
+import type { AnyObject } from '@/types/common';
 
 /**
  * Токены для парсинга формулы
@@ -12,6 +13,10 @@ type Token = {
   type: 'number' | 'string' | 'boolean' | 'identifier' | 'operator' | 'function' | 'paren';
   value: string | number | boolean;
 };
+
+type FormulaValue = string | number | boolean | Date | null | undefined | unknown[];
+type FormulaContext = Record<string, unknown>;
+type FormulaFunction = (...args: FormulaValue[]) => FormulaValue;
 
 /**
  * Математические функции
@@ -32,43 +37,43 @@ const mathFunctions: Record<string, (...args: number[]) => number> = {
 /**
  * Строковые функции
  */
-const stringFunctions: Record<string, ((...args: any[]) => string)> = {
-  upper: (str: string) => String(str).toUpperCase(),
-  lower: (str: string) => String(str).toLowerCase(),
-  trim: (str: string) => String(str).trim(),
-  concat: (...args: any[]) => args.map(String).join(''),
-  substring: (str: string, start: number, end?: number) => 
-    String(str).substring(start, end),
-  replace: (str: string, search: string, replace: string) => 
-    String(str).replace(new RegExp(search, 'g'), replace),
-  length: (str: string) => String(String(str).length),
+const stringFunctions: Record<string, (...args: Array<string | number | undefined>) => string> = {
+  upper: (str) => String(str).toUpperCase(),
+  lower: (str) => String(str).toLowerCase(),
+  trim: (str) => String(str).trim(),
+  concat: (...args) => args.map(String).join(''),
+  substring: (str, start, end) => 
+    String(str).substring(Number(start), end !== undefined ? Number(end) : undefined),
+  replace: (str, search, replace) => 
+    String(str).replace(new RegExp(String(search), 'g'), String(replace)),
+  length: (str) => String(String(str).length),
 };
 
 /**
  * Функции для работы с датами
  */
-const dateFunctions: Record<string, ((...args: any[]) => any)> = {
+const dateFunctions: Record<string, (...args: Array<Date | string | number>) => FormulaValue> = {
   now: () => new Date(),
   today: () => {
     const date = new Date();
     date.setHours(0, 0, 0, 0);
     return date;
   },
-  year: (date: Date) => new Date(date).getFullYear(),
-  month: (date: Date) => new Date(date).getMonth() + 1,
-  day: (date: Date) => new Date(date).getDate(),
-  hour: (date: Date) => new Date(date).getHours(),
-  minute: (date: Date) => new Date(date).getMinutes(),
-  dateAdd: (date: Date, days: number) => {
+  year: (date) => new Date(date).getFullYear(),
+  month: (date) => new Date(date).getMonth() + 1,
+  day: (date) => new Date(date).getDate(),
+  hour: (date) => new Date(date).getHours(),
+  minute: (date) => new Date(date).getMinutes(),
+  dateAdd: (date, days) => {
     const result = new Date(date);
-    result.setDate(result.getDate() + days);
+    result.setDate(result.getDate() + Number(days));
     return result;
   },
-  dateDiff: (date1: Date, date2: Date) => {
+  dateDiff: (date1, date2) => {
     const diff = new Date(date1).getTime() - new Date(date2).getTime();
     return Math.floor(diff / (1000 * 60 * 60 * 24));
   },
-  formatDate: (date: Date, format: string) => {
+  formatDate: (date, format) => {
     const d = new Date(date);
     const formats: Record<string, string> = {
       'YYYY': String(d.getFullYear()),
@@ -78,7 +83,7 @@ const dateFunctions: Record<string, ((...args: any[]) => any)> = {
       'mm': String(d.getMinutes()).padStart(2, '0'),
       'ss': String(d.getSeconds()).padStart(2, '0'),
     };
-    let result = format;
+    let result = String(format);
     for (const [key, value] of Object.entries(formats)) {
       result = result.replace(key, value);
     }
@@ -89,24 +94,24 @@ const dateFunctions: Record<string, ((...args: any[]) => any)> = {
 /**
  * Логические функции
  */
-const logicalFunctions: Record<string, ((...args: any[]) => any)> = {
-  if: (condition: boolean, ifTrue: any, ifFalse: any) => condition ? ifTrue : ifFalse,
-  and: (...args: boolean[]) => args.every(Boolean),
-  or: (...args: boolean[]) => args.some(Boolean),
-  not: (value: boolean) => !value,
-  isNull: (value: any) => value == null,
-  isEmpty: (value: any) => value == null || value === '' || (Array.isArray(value) && value.length === 0),
+const logicalFunctions: Record<string, (...args: FormulaValue[]) => FormulaValue> = {
+  if: (condition, ifTrue, ifFalse) => condition ? ifTrue : ifFalse,
+  and: (...args) => args.every(Boolean),
+  or: (...args) => args.some(Boolean),
+  not: (value) => !value,
+  isNull: (value) => value == null,
+  isEmpty: (value) => value == null || value === '' || (Array.isArray(value) && value.length === 0),
 };
 
 /**
  * Все доступные функции
  */
-const allFunctions = {
+const allFunctions: Record<string, FormulaFunction> = {
   ...mathFunctions,
   ...stringFunctions,
   ...dateFunctions,
   ...logicalFunctions,
-};
+} as Record<string, FormulaFunction>;
 
 /**
  * Парсит выражение формулы в токены
@@ -127,7 +132,7 @@ function tokenize(expression: string): Token[] {
     // Числа
     if (/\d/.test(char)) {
       let num = '';
-      while (i < expression.length && /[\d.]/.test(expression[i])) {
+      while (i < expression.length && (/\d/.test(expression[i]) || expression[i] === '.')) {
         num += expression[i];
         i++;
       }
@@ -135,7 +140,7 @@ function tokenize(expression: string): Token[] {
       continue;
     }
 
-    // Строки
+    // Строки в кавычках
     if (char === '"' || char === "'") {
       const quote = char;
       let str = '';
@@ -143,59 +148,58 @@ function tokenize(expression: string): Token[] {
       while (i < expression.length && expression[i] !== quote) {
         if (expression[i] === '\\' && i + 1 < expression.length) {
           i++;
-          str += expression[i];
-        } else {
-          str += expression[i];
         }
+        str += expression[i];
         i++;
       }
-      i++; // Закрывающая кавычка
+      i++; // Пропускаем закрывающую кавычку
       tokens.push({ type: 'string', value: str });
       continue;
     }
 
+    // Идентификаторы и функции
+    if (/[a-zA-Z_]/.test(char)) {
+      let id = '';
+      while (i < expression.length && /[a-zA-Z0-9_]/.test(expression[i])) {
+        id += expression[i];
+        i++;
+      }
+
+      // Проверяем на булевы значения
+      if (id === 'true' || id === 'false') {
+        tokens.push({ type: 'boolean', value: id === 'true' });
+      } else if (i < expression.length && expression[i] === '(') {
+        tokens.push({ type: 'function', value: id });
+      } else {
+        tokens.push({ type: 'identifier', value: id });
+      }
+      continue;
+    }
+
     // Операторы
-    if ('+-*/^%=<>!'.includes(char)) {
+    if ('+-*/=<>!&|'.includes(char)) {
       let op = char;
       i++;
-      // Проверяем двухсимвольные операторы
-      if (i < expression.length && '=<>'.includes(expression[i])) {
-        op += expression[i];
-        i++;
+      if (i < expression.length) {
+        const nextChar = expression[i];
+        if ((char === '=' && nextChar === '=') ||
+            (char === '!' && nextChar === '=') ||
+            (char === '<' && nextChar === '=') ||
+            (char === '>' && nextChar === '=') ||
+            (char === '&' && nextChar === '&') ||
+            (char === '|' && nextChar === '|')) {
+          op += nextChar;
+          i++;
+        }
       }
       tokens.push({ type: 'operator', value: op });
       continue;
     }
 
     // Скобки
-    if ('()'.includes(char)) {
+    if (char === '(' || char === ')' || char === ',' || char === '[' || char === ']') {
       tokens.push({ type: 'paren', value: char });
       i++;
-      continue;
-    }
-
-    // Запятая (разделитель аргументов)
-    if (char === ',') {
-      i++;
-      continue;
-    }
-
-    // Идентификаторы и функции
-    if (/[a-zA-Z_]/.test(char)) {
-      let identifier = '';
-      while (i < expression.length && /[a-zA-Z0-9_]/.test(expression[i])) {
-        identifier += expression[i];
-        i++;
-      }
-
-      // Проверяем, это функция или переменная
-      if (i < expression.length && expression[i] === '(') {
-        tokens.push({ type: 'function', value: identifier });
-      } else if (identifier === 'true' || identifier === 'false') {
-        tokens.push({ type: 'boolean', value: identifier === 'true' });
-      } else {
-        tokens.push({ type: 'identifier', value: identifier });
-      }
       continue;
     }
 
@@ -206,565 +210,585 @@ function tokenize(expression: string): Token[] {
 }
 
 /**
- * Вычисляет формулу
+ * Вычисляет выражение из токенов
  */
-export function evaluateFormula(
-  expression: string,
-  context: Record<string, any>
-): any {
-  try {
-    const tokens = tokenize(expression);
-    return evaluateTokens(tokens, context);
-  } catch (error) {
-    console.error('Ошибка вычисления формулы:', error);
-    throw new Error(`Ошибка в формуле: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
-  }
-}
+function evaluate(tokens: Token[], context: FormulaContext): FormulaValue {
+  let index = 0;
 
-/**
- * Вычисляет токены
- */
-function evaluateTokens(tokens: Token[], context: Record<string, any>): any {
-  if (tokens.length === 0) return null;
-
-  // Простые случаи
-  if (tokens.length === 1) {
-    const token = tokens[0];
-    if (token.type === 'number' || token.type === 'string' || token.type === 'boolean') {
-      return token.value;
-    }
-    if (token.type === 'identifier') {
-      return context[token.value as string];
-    }
+  function parseExpression(): FormulaValue {
+    return parseOr();
   }
 
-  // Вызов функции
-  if (tokens[0].type === 'function') {
-    const funcName = tokens[0].value as string;
-    const func = allFunctions[funcName];
+  function parseOr(): FormulaValue {
+    let left = parseAnd();
 
-    if (!func) {
-      throw new Error(`Неизвестная функция: ${funcName}`);
+    while (index < tokens.length && tokens[index]?.type === 'operator' && tokens[index].value === '||') {
+      index++;
+      const right = parseAnd();
+      left = Boolean(left) || Boolean(right);
     }
 
-    // Извлекаем аргументы из скобок
-    const args: any[] = [];
-    let depth = 0;
-    let currentArg: Token[] = [];
+    return left;
+  }
 
-    for (let i = 2; i < tokens.length; i++) {
-      const token = tokens[i];
+  function parseAnd(): FormulaValue {
+    let left = parseEquality();
 
-      if (token.type === 'paren') {
-        if (token.value === '(') {
-          depth++;
-          currentArg.push(token);
-        } else if (token.value === ')') {
-          if (depth === 0) {
-            if (currentArg.length > 0) {
-              args.push(evaluateTokens(currentArg, context));
-            }
-            break;
-          } else {
-            depth--;
-            currentArg.push(token);
-          }
+    while (index < tokens.length && tokens[index]?.type === 'operator' && tokens[index].value === '&&') {
+      index++;
+      const right = parseEquality();
+      left = Boolean(left) && Boolean(right);
+    }
+
+    return left;
+  }
+
+  function parseEquality(): FormulaValue {
+    let left = parseComparison();
+
+    while (index < tokens.length && tokens[index]?.type === 'operator' && 
+           (tokens[index].value === '==' || tokens[index].value === '!=')) {
+      const op = String(tokens[index].value);
+      index++;
+      const right = parseComparison();
+      if (op === '==') {
+        left = left == right;
+      } else {
+        left = left != right;
+      }
+    }
+
+    return left;
+  }
+
+  function parseComparison(): FormulaValue {
+    let left = parseAddSub();
+
+    while (index < tokens.length && tokens[index]?.type === 'operator' && 
+           ['<', '<=', '>', '>='].includes(String(tokens[index].value))) {
+      const op = String(tokens[index].value);
+      index++;
+      const right = parseAddSub();
+      
+      const leftNum = Number(left);
+      const rightNum = Number(right);
+      
+      switch (op) {
+        case '<':
+          left = leftNum < rightNum;
+          break;
+        case '<=':
+          left = leftNum <= rightNum;
+          break;
+        case '>':
+          left = leftNum > rightNum;
+          break;
+        case '>=':
+          left = leftNum >= rightNum;
+          break;
+      }
+    }
+
+    return left;
+  }
+
+  function parseAddSub(): FormulaValue {
+    let left = parseMulDiv();
+
+    while (index < tokens.length && tokens[index]?.type === 'operator' && 
+           (tokens[index].value === '+' || tokens[index].value === '-')) {
+      const op = String(tokens[index].value);
+      index++;
+      const right = parseMulDiv();
+      
+      if (op === '+') {
+        if (typeof left === 'string' || typeof right === 'string') {
+          left = String(left) + String(right);
+        } else {
+          left = Number(left) + Number(right);
         }
       } else {
-        currentArg.push(token);
+        left = Number(left) - Number(right);
       }
     }
 
-    return func(...args);
+    return left;
   }
 
-  // Обработка операторов
-  return evaluateExpression(tokens, context);
-}
+  function parseMulDiv(): FormulaValue {
+    let left = parseUnary();
 
-/**
- * Вычисляет выражение с операторами
- */
-function evaluateExpression(tokens: Token[], context: Record<string, any>): any {
-  // Простая реализация для базовых операций
-  // TODO: Полная реализация парсера с приоритетами операторов
-
-  let result: any = null;
-  let operator: string | null = null;
-
-  for (let i = 0; i < tokens.length; i++) {
-    const token = tokens[i];
-
-    if (token.type === 'number' || token.type === 'string' || token.type === 'boolean') {
-      if (result === null) {
-        result = token.value;
-      } else if (operator) {
-        result = applyOperator(result, token.value, operator);
-        operator = null;
+    while (index < tokens.length && tokens[index]?.type === 'operator' && 
+           (tokens[index].value === '*' || tokens[index].value === '/')) {
+      const op = String(tokens[index].value);
+      index++;
+      const right = parseUnary();
+      
+      if (op === '*') {
+        left = Number(left) * Number(right);
+      } else {
+        left = Number(left) / Number(right);
       }
-    } else if (token.type === 'identifier') {
-      const value = context[token.value as string];
-      if (result === null) {
-        result = value;
-      } else if (operator) {
-        result = applyOperator(result, value, operator);
-        operator = null;
-      }
-    } else if (token.type === 'operator') {
-      operator = token.value as string;
     }
+
+    return left;
   }
 
-  return result;
+  function parseUnary(): FormulaValue {
+    if (index < tokens.length && tokens[index]?.type === 'operator' && tokens[index].value === '!') {
+      index++;
+      return !parseUnary();
+    }
+    if (index < tokens.length && tokens[index]?.type === 'operator' && tokens[index].value === '-') {
+      index++;
+      return -Number(parseUnary());
+    }
+    return parsePrimary();
+  }
+
+  function parsePrimary(): FormulaValue {
+    if (index >= tokens.length) {
+      throw new Error('Unexpected end of expression');
+    }
+
+    const token = tokens[index];
+
+    // Числа
+    if (token.type === 'number') {
+      index++;
+      return token.value as number;
+    }
+
+    // Строки
+    if (token.type === 'string') {
+      index++;
+      return token.value as string;
+    }
+
+    // Булевы значения
+    if (token.type === 'boolean') {
+      index++;
+      return token.value as boolean;
+    }
+
+    // Функции
+    if (token.type === 'function') {
+      const funcName = String(token.value);
+      index++;
+      
+      if (index >= tokens.length || tokens[index].value !== '(') {
+        throw new Error(`Expected '(' after function ${funcName}`);
+      }
+      index++;
+
+      const args: FormulaValue[] = [];
+      while (index < tokens.length && tokens[index].value !== ')') {
+        if (tokens[index].value === ',') {
+          index++;
+        } else {
+          args.push(parseExpression());
+        }
+      }
+
+      if (index >= tokens.length || tokens[index].value !== ')') {
+        throw new Error(`Expected ')' after function arguments`);
+      }
+      index++;
+
+      const func = allFunctions[funcName];
+      if (!func) {
+        throw new Error(`Unknown function: ${funcName}`);
+      }
+
+      return func(...args);
+    }
+
+    // Идентификаторы (переменные)
+    if (token.type === 'identifier') {
+      const varName = String(token.value);
+      index++;
+      
+      // Проверяем на доступ к свойствам объекта
+      if (index < tokens.length && tokens[index].value === '[') {
+        index++;
+        const prop = parseExpression();
+        if (index >= tokens.length || tokens[index].value !== ']') {
+          throw new Error(`Expected ']' after property access`);
+        }
+        index++;
+        
+        const obj = context[varName];
+        if (obj && typeof obj === 'object' && !Array.isArray(obj) && !(obj instanceof Date)) {
+          return (obj as AnyObject)[String(prop)] as FormulaValue;
+        }
+        return undefined;
+      }
+      
+      return context[varName] as FormulaValue;
+    }
+
+    // Выражения в скобках
+    if (token.type === 'paren' && token.value === '(') {
+      index++;
+      const result = parseExpression();
+      if (index >= tokens.length || tokens[index].value !== ')') {
+        throw new Error(`Expected ')'`);
+      }
+      index++;
+      return result;
+    }
+
+    throw new Error(`Unexpected token: ${JSON.stringify(token)}`);
+  }
+
+  return parseExpression();
 }
 
 /**
- * Применяет оператор к двум значениям
+ * Вычисляет формулу
  */
-function applyOperator(left: any, right: any, operator: string): any {
-  switch (operator) {
-    case '+':
-      return left + right;
-    case '-':
-      return left - right;
-    case '*':
-      return left * right;
-    case '/':
-      return left / right;
-    case '^':
-      return Math.pow(left, right);
-    case '%':
-      return left % right;
-    case '==':
-    case '=':
-      return left === right;
-    case '!=':
-      return left !== right;
-    case '<':
-      return left < right;
-    case '<=':
-      return left <= right;
-    case '>':
-      return left > right;
-    case '>=':
-      return left >= right;
-    default:
-      throw new Error(`Неизвестный оператор: ${operator}`);
+export function calculateFormula(
+  formula: string, 
+  rowData: AnyObject,
+  allRows?: AnyObject[]
+): FormulaValue {
+  try {
+    // Удаляем префикс '=' если есть
+    const expression = formula.startsWith('=') ? formula.slice(1) : formula;
+    
+    // Создаем контекст с данными строки
+    const context: FormulaContext = { ...rowData };
+    
+    // Добавляем специальные переменные
+    if (allRows) {
+      context._rows = allRows;
+      context._rowIndex = allRows.indexOf(rowData);
+      context._rowCount = allRows.length;
+    }
+    
+    // Токенизируем и вычисляем выражение
+    const tokens = tokenize(expression);
+    return evaluate(tokens, context);
+    
+  } catch (error) {
+    console.error('Ошибка вычисления формулы:', error);
+    return `#ERROR: ${error instanceof Error ? error.message : 'Unknown error'}`;
   }
 }
 
 /**
  * Валидирует формулу
  */
-export function validateFormula(config: FormulaConfig): {
-  isValid: boolean;
-  errors: string[];
-} {
-  const errors: string[] = [];
-
-  if (!config.expression || config.expression.trim() === '') {
-    errors.push('Выражение формулы не может быть пустым');
-  }
-
-  if (!config.return_type) {
-    errors.push('Не указан тип возвращаемого значения');
-  }
-
-  // Пробуем распарсить выражение
+export function validateFormula(formula: string): { valid: boolean; error?: string } {
   try {
-    tokenize(config.expression);
-  } catch (error) {
-    errors.push(`Ошибка парсинга: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
-  }
-
-  // Проверяем зависимости
-  if (config.dependencies && config.dependencies.length > 0) {
-    const usedColumns = extractColumnReferences(config.expression);
-    const unusedDeps = config.dependencies.filter(dep => !usedColumns.includes(dep));
+    const expression = formula.startsWith('=') ? formula.slice(1) : formula;
+    const tokens = tokenize(expression);
     
-    if (unusedDeps.length > 0) {
-      errors.push(`Неиспользуемые зависимости: ${unusedDeps.join(', ')}`);
+    // Проверяем баланс скобок
+    let parenDepth = 0;
+    for (const token of tokens) {
+      if (token.type === 'paren') {
+        if (token.value === '(' || token.value === '[') {
+          parenDepth++;
+        } else if (token.value === ')' || token.value === ']') {
+          parenDepth--;
+          if (parenDepth < 0) {
+            return { valid: false, error: 'Несбалансированные скобки' };
+          }
+        }
+      }
     }
-
-    const missingDeps = usedColumns.filter(col => !config.dependencies.includes(col));
-    if (missingDeps.length > 0) {
-      errors.push(`Отсутствующие зависимости: ${missingDeps.join(', ')}`);
+    
+    if (parenDepth !== 0) {
+      return { valid: false, error: 'Несбалансированные скобки' };
     }
+    
+    // Проверяем неизвестные функции
+    for (const token of tokens) {
+      if (token.type === 'function' && !allFunctions[String(token.value)]) {
+        return { valid: false, error: `Неизвестная функция: ${token.value}` };
+      }
+    }
+    
+    // Проверяем последовательности операторов
+    for (let i = 0; i < tokens.length - 1; i++) {
+      const current = tokens[i];
+      const next = tokens[i + 1];
+      
+      // Два бинарных оператора подряд (кроме унарных - и !)
+      if (current.type === 'operator' && next.type === 'operator') {
+        const currentOp = String(current.value);
+        const nextOp = String(next.value);
+        
+        // Разрешаем унарные операторы после бинарных
+        if (nextOp === '-' || nextOp === '!') {
+          continue;
+        }
+        
+        // Запрещаем двойные операторы типа ++, --, **, //
+        if ((currentOp === '+' && nextOp === '+') ||
+            (currentOp === '-' && nextOp === '-') ||
+            (currentOp === '*' && nextOp === '*') ||
+            (currentOp === '/' && nextOp === '/')) {
+          return { valid: false, error: `Некорректная последовательность операторов: ${currentOp}${nextOp}` };
+        }
+      }
+    }
+    
+    return { valid: true };
+  } catch (error) {
+    return { 
+      valid: false, 
+      error: error instanceof Error ? error.message : 'Ошибка валидации'
+    };
   }
+}
 
+/**
+ * Получает список используемых переменных в формуле
+ */
+export function getFormulaVariables(formula: string): string[] {
+  try {
+    const expression = formula.startsWith('=') ? formula.slice(1) : formula;
+    const tokens = tokenize(expression);
+    
+    const variables = new Set<string>();
+    for (const token of tokens) {
+      if (token.type === 'identifier') {
+        variables.add(String(token.value));
+      }
+    }
+    
+    return Array.from(variables);
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Создает конфигурацию формулы
+ */
+export function createFormulaConfig(
+  formula: string,
+  returnType: ColumnType = 'text'
+): FormulaConfig {
   return {
-    isValid: errors.length === 0,
-    errors,
+    expression: formula,
+    dependencies: getFormulaVariables(formula),
+    return_type: returnType
   };
 }
 
 /**
- * Извлекает ссылки на колонки из выражения
+ * Преобразует результат формулы к нужному типу
  */
-export function extractColumnReferences(expression: string): string[] {
-  const tokens = tokenize(expression);
-  const columns = new Set<string>();
-
-  for (const token of tokens) {
-    if (token.type === 'identifier') {
-      columns.add(token.value as string);
+export function castFormulaResult(
+  value: FormulaValue, 
+  targetType: ColumnType
+): FormulaValue {
+  if (value == null) return null;
+  
+  switch (targetType) {
+    case 'number': {
+      const num = Number(value);
+      return isNaN(num) ? null : num;
     }
+    
+    case 'text':
+      return String(value);
+    
+    case 'boolean':
+      return Boolean(value);
+    
+    case 'date':
+      return value instanceof Date ? value : new Date(String(value));
+    
+    default:
+      return value;
   }
-
-  return Array.from(columns);
 }
 
 /**
- * Метаданные функций для UI
+ * Описание доступных функций для UI
  */
 export const FORMULA_FUNCTIONS = [
-  // Математические
+  // Математические функции
   {
-    name: 'abs',
+    name: 'ABS',
     category: 'math',
-    description: 'Возвращает абсолютное значение числа',
-    params: [{ name: 'number', type: 'number', optional: false }],
-    examples: ['abs(-5) => 5', 'abs({price}) => абсолютное значение цены'],
+    description: 'Абсолютное значение числа',
+    params: [{ name: 'value', type: 'number', optional: false }],
+    examples: ['ABS(-5)', 'ABS({amount})']
   },
   {
-    name: 'round',
+    name: 'CEIL',
     category: 'math',
-    description: 'Округляет число до ближайшего целого',
-    params: [{ name: 'number', type: 'number', optional: false }],
-    examples: ['round(3.7) => 4', 'round({price}) => округленная цена'],
+    description: 'Округление вверх',
+    params: [{ name: 'value', type: 'number', optional: false }],
+    examples: ['CEIL(4.3)', 'CEIL({price})']
   },
   {
-    name: 'ceil',
+    name: 'FLOOR',
     category: 'math',
-    description: 'Округляет число вверх',
-    params: [{ name: 'number', type: 'number', optional: false }],
-    examples: ['ceil(3.2) => 4'],
+    description: 'Округление вниз',
+    params: [{ name: 'value', type: 'number', optional: false }],
+    examples: ['FLOOR(4.7)', 'FLOOR({price})']
   },
   {
-    name: 'floor',
+    name: 'ROUND',
     category: 'math',
-    description: 'Округляет число вниз',
-    params: [{ name: 'number', type: 'number', optional: false }],
-    examples: ['floor(3.9) => 3'],
+    description: 'Математическое округление',
+    params: [{ name: 'value', type: 'number', optional: false }],
+    examples: ['ROUND(4.5)', 'ROUND({price})']
   },
   {
-    name: 'sum',
+    name: 'SUM',
     category: 'math',
-    description: 'Суммирует все аргументы',
-    params: [{ name: 'numbers', type: 'number', optional: false }],
-    examples: ['sum(1, 2, 3) => 6', 'sum({price}, {tax}) => сумма'],
+    description: 'Сумма чисел',
+    params: [{ name: 'values', type: 'number...', optional: false }],
+    examples: ['SUM(1, 2, 3)', 'SUM({price}, {tax})']
   },
   {
-    name: 'avg',
+    name: 'AVG',
     category: 'math',
-    description: 'Вычисляет среднее значение',
-    params: [{ name: 'numbers', type: 'number', optional: false }],
-    examples: ['avg(1, 2, 3) => 2'],
+    description: 'Среднее значение',
+    params: [{ name: 'values', type: 'number...', optional: false }],
+    examples: ['AVG(1, 2, 3)', 'AVG({score1}, {score2})']
   },
   {
-    name: 'min',
+    name: 'MIN',
     category: 'math',
-    description: 'Возвращает минимальное значение',
-    params: [{ name: 'numbers', type: 'number', optional: false }],
-    examples: ['min(1, 2, 3) => 1'],
+    description: 'Минимальное значение',
+    params: [{ name: 'values', type: 'number...', optional: false }],
+    examples: ['MIN(1, 5, 3)', 'MIN({price1}, {price2})']
   },
   {
-    name: 'max',
+    name: 'MAX',
     category: 'math',
-    description: 'Возвращает максимальное значение',
-    params: [{ name: 'numbers', type: 'number', optional: false }],
-    examples: ['max(1, 2, 3) => 3'],
+    description: 'Максимальное значение',
+    params: [{ name: 'values', type: 'number...', optional: false }],
+    examples: ['MAX(1, 5, 3)', 'MAX({price1}, {price2})']
   },
+  
+  // Строковые функции
   {
-    name: 'pow',
-    category: 'math',
-    description: 'Возводит число в степень',
-    params: [
-      { name: 'base', type: 'number', optional: false },
-      { name: 'exponent', type: 'number', optional: false },
-    ],
-    examples: ['pow(2, 3) => 8'],
-  },
-  {
-    name: 'sqrt',
-    category: 'math',
-    description: 'Извлекает квадратный корень',
-    params: [{ name: 'number', type: 'number', optional: false }],
-    examples: ['sqrt(9) => 3'],
-  },
-  // Строковые
-  {
-    name: 'upper',
+    name: 'UPPER',
     category: 'string',
-    description: 'Преобразует строку в верхний регистр',
-    params: [{ name: 'string', type: 'string', optional: false }],
-    examples: ['upper("hello") => "HELLO"', 'upper({name}) => ИМЯ БОЛЬШИМИ БУКВАМИ'],
+    description: 'В верхний регистр',
+    params: [{ name: 'text', type: 'string', optional: false }],
+    examples: ['UPPER("hello")', 'UPPER({name})']
   },
   {
-    name: 'lower',
+    name: 'LOWER',
     category: 'string',
-    description: 'Преобразует строку в нижний регистр',
-    params: [{ name: 'string', type: 'string', optional: false }],
-    examples: ['lower("HELLO") => "hello"'],
+    description: 'В нижний регистр',
+    params: [{ name: 'text', type: 'string', optional: false }],
+    examples: ['LOWER("HELLO")', 'LOWER({name})']
   },
   {
-    name: 'concat',
+    name: 'TRIM',
     category: 'string',
-    description: 'Объединяет строки',
-    params: [{ name: 'strings', type: 'string', optional: false }],
-    examples: ['concat("Hello", " ", "World") => "Hello World"', 'concat({first_name}, " ", {last_name})'],
+    description: 'Удалить пробелы',
+    params: [{ name: 'text', type: 'string', optional: false }],
+    examples: ['TRIM("  hello  ")', 'TRIM({name})']
   },
   {
-    name: 'trim',
+    name: 'CONCAT',
     category: 'string',
-    description: 'Удаляет пробелы в начале и конце строки',
-    params: [{ name: 'string', type: 'string', optional: false }],
-    examples: ['trim("  hello  ") => "hello"'],
+    description: 'Объединить строки',
+    params: [{ name: 'texts', type: 'string...', optional: false }],
+    examples: ['CONCAT("Hello", " ", "World")', 'CONCAT({first}, " ", {last})']
   },
   {
-    name: 'substring',
+    name: 'LENGTH',
     category: 'string',
-    description: 'Извлекает подстроку',
-    params: [
-      { name: 'string', type: 'string', optional: false },
-      { name: 'start', type: 'number', optional: false },
-      { name: 'end', type: 'number', optional: true },
-    ],
-    examples: ['substring("hello", 0, 3) => "hel"'],
+    description: 'Длина строки',
+    params: [{ name: 'text', type: 'string', optional: false }],
+    examples: ['LENGTH("hello")', 'LENGTH({description})']
   },
+  
+  // Функции даты
   {
-    name: 'replace',
-    category: 'string',
-    description: 'Заменяет текст в строке',
-    params: [
-      { name: 'string', type: 'string', optional: false },
-      { name: 'search', type: 'string', optional: false },
-      { name: 'replace', type: 'string', optional: false },
-    ],
-    examples: ['replace("hello world", "world", "there") => "hello there"'],
-  },
-  {
-    name: 'length',
-    category: 'string',
-    description: 'Возвращает длину строки',
-    params: [{ name: 'string', type: 'string', optional: false }],
-    examples: ['length("hello") => "5"'],
-  },
-  // Даты
-  {
-    name: 'now',
+    name: 'NOW',
     category: 'date',
-    description: 'Возвращает текущую дату и время',
+    description: 'Текущая дата и время',
     params: [],
-    examples: ['now() => 2024-01-01 12:00:00'],
+    examples: ['NOW()']
   },
   {
-    name: 'today',
+    name: 'TODAY',
     category: 'date',
-    description: 'Возвращает сегодняшнюю дату (без времени)',
+    description: 'Текущая дата',
     params: [],
-    examples: ['today() => 2024-01-01'],
+    examples: ['TODAY()']
   },
   {
-    name: 'year',
+    name: 'YEAR',
     category: 'date',
-    description: 'Извлекает год из даты',
+    description: 'Год из даты',
     params: [{ name: 'date', type: 'date', optional: false }],
-    examples: ['year({created_date}) => 2024'],
+    examples: ['YEAR({created_at})']
   },
   {
-    name: 'month',
+    name: 'MONTH',
     category: 'date',
-    description: 'Извлекает месяц из даты',
+    description: 'Месяц из даты',
     params: [{ name: 'date', type: 'date', optional: false }],
-    examples: ['month({created_date}) => 1'],
+    examples: ['MONTH({created_at})']
   },
   {
-    name: 'day',
+    name: 'DAY',
     category: 'date',
-    description: 'Извлекает день из даты',
+    description: 'День из даты',
     params: [{ name: 'date', type: 'date', optional: false }],
-    examples: ['day({created_date}) => 15'],
+    examples: ['DAY({created_at})']
   },
+  
+  // Логические функции
   {
-    name: 'dateDiff',
-    category: 'date',
-    description: 'Вычисляет разницу между датами в днях',
-    params: [
-      { name: 'date1', type: 'date', optional: false },
-      { name: 'date2', type: 'date', optional: false },
-    ],
-    examples: ['dateDiff({due_date}, today()) => 7'],
-  },
-  {
-    name: 'dateAdd',
-    category: 'date',
-    description: 'Добавляет дни к дате',
-    params: [
-      { name: 'date', type: 'date', optional: false },
-      { name: 'days', type: 'number', optional: false },
-    ],
-    examples: ['dateAdd(today(), 7) => дата через 7 дней'],
-  },
-  {
-    name: 'formatDate',
-    category: 'date',
-    description: 'Форматирует дату',
-    params: [
-      { name: 'date', type: 'date', optional: false },
-      { name: 'format', type: 'string', optional: false },
-    ],
-    examples: ['formatDate({date}, "YYYY-MM-DD") => "2024-01-01"'],
-  },
-  // Логические
-  {
-    name: 'if',
+    name: 'IF',
     category: 'logical',
-    description: 'Условное выражение',
+    description: 'Условное значение',
     params: [
       { name: 'condition', type: 'boolean', optional: false },
-      { name: 'valueIfTrue', type: 'any', optional: false },
-      { name: 'valueIfFalse', type: 'any', optional: false },
+      { name: 'ifTrue', type: 'any', optional: false },
+      { name: 'ifFalse', type: 'any', optional: false }
     ],
-    examples: ['if({price} > 100, "Дорого", "Дешево")'],
+    examples: ['IF({status} == "active", "Да", "Нет")']
   },
   {
-    name: 'and',
+    name: 'AND',
     category: 'logical',
     description: 'Логическое И',
-    params: [{ name: 'conditions', type: 'boolean', optional: false }],
-    examples: ['and({active}, {verified}) => true если оба true'],
+    params: [{ name: 'values', type: 'boolean...', optional: false }],
+    examples: ['AND({active}, {verified})']
   },
   {
-    name: 'or',
+    name: 'OR',
     category: 'logical',
     description: 'Логическое ИЛИ',
-    params: [{ name: 'conditions', type: 'boolean', optional: false }],
-    examples: ['or({active}, {verified}) => true если хотя бы один true'],
+    params: [{ name: 'values', type: 'boolean...', optional: false }],
+    examples: ['OR({active}, {premium})']
   },
   {
-    name: 'not',
+    name: 'NOT',
     category: 'logical',
     description: 'Логическое НЕ',
-    params: [{ name: 'condition', type: 'boolean', optional: false }],
-    examples: ['not({active}) => инвертирует значение'],
-  },
-  {
-    name: 'isNull',
-    category: 'logical',
-    description: 'Проверяет на null',
-    params: [{ name: 'value', type: 'any', optional: false }],
-    examples: ['isNull({optional_field}) => true если null'],
-  },
-  {
-    name: 'isEmpty',
-    category: 'logical',
-    description: 'Проверяет на пустоту',
-    params: [{ name: 'value', type: 'any', optional: false }],
-    examples: ['isEmpty({name}) => true если пусто'],
-  },
+    params: [{ name: 'value', type: 'boolean', optional: false }],
+    examples: ['NOT({archived})']
+  }
 ];
 
 /**
- * Получает список доступных функций
+ * Примеры формул для документации
  */
-export function getAvailableFunctions(): Record<string, {
-  name: string;
-  category: string;
-  description: string;
-  signature: string;
-  example: string;
-}> {
-  return {
-    // Математические
-    abs: {
-      name: 'abs',
-      category: 'math',
-      description: 'Возвращает абсолютное значение числа',
-      signature: 'abs(number)',
-      example: 'abs(-5) => 5',
-    },
-    round: {
-      name: 'round',
-      category: 'math',
-      description: 'Округляет число до ближайшего целого',
-      signature: 'round(number)',
-      example: 'round(3.7) => 4',
-    },
-    sum: {
-      name: 'sum',
-      category: 'math',
-      description: 'Суммирует все аргументы',
-      signature: 'sum(number1, number2, ...)',
-      example: 'sum(1, 2, 3) => 6',
-    },
-    avg: {
-      name: 'avg',
-      category: 'math',
-      description: 'Вычисляет среднее значение',
-      signature: 'avg(number1, number2, ...)',
-      example: 'avg(1, 2, 3) => 2',
-    },
-    // Строковые
-    upper: {
-      name: 'upper',
-      category: 'string',
-      description: 'Преобразует строку в верхний регистр',
-      signature: 'upper(string)',
-      example: 'upper("hello") => "HELLO"',
-    },
-    lower: {
-      name: 'lower',
-      category: 'string',
-      description: 'Преобразует строку в нижний регистр',
-      signature: 'lower(string)',
-      example: 'lower("HELLO") => "hello"',
-    },
-    concat: {
-      name: 'concat',
-      category: 'string',
-      description: 'Объединяет строки',
-      signature: 'concat(string1, string2, ...)',
-      example: 'concat("Hello", " ", "World") => "Hello World"',
-    },
-    // Даты
-    now: {
-      name: 'now',
-      category: 'date',
-      description: 'Возвращает текущую дату и время',
-      signature: 'now()',
-      example: 'now() => 2024-01-01 12:00:00',
-    },
-    dateDiff: {
-      name: 'dateDiff',
-      category: 'date',
-      description: 'Вычисляет разницу между датами в днях',
-      signature: 'dateDiff(date1, date2)',
-      example: 'dateDiff(date1, date2) => 7',
-    },
-    // Логические
-    if: {
-      name: 'if',
-      category: 'logical',
-      description: 'Условное выражение',
-      signature: 'if(condition, valueIfTrue, valueIfFalse)',
-      example: 'if(price > 100, "Дорого", "Дешево")',
-    },
-  };
-}
-
-/**
- * Проверяет тип результата формулы
- */
-export function inferFormulaType(expression: string, context: Record<string, any>): ColumnType {
-  try {
-    const result = evaluateFormula(expression, context);
-    
-    if (typeof result === 'number') return 'number';
-    if (typeof result === 'boolean') return 'boolean';
-    if (result instanceof Date) return 'date';
-    return 'text';
-  } catch {
-    return 'text';
-  }
-}
+export const formulaExamples = [
+  { formula: '=price * quantity', description: 'Умножение двух колонок' },
+  { formula: '=IF(status == "active", "Да", "Нет")', description: 'Условное выражение' },
+  { formula: '=UPPER(name)', description: 'Преобразование в верхний регистр' },
+  { formula: '=SUM(amount, tax, shipping)', description: 'Сумма нескольких колонок' },
+  { formula: '=DATEDIFF(end_date, start_date)', description: 'Разница между датами в днях' },
+  { formula: '=CONCAT(first_name, " ", last_name)', description: 'Объединение строк' },
+  { formula: '=ROUND(price * 1.2, 2)', description: 'Округление с налогом' },
+  { formula: '=NOW()', description: 'Текущая дата и время' },
+];

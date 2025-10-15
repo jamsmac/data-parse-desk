@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { LoginCredentials, RegisterData } from '@/types/auth';
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { setUser as setSentryUser, clearUser as clearSentryUser } from '@/lib/sentry';
 
 interface AuthContextType {
   user: User | null;
@@ -40,6 +41,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       setIsLoading(false);
+      
+      // Обновляем пользователя в Sentry
+      if (session?.user) {
+        setSentryUser({
+          id: session.user.id,
+          email: session.user.email,
+          username: session.user.user_metadata?.full_name,
+        });
+      } else {
+        clearSentryUser();
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -107,6 +119,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       throw error;
     }
+
+    // Очищаем пользователя из Sentry
+    clearSentryUser();
 
     toast({
       title: 'Вы вышли из системы',

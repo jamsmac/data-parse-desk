@@ -1,0 +1,265 @@
+/**
+ * Aurora Design System - Design Tokens
+ * Fluid Aurora цветовая палитра и базовые токены
+ */
+
+@layer base {
+  :root {
+    /* ===== Aurora Градиенты ===== */
+    --aurora-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --aurora-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --aurora-dark: linear-gradient(135deg, #4a00e0 0%, #8e2de2 100%);
+    --aurora-light: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    --aurora-sunset: linear-gradient(135deg, #ff6b6b 0%, #ffd93d 100%);
+    --aurora-ocean: linear-gradient(135deg, #0077be 0%, #00c9ff 100%);
+    --aurora-forest: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    --aurora-nebula: linear-gradient(135deg, #667eea 0%, #f093fb 50%, #764ba2 100%);
+
+    /* ===== Fluid Colors ===== */
+    --fluid-cyan: 194 90% 60%;
+    --fluid-purple: 266 70% 65%;
+    --fluid-pink: 338 80% 75%;
+    --fluid-blue: 217 91% 60%;
+    --fluid-violet: 271 76% 63%;
+    --fluid-rose: 350 89% 70%;
+    
+    /* Nebula Colors */
+    --nebula-blue: 220 70% 55%;
+    --nebula-purple: 280 65% 60%;
+    --nebula-pink: 330 75% 65%;
+    --nebula-violet: 260 70% 58%;
+    
+    /* ===== Glass Morphism ===== */
+    --glass-bg-light: rgba(255, 255, 255, 0.05);
+    --glass-bg-medium: rgba(255, 255, 255, 0.1);
+    --glass-bg-strong: rgba(255, 255, 255, 0.15);
+    
+    --glass-border-light: rgba(255, 255, 255, 0.1);
+    --glass-border-medium: rgba(255, 255, 255, 0.2);
+    --glass-border-strong: rgba(255, 255, 255, 0.3);
+    
+    --glass-blur-subtle: blur(8px);
+    --glass-blur-medium: blur(12px);
+    --glass-blur-strong: blur(20px);
+
+    /* ===== Shadows ===== */
+    --shadow-glass: 0 8px 32px rgba(31, 38, 135, 0.15);
+    --shadow-glass-hover: 0 12px 48px rgba(31, 38, 135, 0.25);
+    --shadow-float: 0 20px 60px rgba(0, 0, 0, 0.3);
+    --shadow-glow: 0 0 20px rgba(102, 126, 234, 0.5);
+    --shadow-glow-strong: 0 0 40px rgba(102, 126, 234, 0.8);
+    
+    /* Aurora specific shadows */
+    --shadow-aurora: 0 8px 32px rgba(102, 126, 234, 0.3);
+    --shadow-nebula: 0 8px 32px rgba(240, 147, 251, 0.3);
+
+    /* ===== Transitions ===== */
+    --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-medium: 600ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 900ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-spring: 500ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    
+    /* Easing functions */
+    --ease-in-out-circ: cubic-bezier(0.85, 0, 0.15, 1);
+    --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+    --ease-in-out-back: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    /* ===== Spacing для эффектов ===== */
+    --aurora-spacing-xs: 0.5rem;
+    --aurora-spacing-sm: 1rem;
+    --aurora-spacing-md: 1.5rem;
+    --aurora-spacing-lg: 2rem;
+    --aurora-spacing-xl: 3rem;
+    
+    /* ===== Border Radius ===== */
+    --aurora-radius-sm: 0.5rem;
+    --aurora-radius-md: 1rem;
+    --aurora-radius-lg: 1.5rem;
+    --aurora-radius-xl: 2rem;
+    --aurora-radius-full: 9999px;
+
+    /* ===== Z-index layers ===== */
+    --z-background: -1;
+    --z-normal: 0;
+    --z-float: 10;
+    --z-overlay: 50;
+    --z-modal: 100;
+    --z-cursor: 9999;
+
+    /* ===== Backdrop filters ===== */
+    --backdrop-blur-sm: blur(4px);
+    --backdrop-blur-md: blur(8px);
+    --backdrop-blur-lg: blur(16px);
+    --backdrop-blur-xl: blur(24px);
+
+    /* ===== Glow effects ===== */
+    --glow-cyan: 0 0 20px hsl(var(--fluid-cyan) / 0.5);
+    --glow-purple: 0 0 20px hsl(var(--fluid-purple) / 0.5);
+    --glow-pink: 0 0 20px hsl(var(--fluid-pink) / 0.5);
+    --glow-primary: 0 0 20px hsl(var(--primary) / 0.5);
+  }
+
+  .dark {
+    /* ===== Glass Morphism (Dark) ===== */
+    --glass-bg-light: rgba(0, 0, 0, 0.2);
+    --glass-bg-medium: rgba(0, 0, 0, 0.3);
+    --glass-bg-strong: rgba(0, 0, 0, 0.5);
+    
+    --glass-border-light: rgba(255, 255, 255, 0.05);
+    --glass-border-medium: rgba(255, 255, 255, 0.1);
+    --glass-border-strong: rgba(255, 255, 255, 0.2);
+
+    /* ===== Shadows (Dark) ===== */
+    --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --shadow-glass-hover: 0 12px 48px rgba(0, 0, 0, 0.7);
+    --shadow-float: 0 20px 60px rgba(0, 0, 0, 0.8);
+    --shadow-glow: 0 0 20px rgba(102, 126, 234, 0.6);
+    --shadow-glow-strong: 0 0 40px rgba(102, 126, 234, 1);
+    
+    --shadow-aurora: 0 8px 32px rgba(102, 126, 234, 0.4);
+    --shadow-nebula: 0 8px 32px rgba(240, 147, 251, 0.4);
+  }
+}
+
+/* ===== Animation Keyframes ===== */
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes wave {
+  0% {
+    transform: translateX(0) translateY(0);
+  }
+  50% {
+    transform: translateX(-25%) translateY(-10px);
+  }
+  100% {
+    transform: translateX(0) translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: var(--shadow-glow);
+    opacity: 1;
+  }
+  50% {
+    box-shadow: var(--shadow-glow-strong);
+    opacity: 0.9;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+@keyframes rotate-gradient {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes aurora-flow {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes scale-in {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ===== Utility Classes ===== */
+
+.aurora-gradient-text {
+  background: var(--aurora-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.aurora-animated-gradient {
+  background: linear-gradient(
+    -45deg,
+    #667eea,
+    #764ba2,
+    #f093fb,
+    #f5576c
+  );
+  background-size: 400% 400%;
+  animation: aurora-flow 15s ease infinite;
+}
+
+/* ===== Reduced Motion Support ===== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .aurora-animated-gradient {
+    animation: none;
+  }
+}
+
+

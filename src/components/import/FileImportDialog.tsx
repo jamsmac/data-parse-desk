@@ -1,12 +1,14 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Upload, X, AlertCircle, CheckCircle2, FileSpreadsheet, FileText, Sparkles, TrendingUp, AlertTriangle, Info, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  GlassDialog as Dialog,
+  GlassDialogContent as DialogContent,
+  GlassDialogDescription as DialogDescription,
+  GlassDialogHeader as DialogHeader,
+  GlassDialogTitle as DialogTitle,
+  FadeIn,
+} from '@/components/aurora';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -20,7 +22,7 @@ import { suggestColumnMapping } from '@/utils/columnMapper';
 import { mlMapper } from '@/utils/mlMapper';
 import { mappingMemory } from '@/utils/mappingMemory';
 import { validateData, analyzeDataQuality } from '@/utils/advancedValidation';
-import type { TableSchema, ParsedFileData, ColumnMapping } from '@/types/database';
+import type { TableSchema, ParsedFileData, ColumnMapping, ValidationError } from '@/types/database';
 
 interface DataQualityReport {
   completeness: number;
@@ -53,7 +55,7 @@ export const FileImportDialog: React.FC<FileImportDialogProps> = ({
   const [importProgress, setImportProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
   const [dataQuality, setDataQuality] = useState<DataQualityReport | null>(null);
-  const [validationErrors, setValidationErrors] = useState<any[]>([]);
+  const [validationErrors, setValidationErrors] = useState<Array<ValidationError & {severity: 'error' | 'warning'}>>([]);
   const [useMLMapping, setUseMLMapping] = useState(true);
   const [mappingFeedback, setMappingFeedback] = useState<Record<string, boolean>>({});
 
@@ -156,14 +158,10 @@ export const FileImportDialog: React.FC<FileImportDialogProps> = ({
           });
         }
       } else {
-        // Простой маппинг по именам
-        const schemaColumns = existingColumns.map(col => ({
-          column_name: col.column_name,
-        }));
-        
+        // Простой маппинг по именам        
         smartMappings = suggestColumnMapping(
           result.headers,
-          schemaColumns as any,
+          existingColumns,
           0.6
         );
       }
@@ -187,7 +185,12 @@ export const FileImportDialog: React.FC<FileImportDialogProps> = ({
         });
 
       const errors = validateData(result.rows, targetColumnsForValidation, []);
-      setValidationErrors(errors);
+      // Преобразуем ValidationError из database.ts в формат для отображения
+      const formattedErrors = errors.map(err => ({
+        ...err,
+        severity: 'error' as const
+      }));
+      setValidationErrors(formattedErrors);
 
       setStep('mapping');
 
@@ -723,7 +726,7 @@ export const FileImportDialog: React.FC<FileImportDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent size="xl" className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Импорт данных</DialogTitle>
           <DialogDescription>

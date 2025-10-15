@@ -26,6 +26,7 @@ import {
   Eye,
 } from 'lucide-react';
 import { ChartConfig } from '@/types/charts';
+import { AnyObject } from '@/types/common';
 
 export interface DashboardWidget {
   id: string;
@@ -33,7 +34,7 @@ export interface DashboardWidget {
   title: string;
   position: { x: number; y: number };
   size: { width: number; height: number };
-  config?: any;
+  config?: AnyObject;
   chartConfig?: ChartConfig;
 }
 

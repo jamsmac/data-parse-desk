@@ -132,7 +132,7 @@ export default function RelationManager({ open, onOpenChange, databaseId }: Rela
                 <Label>Тип связи</Label>
                 <Select
                   value={newRelation.relation_type}
-                  onValueChange={(value: any) => setNewRelation({ ...newRelation, relation_type: value })}
+                  onValueChange={(value) => setNewRelation({ ...newRelation, relation_type: value as 'one_to_many' | 'many_to_one' | 'many_to_many' })}
                 >
                   <SelectTrigger>
                     <SelectValue />

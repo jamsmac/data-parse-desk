@@ -3,11 +3,16 @@
  */
 
 import { ValidationError, ValidationWarning, ColumnType } from '@/types/database';
+import { AnyObject, TableRow } from '@/types/common';
 
 export interface ValidationRule {
   type: 'required' | 'type' | 'format' | 'range' | 'unique' | 'reference' | 'custom';
   message: string;
-  params?: any;
+  params?: {
+    min?: number;
+    max?: number;
+    validator?: (value: unknown) => boolean;
+  };
 }
 
 export interface ValidationResult {
@@ -24,20 +29,20 @@ export interface ValidationResult {
 
 class AdvancedValidator {
   private emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  private phoneRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/;
+  private phoneRegex = /^[+]?[(]?[0-9]{1,4}[)]?[-\s.]?[(]?[0-9]{1,4}[)]?[-\s.]?[0-9]{1,9}$/;
   private urlRegex = /^https?:\/\/.+/;
-  private dateRegex = /^\d{1,4}[-\/]\d{1,2}[-\/]\d{1,4}/;
+  private dateRegex = /^\d{1,4}[-/]\d{1,2}[-/]\d{1,4}/;
 
   /**
    * Валидирует данные перед импортом
    */
   validate(
-    data: Record<string, any>[],
+    data: TableRow[],
     schema: { name: string; type: ColumnType; required?: boolean; rules?: ValidationRule[] }[]
   ): ValidationResult {
     const errors: ValidationError[] = [];
     const warnings: ValidationWarning[] = [];
-    const uniqueValues = new Map<string, Set<any>>();
+    const uniqueValues = new Map<string, Set<unknown>>();
 
     // Инициализируем множества для проверки уникальности
     schema.forEach((col) => {
@@ -136,44 +141,50 @@ class AdvancedValidator {
   /**
    * Валидирует тип данных
    */
-  private validateType(value: any, type: ColumnType): string | null {
+  private validateType(value: unknown, type: ColumnType): string | null {
     switch (type) {
-      case 'number':
+      case 'number': {
         if (isNaN(Number(value))) {
           return `Ожидается число, получено: "${value}"`;
         }
         break;
+      }
 
-      case 'boolean':
+      case 'boolean': {
         const boolValues = ['true', 'false', 'yes', 'no', '1', '0', 'да', 'нет'];
         if (!boolValues.includes(String(value).toLowerCase())) {
           return `Ожидается boolean, получено: "${value}"`;
         }
         break;
+      }
 
-      case 'date':
+      case 'date': {
         if (!this.isValidDate(value)) {
           return `Неверный формат даты: "${value}"`;
         }
         break;
+      }
 
-      case 'email':
+      case 'email': {
         if (!this.emailRegex.test(String(value))) {
           return `Неверный формат email: "${value}"`;
         }
         break;
+      }
 
-      case 'phone':
+      case 'phone': {
         if (!this.phoneRegex.test(String(value))) {
           return `Неверный формат телефона: "${value}"`;
         }
         break;
+      }
 
-      case 'url':
+      case 'url': {
         if (!this.urlRegex.test(String(value))) {
           return `Неверный формат URL: "${value}"`;
         }
         break;
+      }
     }
 
     return null;
@@ -182,17 +193,18 @@ class AdvancedValidator {
   /**
    * Валидирует формат (мягкие проверки)
    */
-  private validateFormat(value: any, type: ColumnType): string | null {
+  private validateFormat(value: unknown, type: ColumnType): string | null {
     const str = String(value);
 
     switch (type) {
-      case 'text':
+      case 'text': {
         if (str.length > 1000) {
           return `Слишком длинный текст (${str.length} символов)`;
         }
         break;
+      }
 
-      case 'number':
+      case 'number': {
         const num = Number(value);
         if (num > Number.MAX_SAFE_INTEGER) {
           return `Число слишком большое`;
@@ -201,12 +213,14 @@ class AdvancedValidator {
           return `Число слишком маленькое`;
         }
         break;
+      }
 
-      case 'email':
+      case 'email': {
         if (str.length > 255) {
           return `Email слишком длинный`;
         }
         break;
+      }
     }
 
     return null;
@@ -216,13 +230,13 @@ class AdvancedValidator {
    * Валидирует кастомное правило
    */
   private validateRule(
-    value: any,
+    value: unknown,
     rule: ValidationRule,
     row: number,
     column: string
   ): ValidationError | null {
     switch (rule.type) {
-      case 'range':
+      case 'range': {
         const num = Number(value);
         if (rule.params?.min != null && num < rule.params.min) {
           return { row, column, value, message: rule.message };
@@ -231,12 +245,14 @@ class AdvancedValidator {
           return { row, column, value, message: rule.message };
         }
         break;
+      }
 
-      case 'custom':
+      case 'custom': {
         if (rule.params?.validator && !rule.params.validator(value)) {
           return { row, column, value, message: rule.message };
         }
         break;
+      }
     }
 
     return null;
@@ -245,15 +261,15 @@ class AdvancedValidator {
   /**
    * Проверяет корректность даты
    */
-  private isValidDate(value: any): boolean {
-    const date = new Date(value);
+  private isValidDate(value: unknown): boolean {
+    const date = new Date(value as string | number | Date);
     return date instanceof Date && !isNaN(date.getTime());
   }
 
   /**
    * Анализирует качество данных
    */
-  analyzeDataQuality(data: Record<string, any>[]): {
+  analyzeDataQuality(data: TableRow[]): {
     columns: {
       name: string;
       completeness: number; // % заполненности
@@ -298,7 +314,7 @@ class AdvancedValidator {
   /**
    * Определяет тип значения
    */
-  private inferType(value: any): string {
+  private inferType(value: unknown): string {
     if (value == null) return 'null';
     if (typeof value === 'number') return 'number';
     if (typeof value === 'boolean') return 'boolean';
@@ -339,16 +355,16 @@ export const advancedValidator = new AdvancedValidator();
 
 // Экспортируем также удобные функции
 export function validateData(
-  data: Record<string, any>[],
+  data: TableRow[],
   schema: { name: string; type: ColumnType; required?: boolean }[],
-  mappings: any[]
-): any[] {
+  mappings: Array<{ source: string; target: string }>
+): ValidationError[] {
   const result = advancedValidator.validate(data, schema);
   return result.errors;
 }
 
 export function analyzeDataQuality(
-  data: Record<string, any>[],
+  data: TableRow[],
   columns: string[]
 ): {
   completeness: number;

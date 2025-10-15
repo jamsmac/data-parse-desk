@@ -47,7 +47,7 @@ export default function Analytics() {
     setActiveTab('builder');
   };
 
-  const handleExportPivot = (data: any[][]) => {
+  const handleExportPivot = (data: unknown[][]) => {
     console.log('Exporting pivot data:', data);
     // Здесь будет логика экспорта
   };

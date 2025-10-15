@@ -1,0 +1,223 @@
+/**
+ * Aurora Design System - Responsive Optimizations
+ * Mobile, tablet, and device-specific optimizations
+ */
+
+@layer utilities {
+  /* ===== Mobile Optimizations (< 768px) ===== */
+  @media (max-width: 768px) {
+    /* Simplify glass effects for better performance */
+    .glass,
+    .glass-subtle,
+    .glass-medium,
+    .glass-strong,
+    .glass-card,
+    .glass-panel,
+    .glass-table,
+    .glass-modal {
+      backdrop-filter: blur(4px) !important;
+      -webkit-backdrop-filter: blur(4px) !important;
+    }
+
+    /* Disable heavy background animations */
+    .animate-aurora-flow {
+      animation: none !important;
+    }
+
+    /* Reduce animation complexity */
+    .animate-float,
+    .animate-float-slow {
+      animation-duration: 2s !important;
+      animation-iteration-count: 3 !important;
+    }
+
+    /* Faster transitions on mobile */
+    [class*="transition-"] {
+      transition-duration: 200ms !important;
+    }
+
+    /* Remove stagger delays for instant feel */
+    [class*="delay-"] {
+      animation-delay: 0s !important;
+      transition-delay: 0s !important;
+    }
+
+    /* Optimize touch interactions */
+    .glass-card,
+    .glass-button {
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+  }
+
+  /* ===== Tablet Optimizations (768px - 1024px) ===== */
+  @media (min-width: 768px) and (max-width: 1024px) {
+    /* Medium glass effects */
+    .glass-strong {
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    /* Reduce animation frequency */
+    .animate-pulse-glow {
+      animation-duration: 3s;
+    }
+  }
+
+  /* ===== Reduced Motion Preferences ===== */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+
+    /* Keep essential transitions */
+    .glass-card,
+    .glass-panel {
+      transition: opacity 150ms ease !important;
+    }
+
+    /* Disable parallax */
+    [data-parallax] {
+      transform: none !important;
+    }
+  }
+
+  /* ===== High Contrast Mode ===== */
+  @media (prefers-contrast: high) {
+    .glass-card,
+    .glass-panel,
+    .glass-table {
+      border-width: 2px;
+      background-color: rgba(var(--background), 0.95);
+    }
+
+    .shadow-glow,
+    .shadow-glow-strong {
+      box-shadow: none;
+      border: 2px solid currentColor;
+    }
+  }
+
+  /* ===== Print Styles ===== */
+  @media print {
+    .glass-card,
+    .glass-panel {
+      background-color: white;
+      border: 1px solid black;
+      backdrop-filter: none;
+      box-shadow: none;
+    }
+
+    canvas {
+      display: none;
+    }
+
+    [class*="animate-"] {
+      animation: none;
+    }
+  }
+
+  /* ===== Touch Device Optimizations ===== */
+  @media (hover: none) and (pointer: coarse) {
+    /* Larger touch targets */
+    .glass-button,
+    button,
+    a {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    /* Remove hover effects */
+    .glass-hover-float,
+    .glass-hover-glow,
+    .glass-hover-scale {
+      transform: none !important;
+    }
+
+    /* Optimize for scrolling */
+    .glass-table {
+      -webkit-overflow-scrolling: touch;
+    }
+  }
+
+  /* ===== Retina Displays ===== */
+  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    /* Sharper borders */
+    .glass-card,
+    .glass-panel {
+      border-width: 0.5px;
+    }
+  }
+
+  /* ===== Dark Mode on Mobile ===== */
+  @media (max-width: 768px) and (prefers-color-scheme: dark) {
+    /* Stronger contrast for readability */
+    .glass-card {
+      background-color: rgba(0, 0, 0, 0.4);
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Reduce glow intensity */
+    .shadow-glow {
+      box-shadow: 0 0 10px rgba(129, 140, 248, 0.3);
+    }
+  }
+
+  /* ===== Performance Hints ===== */
+  .glass-card,
+  .glass-panel,
+  .glass-table,
+  [class*="animate-"] {
+    /* Optimize rendering */
+    will-change: auto;
+    transform: translateZ(0);
+    
+    /* Enable GPU acceleration */
+    -webkit-transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+
+  /* Lazy load Aurora background on mobile */
+  @media (max-width: 768px) {
+    canvas {
+      content-visibility: auto;
+      contain-intrinsic-size: 100vw 100vh;
+    }
+  }
+}
+
+/* ===== Utility Classes for Device-Specific Visibility ===== */
+@layer utilities {
+  .mobile-only {
+    display: none;
+  }
+  
+  .desktop-only {
+    display: block;
+  }
+
+  @media (max-width: 768px) {
+    .mobile-only {
+      display: block;
+    }
+    
+    .desktop-only {
+      display: none;
+    }
+  }
+
+  /* Hide on reduced motion */
+  @media (prefers-reduced-motion: reduce) {
+    .motion-only {
+      display: none !important;
+    }
+  }
+}
+
+

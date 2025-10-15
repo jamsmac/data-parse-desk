@@ -25,9 +25,9 @@ export interface ChartConfig {
 export interface FilterCondition {
   columnId: string;
   operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'contains' | 'starts_with' | 'ends_with';
-  value: any;
+  value: string | number | boolean | Date | null;
 }
 
 export interface ChartData {
-  [key: string]: any;
+  [key: string]: string | number | boolean | Date | null;
 }

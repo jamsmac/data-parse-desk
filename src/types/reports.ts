@@ -1,4 +1,5 @@
-import { ChartConfig } from './charts';
+import { ChartConfig, FilterCondition } from './charts';
+import { TableRow } from './common';
 
 export type ReportSchedule = 'daily' | 'weekly' | 'monthly' | 'custom';
 export type ReportFormat = 'pdf' | 'excel' | 'csv' | 'html';
@@ -18,7 +19,7 @@ export interface ReportTemplate {
   description?: string;
   category: 'sales' | 'financial' | 'analytics' | 'inventory' | 'custom';
   sections: ReportSection[];
-  filters?: any[];
+  filters?: FilterCondition[];
   dateRange?: {
     start: string;
     end: string;
@@ -45,7 +46,7 @@ export interface ReportConfig {
   id: string;
   name: string;
   template?: ReportTemplate;
-  data: any[];
+  data: TableRow[];
   generatedAt: string;
   format: ReportFormat;
 }

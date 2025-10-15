@@ -127,7 +127,7 @@ export const RelationColumnEditor: React.FC<RelationColumnEditorProps> = ({
             <Label htmlFor="relationType">Тип связи</Label>
             <Select
               value={relationType}
-              onValueChange={(value: any) => setRelationType(value)}
+              onValueChange={(value) => setRelationType(value as 'one_to_many' | 'many_to_one' | 'many_to_many')}
             >
               <SelectTrigger id="relationType">
                 <SelectValue />

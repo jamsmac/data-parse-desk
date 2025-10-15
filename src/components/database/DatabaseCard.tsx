@@ -1,6 +1,10 @@
 import React from 'react';
 import { Database, MoreVertical, Edit, Trash2, Users, Calendar } from 'lucide-react';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import {
+  GlassCard,
+  GlassCardContent,
+  GlassCardFooter
+} from '@/components/aurora';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -43,11 +47,15 @@ export const DatabaseCard: React.FC<DatabaseCardProps> = ({
   };
 
   return (
-    <Card
-      className="group cursor-pointer transition-all hover:shadow-lg hover:border-primary/50"
+    <GlassCard
+      intensity="medium"
+      hover="float"
+      variant="aurora"
+      animated={true}
+      className="group cursor-pointer"
       onClick={handleCardClick}
     >
-      <CardContent className="pt-6">
+      <GlassCardContent className="pt-6">
         <div className="flex items-start justify-between">
           {/* Иконка и название */}
           <div className="flex items-start gap-3 flex-1">
@@ -121,9 +129,9 @@ export const DatabaseCard: React.FC<DatabaseCardProps> = ({
             <span>{formatDate(database.created_at)}</span>
           </div>
         </div>
-      </CardContent>
+      </GlassCardContent>
 
-      <CardFooter className="pt-0">
+      <GlassCardFooter className="pt-0">
         {database.tags && database.tags.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {database.tags.slice(0, 3).map((tag) => (
@@ -138,7 +146,7 @@ export const DatabaseCard: React.FC<DatabaseCardProps> = ({
             )}
           </div>
         )}
-      </CardFooter>
-    </Card>
+      </GlassCardFooter>
+    </GlassCard>
   );
 };

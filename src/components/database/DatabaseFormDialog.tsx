@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { Database as DatabaseIcon } from 'lucide-react';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  GlassDialog as Dialog,
+  GlassDialogContent as DialogContent,
+  GlassDialogDescription as DialogDescription,
+  GlassDialogFooter as DialogFooter,
+  GlassDialogHeader as DialogHeader,
+  GlassDialogTitle as DialogTitle,
+} from '@/components/aurora';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

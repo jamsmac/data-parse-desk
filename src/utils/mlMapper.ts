@@ -3,6 +3,8 @@
  * Использует эвристические алгоритмы для автоматического сопоставления колонок
  */
 
+import type { TableRow } from '@/types/common';
+
 interface MappingSuggestion {
   sourceColumn: string;
   targetColumn: string;
@@ -13,7 +15,7 @@ interface MappingSuggestion {
 interface ColumnAnalysis {
   name: string;
   type: 'text' | 'number' | 'date' | 'boolean' | 'email' | 'phone' | 'url';
-  samples: any[];
+  samples: unknown[];
   nullCount: number;
   uniqueCount: number;
   patterns: string[];
@@ -22,9 +24,9 @@ interface ColumnAnalysis {
 export class MLMapper {
   private knownPatterns = {
     email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-    phone: /^[\d\s\-\+\(\)]+$/,
+    phone: /^[\d\s\-+()]+$/,
     url: /^https?:\/\/.+/,
-    date: /^\d{1,4}[-\/]\d{1,2}[-\/]\d{1,4}/,
+    date: /^\d{1,4}[-/]\d{1,2}[-/]\d{1,4}/,
     number: /^-?\d+\.?\d*$/,
     currency: /^[$€£¥]\s?\d+/,
     percentage: /^\d+\.?\d*%$/,
@@ -66,7 +68,7 @@ export class MLMapper {
   /**
    * Анализирует колонку и определяет её тип и характеристики
    */
-  analyzeColumn(columnName: string, values: any[]): ColumnAnalysis {
+  analyzeColumn(columnName: string, values: unknown[]): ColumnAnalysis {
     const samples = values.slice(0, 100); // Берём первые 100 значений
     const nonNullSamples = samples.filter((v) => v != null && v !== '');
     
@@ -75,7 +77,7 @@ export class MLMapper {
       type: 'text',
       samples: nonNullSamples.slice(0, 5),
       nullCount: samples.length - nonNullSamples.length,
-      uniqueCount: new Set(nonNullSamples).size,
+      uniqueCount: new Set(nonNullSamples.map(v => String(v))).size,
       patterns: [],
     };
 
@@ -114,7 +116,9 @@ export class MLMapper {
 
     if (maxScore >= threshold) {
       const detectedType = Object.entries(typeScores).find(([_, score]) => score === maxScore)?.[0];
-      analysis.type = detectedType as any || 'text';
+      if (detectedType && ['text', 'number', 'date', 'boolean', 'email', 'phone', 'url'].includes(detectedType)) {
+        analysis.type = detectedType as ColumnAnalysis['type'];
+      }
     }
 
     // Определяем паттерны
@@ -188,7 +192,7 @@ export class MLMapper {
    * Генерирует предложения по маппингу
    */
   suggestMappings(
-    sourceColumns: { name: string; values: any[] }[],
+    sourceColumns: { name: string; values: unknown[] }[],
     targetColumns: { name: string; type: string }[]
   ): MappingSuggestion[] {
     const suggestions: MappingSuggestion[] = [];

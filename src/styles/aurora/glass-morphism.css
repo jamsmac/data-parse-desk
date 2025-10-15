@@ -1,0 +1,350 @@
+/**
+ * Aurora Design System - Glass Morphism Styles
+ * Полупрозрачные элементы с эффектом размытого стекла
+ */
+
+@layer components {
+  /* ===== Базовые Glass классы ===== */
+  
+  .glass {
+    background: var(--glass-bg-medium);
+    backdrop-filter: var(--glass-blur-medium);
+    -webkit-backdrop-filter: var(--glass-blur-medium);
+    border: 1px solid var(--glass-border-medium);
+    box-shadow: var(--shadow-glass);
+  }
+
+  .glass-subtle {
+    background: var(--glass-bg-light);
+    backdrop-filter: var(--glass-blur-subtle);
+    -webkit-backdrop-filter: var(--glass-blur-subtle);
+    border: 1px solid var(--glass-border-light);
+    box-shadow: var(--shadow-glass);
+  }
+
+  .glass-medium {
+    background: var(--glass-bg-medium);
+    backdrop-filter: var(--glass-blur-medium);
+    -webkit-backdrop-filter: var(--glass-blur-medium);
+    border: 1px solid var(--glass-border-medium);
+    box-shadow: var(--shadow-glass);
+  }
+
+  .glass-strong {
+    background: var(--glass-bg-strong);
+    backdrop-filter: var(--glass-blur-strong);
+    -webkit-backdrop-filter: var(--glass-blur-strong);
+    border: 1px solid var(--glass-border-strong);
+    box-shadow: var(--shadow-glass);
+  }
+
+  /* ===== Glass с градиентами ===== */
+  
+  .glass-aurora {
+    background: linear-gradient(
+      135deg,
+      rgba(102, 126, 234, 0.1) 0%,
+      rgba(118, 75, 162, 0.1) 100%
+    );
+    backdrop-filter: var(--glass-blur-medium);
+    -webkit-backdrop-filter: var(--glass-blur-medium);
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    box-shadow: var(--shadow-aurora);
+  }
+
+  .glass-nebula {
+    background: linear-gradient(
+      135deg,
+      rgba(240, 147, 251, 0.1) 0%,
+      rgba(245, 87, 108, 0.1) 100%
+    );
+    backdrop-filter: var(--glass-blur-medium);
+    -webkit-backdrop-filter: var(--glass-blur-medium);
+    border: 1px solid rgba(240, 147, 251, 0.2);
+    box-shadow: var(--shadow-nebula);
+  }
+
+  /* ===== Hover состояния ===== */
+  
+  .glass-hover-float:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-glass-hover);
+    transition: all var(--transition-smooth);
+  }
+
+  .glass-hover-glow:hover {
+    box-shadow: var(--shadow-glow);
+    border-color: rgba(102, 126, 234, 0.5);
+    transition: all var(--transition-smooth);
+  }
+
+  .glass-hover-scale:hover {
+    transform: scale(1.02);
+    box-shadow: var(--shadow-glass-hover);
+    transition: all var(--transition-smooth);
+  }
+
+  .glass-hover-shimmer:hover::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent
+    );
+    animation: shimmer 2s infinite;
+  }
+
+  /* ===== Focus состояния ===== */
+  
+  .glass-focus:focus-within {
+    border-color: rgba(102, 126, 234, 0.5);
+    box-shadow: 
+      var(--shadow-glass),
+      0 0 0 3px rgba(102, 126, 234, 0.2);
+    transition: all var(--transition-smooth);
+  }
+
+  /* ===== Glass Card ===== */
+  
+  .glass-card {
+    @apply glass-medium;
+    @apply rounded-lg;
+    padding: var(--aurora-spacing-md);
+    transition: all var(--transition-smooth);
+  }
+
+  .glass-card-hover {
+    @apply glass-card;
+    @apply glass-hover-float;
+  }
+
+  /* ===== Glass Panel ===== */
+  
+  .glass-panel {
+    @apply glass-subtle;
+    @apply rounded-xl;
+    padding: var(--aurora-spacing-lg);
+  }
+
+  .glass-panel-strong {
+    @apply glass-strong;
+    @apply rounded-xl;
+    padding: var(--aurora-spacing-lg);
+  }
+
+  /* ===== Glass Input ===== */
+  
+  .glass-input {
+    @apply glass-subtle;
+    @apply rounded-md;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--glass-border-light);
+    transition: all var(--transition-smooth);
+  }
+
+  .glass-input:focus {
+    @apply glass-focus;
+    outline: none;
+  }
+
+  .glass-input::placeholder {
+    color: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  /* ===== Glass Button ===== */
+  
+  .glass-button {
+    @apply glass-medium;
+    @apply rounded-md;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    transition: all var(--transition-smooth);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass-button:hover {
+    @apply glass-hover-scale;
+  }
+
+  .glass-button:active {
+    transform: scale(0.98);
+  }
+
+  /* ===== Glass Modal/Dialog ===== */
+  
+  .glass-modal {
+    @apply glass-strong;
+    @apply rounded-2xl;
+    padding: var(--aurora-spacing-xl);
+    max-width: 90vw;
+    max-height: 90vh;
+  }
+
+  /* ===== Glass Table ===== */
+  
+  .glass-table {
+    @apply glass-subtle;
+    @apply rounded-lg;
+    overflow: hidden;
+  }
+
+  .glass-table thead {
+    background: var(--glass-bg-medium);
+    backdrop-filter: var(--glass-blur-medium);
+    -webkit-backdrop-filter: var(--glass-blur-medium);
+  }
+
+  .glass-table tbody tr {
+    border-bottom: 1px solid var(--glass-border-light);
+    transition: all var(--transition-smooth);
+  }
+
+  .glass-table tbody tr:hover {
+    background: var(--glass-bg-light);
+    transform: scale(1.01);
+  }
+
+  /* ===== Glass Sidebar ===== */
+  
+  .glass-sidebar {
+    @apply glass-medium;
+    height: 100vh;
+    border-right: 1px solid var(--glass-border-medium);
+  }
+
+  /* ===== Glass Tooltip ===== */
+  
+  .glass-tooltip {
+    @apply glass-strong;
+    @apply rounded;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+
+  /* ===== Glass Badge ===== */
+  
+  .glass-badge {
+    @apply glass-subtle;
+    @apply rounded-full;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  /* ===== Aurora Glass (специальные эффекты) ===== */
+  
+  .glass-aurora-card {
+    @apply glass-aurora;
+    @apply rounded-lg;
+    padding: var(--aurora-spacing-md);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass-aurora-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      135deg,
+      rgba(102, 126, 234, 0.05) 0%,
+      rgba(118, 75, 162, 0.05) 100%
+    );
+    opacity: 0;
+    transition: opacity var(--transition-smooth);
+    z-index: -1;
+  }
+
+  .glass-aurora-card:hover::before {
+    opacity: 1;
+  }
+
+  /* ===== Responsive адаптация ===== */
+  
+  @media (max-width: 768px) {
+    .glass,
+    .glass-subtle,
+    .glass-medium,
+    .glass-strong {
+      /* Упрощенные эффекты на мобильных */
+      backdrop-filter: var(--glass-blur-subtle);
+      -webkit-backdrop-filter: var(--glass-blur-subtle);
+    }
+    
+    .glass-card,
+    .glass-panel {
+      padding: var(--aurora-spacing-sm);
+    }
+  }
+
+  /* ===== Поддержка старых браузеров ===== */
+  
+  @supports not (backdrop-filter: blur(10px)) {
+    .glass,
+    .glass-subtle,
+    .glass-medium,
+    .glass-strong {
+      background: rgba(255, 255, 255, 0.85);
+    }
+    
+    .dark .glass,
+    .dark .glass-subtle,
+    .dark .glass-medium,
+    .dark .glass-strong {
+      background: rgba(0, 0, 0, 0.85);
+    }
+  }
+}
+
+/* ===== Animation classes ===== */
+
+@layer utilities {
+  .aurora-animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .aurora-animate-float-slow {
+    animation: float-slow 6s ease-in-out infinite;
+  }
+
+  .aurora-animate-pulse-glow {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+
+  .aurora-animate-shimmer {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .aurora-animate-shimmer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 200%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    );
+    animation: shimmer 2s infinite;
+  }
+}
+
+

@@ -191,10 +191,10 @@ export function ReportBuilder({
                   <Label>Категория</Label>
                   <Select
                     value={template.category}
-                    onValueChange={(value: any) =>
+                    onValueChange={(value) =>
                       setTemplate((prev) => ({
                         ...prev,
-                        category: value,
+                        category: value as 'sales' | 'financial' | 'analytics' | 'inventory' | 'custom',
                         updatedAt: new Date().toISOString(),
                       }))
                     }

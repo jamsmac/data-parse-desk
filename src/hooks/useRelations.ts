@@ -45,7 +45,7 @@ export function useCreateRelation(databaseId: string) {
     onSuccess: (data, variables) => {
       // Инвалидируем отношения для обеих баз данных
       queryClient.invalidateQueries({ queryKey: ['relations', databaseId] });
-      queryClient.invalidateQueries({ queryKey: ['relations', variables.targetDatabaseId] });
+      queryClient.invalidateQueries({ queryKey: ['relations', variables.target_database_id] });
       queryClient.invalidateQueries({ queryKey: ['databases'] });
     },
   });

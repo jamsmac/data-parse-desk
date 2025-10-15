@@ -2,6 +2,7 @@ import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
+import type { AnyObject, TableRow } from '@/types/common';
 
 dayjs.extend(customParseFormat);
 dayjs.extend(utc);
@@ -44,19 +45,18 @@ const DATE_FORMATS = [
   'MM/DD/YYYY h:mm:ss A',
 ];
 
-export interface NormalizedRow {
-  [key: string]: any;
+export interface NormalizedRow extends AnyObject {
   date_iso?: string;
   date_only?: string;
   epoch_ms?: number;
   amount_num?: number;
   row_hash?: string;
-  _rawData: any;
+  _rawData: TableRow;
   _fileName: string;
 }
 
 // Create hash from row data for duplicate detection
-export function createRowHash(row: any): string {
+export function createRowHash(row: TableRow): string {
   const sortedKeys = Object.keys(row).sort();
   const values = sortedKeys.map(key => String(row[key] ?? ''));
   const hashString = values.join('|');
@@ -93,7 +93,7 @@ export function detectColumns(headers: string[]): {
   return { dateColumns, amountColumns };
 }
 
-export function normalizeDate(value: any): {
+export function normalizeDate(value: unknown): {
   date_iso: string | null;
   date_only: string | null;
   epoch_ms: number | null;
@@ -103,27 +103,40 @@ export function normalizeDate(value: any): {
     return { date_iso: null, date_only: null, epoch_ms: null };
   }
 
-  let dateStr = String(value).trim();
+  const dateStr = String(value).trim();
 
-  // Try parsing with various formats
-  for (const format of DATE_FORMATS) {
-    const parsed = dayjs.tz(dateStr, format, TIMEZONE);
-    if (parsed.isValid()) {
+  try {
+    // Try parsing with various formats
+    for (const format of DATE_FORMATS) {
+      const parsed = dayjs(dateStr, format, true);
+      if (parsed.isValid()) {
+        // Convert to timezone
+        const tzDate = dayjs.tz(parsed.format('YYYY-MM-DD HH:mm:ss'), TIMEZONE);
+        return {
+          date_iso: tzDate.format(),
+          date_only: tzDate.format('YYYY-MM-DD'),
+          epoch_ms: tzDate.valueOf(),
+        };
+      }
+    }
+
+    // Try ISO format
+    const isoDate = dayjs(dateStr);
+    if (isoDate.isValid()) {
+      const tzDate = dayjs.tz(isoDate.format('YYYY-MM-DD HH:mm:ss'), TIMEZONE);
       return {
-        date_iso: parsed.format(),
-        date_only: parsed.format('YYYY-MM-DD'),
-        epoch_ms: parsed.valueOf(),
+        date_iso: tzDate.format(),
+        date_only: tzDate.format('YYYY-MM-DD'),
+        epoch_ms: tzDate.valueOf(),
       };
     }
-  }
-
-  // Try ISO format
-  const isoDate = dayjs.tz(dateStr, TIMEZONE);
-  if (isoDate.isValid()) {
+  } catch (err) {
+    // If any parsing error, return null values
     return {
-      date_iso: isoDate.format(),
-      date_only: isoDate.format('YYYY-MM-DD'),
-      epoch_ms: isoDate.valueOf(),
+      date_iso: null,
+      date_only: null,
+      epoch_ms: null,
+      error: 'Invalid date format',
     };
   }
 
@@ -135,7 +148,7 @@ export function normalizeDate(value: any): {
   };
 }
 
-export function normalizeAmount(value: any): {
+export function normalizeAmount(value: unknown): {
   amount_num: number | null;
   error?: string;
 } {
@@ -177,7 +190,7 @@ export function normalizeAmount(value: any): {
 }
 
 export function normalizeRow(
-  row: any,
+  row: TableRow,
   dateColumns: string[],
   amountColumns: string[],
   fileName: string
@@ -210,13 +223,15 @@ export function normalizeRow(
   return normalized;
 }
 
-export function formatAmount(amount: number | null | undefined): string {
+export function formatAmount(amount: number | null | undefined, currency: string = ''): string {
   if (amount === null || amount === undefined) return '—';
   
-  return new Intl.NumberFormat('en-US', {
+  const formatted = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
-  }).format(amount) + ' UZS';
+  }).format(amount);
+  
+  return currency ? `${formatted} ${currency}` : formatted;
 }
 
 export type GroupBy = 'day' | 'month' | 'year' | 'none';

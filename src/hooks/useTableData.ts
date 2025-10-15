@@ -1,11 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { DatabaseAPI } from '@/api/databaseAPI';
+import { TableFilters, TableSorting, TablePagination } from '@/types/database';
+import { TableRow } from '@/types/common';
 
 export function useTableData(
   databaseId: string,
-  filters?: Record<string, any>,
-  sorting?: { column: string; direction: 'asc' | 'desc' },
-  pagination?: { page: number; pageSize: number }
+  filters?: TableFilters,
+  sorting?: TableSorting,
+  pagination?: TablePagination
 ) {
   return useQuery({
     queryKey: ['table-data', databaseId, filters, sorting, pagination],
@@ -19,7 +21,7 @@ export function useInsertRow(databaseId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (rowData: Record<string, any>) =>
+    mutationFn: (rowData: TableRow) =>
       DatabaseAPI.insertTableRow(databaseId, rowData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['table-data', databaseId] });
@@ -32,7 +34,7 @@ export function useUpdateRow(databaseId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ rowId, updates }: { rowId: string; updates: Record<string, any> }) =>
+    mutationFn: ({ rowId, updates }: { rowId: string; updates: Partial<TableRow> }) =>
       DatabaseAPI.updateTableRow(databaseId, rowId, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['table-data', databaseId] });
@@ -56,7 +58,7 @@ export function useBulkInsert(databaseId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (rows: Record<string, any>[]) =>
+    mutationFn: (rows: TableRow[]) =>
       DatabaseAPI.bulkInsertTableRows(databaseId, rows),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['table-data', databaseId] });

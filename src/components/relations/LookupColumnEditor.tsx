@@ -74,8 +74,8 @@ export default function LookupColumnEditor({
         targetColumnId: '',
         description: '',
       });
-    } catch (err: any) {
-      setError(err.message || 'Ошибка создания Lookup колонки');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка создания Lookup колонки');
     } finally {
       setIsLoading(false);
     }

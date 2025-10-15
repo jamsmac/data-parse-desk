@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Production
+dist/
+build/
+
+# Testing
+coverage/
+
+# Temporary files
+temp_analysis/
+*.tmp
+*.temp
+
+# Config files
+vite.config.ts.timestamp-*
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

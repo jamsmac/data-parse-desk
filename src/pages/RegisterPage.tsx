@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  GlassCard, 
+  GlassCardContent, 
+  GlassCardDescription, 
+  GlassCardHeader, 
+  GlassCardTitle,
+  AuroraBackground,
+  FadeIn
+} from '@/components/aurora';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -63,28 +71,37 @@ export default function RegisterPage() {
     try {
       const { confirmPassword, ...registerData } = formData;
       await register(registerData);
-    } catch (err: any) {
-      setError(err.message || 'Ошибка регистрации. Попробуйте снова.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка регистрации. Попробуйте снова.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
+    <AuroraBackground variant="aurora" intensity="subtle">
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <FadeIn direction="up" duration={600}>
+          <GlassCard 
+            className="w-full max-w-md"
+            intensity="strong"
+            variant="elevated"
+            animated={true}
+          >
+            <GlassCardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
             <div className="p-3 bg-primary/10 rounded-full">
               <Database className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">Регистрация в VHData</CardTitle>
-          <CardDescription className="text-center">
-            Создайте аккаунт для доступа к платформе
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+              <GlassCardTitle className="text-2xl text-center" gradient={true}>
+                Регистрация в VHData
+              </GlassCardTitle>
+              <GlassCardDescription className="text-center">
+                Создайте аккаунт для доступа к платформе
+              </GlassCardDescription>
+            </GlassCardHeader>
+            <GlassCardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <Alert variant="destructive">
@@ -235,8 +252,10 @@ export default function RegisterPage() {
               <p>Ваши данные надежно защищены</p>
             </div>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+            </GlassCardContent>
+          </GlassCard>
+        </FadeIn>
+      </div>
+    </AuroraBackground>
   );
 }

@@ -18,7 +18,7 @@ interface RelationPickerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   targetDatabase: Database;
-  targetRecords: Record<string, any>[];
+  targetRecords: Record<string, unknown>[];
   targetColumns: TableSchema[];
   selectedRecordIds: string[];
   onSelect: (recordIds: string[]) => void;
@@ -79,7 +79,7 @@ export default function RelationPicker({
     if (tempSelectedIds.length === filteredRecords.length) {
       setTempSelectedIds([]);
     } else {
-      setTempSelectedIds(filteredRecords.map((record) => record.id));
+      setTempSelectedIds(filteredRecords.map((record) => String(record.id)));
     }
   };
 
@@ -93,8 +93,8 @@ export default function RelationPicker({
     onOpenChange(false);
   };
 
-  const getRecordDisplay = (record: Record<string, any>) => {
-    return record[displayColumnName] || record.id || 'Без названия';
+  const getRecordDisplay = (record: Record<string, unknown>) => {
+    return String(record[displayColumnName] || record.id || 'Без названия');
   };
 
   const selectedCount = tempSelectedIds.length;
@@ -155,23 +155,24 @@ export default function RelationPicker({
                 </div>
               ) : (
                 filteredRecords.map((record) => {
-                  const isSelected = tempSelectedIds.includes(record.id);
+                  const recordId = String(record.id);
+                  const isSelected = tempSelectedIds.includes(recordId);
                   const displayValue = getRecordDisplay(record);
 
                   return (
                     <div
-                      key={record.id}
+                      key={recordId}
                       className={`
                         flex items-center gap-3 p-3 rounded-lg cursor-pointer
                         transition-colors hover:bg-accent
                         ${isSelected ? 'bg-primary/5 border border-primary/20' : 'border border-transparent'}
                       `}
-                      onClick={() => handleToggleRecord(record.id)}
+                      onClick={() => handleToggleRecord(recordId)}
                     >
                       {multiple ? (
                         <Checkbox
                           checked={isSelected}
-                          onCheckedChange={() => handleToggleRecord(record.id)}
+                          onCheckedChange={() => handleToggleRecord(recordId)}
                           onClick={(e) => e.stopPropagation()}
                         />
                       ) : (
@@ -237,7 +238,7 @@ export default function RelationPicker({
               </div>
               <div className="flex flex-wrap gap-2">
                 {tempSelectedIds.slice(0, 5).map((id) => {
-                  const record = targetRecords.find((r) => r.id === id);
+                  const record = targetRecords.find((r) => String(r.id) === id);
                   if (!record) return null;
 
                   return (

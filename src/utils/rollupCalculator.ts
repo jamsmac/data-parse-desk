@@ -1,4 +1,5 @@
 import { RollupConfig } from '@/types/database';
+import { TableRow } from '@/types/common';
 import { resolveRelation } from './relationResolver';
 
 /**
@@ -43,7 +44,7 @@ export const calculateRollup = async (
  * Выполняет агрегацию над массивом значений
  */
 const performAggregation = (
-  values: any[],
+  values: unknown[],
   aggregation: RollupConfig['aggregation']
 ): number | string | null => {
   if (values.length === 0) {
@@ -55,10 +56,10 @@ const performAggregation = (
       return values.length;
 
     case 'sum':
-      return values.reduce((acc, val) => acc + (Number(val) || 0), 0);
+      return values.reduce((acc: number, val) => acc + (Number(val) || 0), 0);
 
     case 'avg': {
-      const sum = values.reduce((acc, val) => acc + (Number(val) || 0), 0);
+      const sum = values.reduce((acc: number, val) => acc + (Number(val) || 0), 0);
       return sum / values.length;
     }
 
@@ -103,9 +104,9 @@ const performAggregation = (
  * Batch вычисление rollup для множественных записей
  */
 export const calculateRollupsForRecords = async (
-  records: any[],
+  records: TableRow[],
   rollupConfigs: Array<RollupConfig & { columnName: string }>
-): Promise<any[]> => {
+): Promise<TableRow[]> => {
   const enrichedRecords = await Promise.all(
     records.map(async (record) => {
       const enrichedRecord = { ...record };
@@ -114,7 +115,10 @@ export const calculateRollupsForRecords = async (
         const relationColumnValue = record[config.relation_column_id];
         
         if (relationColumnValue) {
-          const rollupValue = await calculateRollup(config, relationColumnValue);
+          const rollupValue = await calculateRollup(
+            config, 
+            relationColumnValue as string | string[]
+          );
           enrichedRecord[config.columnName] = rollupValue;
         }
       }

@@ -152,7 +152,7 @@ export const RollupColumnEditor: React.FC<RollupColumnEditorProps> = ({
             <Label htmlFor="aggregation">Тип агрегации</Label>
             <Select
               value={aggregation}
-              onValueChange={(value: any) => setAggregation(value)}
+              onValueChange={(value) => setAggregation(value as 'count' | 'sum' | 'avg' | 'min' | 'max' | 'median' | 'unique' | 'empty' | 'not_empty')}
             >
               <SelectTrigger id="aggregation">
                 <SelectValue />

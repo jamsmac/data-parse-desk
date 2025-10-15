@@ -17,6 +17,7 @@ import {
   LayoutDashboard,
 } from 'lucide-react';
 import { ChartType } from '@/types/charts';
+import type { ComponentType } from 'react';
 
 export interface ChartTemplate {
   id: string;
@@ -24,7 +25,7 @@ export interface ChartTemplate {
   description: string;
   type: ChartType;
   category: 'sales' | 'analytics' | 'financial' | 'inventory' | 'users' | 'custom';
-  icon: any;
+  icon: ComponentType<{ className?: string }>;
   preview: string;
   config: {
     recommendedColumns: {

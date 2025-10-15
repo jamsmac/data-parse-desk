@@ -38,17 +38,19 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon, X } from 'lucide-react';
 import { ChartConfig, ChartType, AggregationType, ChartAxis, ChartData } from '@/types/charts';
 import { TableSchema } from '@/types/database';
+import { TableRow } from '@/types/common';
+import type { ComponentType } from 'react';
 
 export interface ChartBuilderProps {
   databaseId: string;
   columns: TableSchema[];
-  data: any[];
+  data: TableRow[];
   initialConfig?: Partial<ChartConfig>;
   onSave: (config: ChartConfig) => void;
   onCancel: () => void;
 }
 
-const CHART_TYPES: { value: ChartType; label: string; icon: any }[] = [
+const CHART_TYPES: { value: ChartType; label: string; icon: ComponentType<{ className?: string }> }[] = [
   { value: 'line', label: 'Линейный', icon: LineChartIcon },
   { value: 'bar', label: 'Столбчатый', icon: BarChart3 },
   { value: 'area', label: 'Областной', icon: LineChartIcon },
@@ -109,15 +111,27 @@ export function ChartBuilder({
 
     const aggregated = aggregateData(data, config);
     setChartData(aggregated);
-  }, [data, config.xAxis, config.yAxis]);
+  }, [data, config]);
 
-  const aggregateData = (rawData: any[], cfg: ChartConfig): ChartData[] => {
+  const aggregateData = (rawData: TableRow[], cfg: ChartConfig): ChartData[] => {
     if (!cfg.xAxis) return [];
 
-    const grouped = new Map<string, any>();
+    interface GroupStats {
+      sum: number;
+      count: number;
+      min: number;
+      max: number;
+      values: number[];
+    }
+
+    interface GroupedData {
+      [key: string]: string | GroupStats;
+    }
+
+    const grouped = new Map<string, GroupedData>();
 
     rawData.forEach((row) => {
-      const xValue = row[cfg.xAxis!.columnName] || 'N/A';
+      const xValue = String(row[cfg.xAxis!.columnName] || 'N/A');
       
       if (!grouped.has(xValue)) {
         grouped.set(xValue, { [cfg.xAxis!.columnName]: xValue });
@@ -126,26 +140,33 @@ export function ChartBuilder({
       const group = grouped.get(xValue)!;
 
       cfg.yAxis.forEach((yAxis) => {
-        const value = parseFloat(row[yAxis.columnName]) || 0;
+        const value = parseFloat(String(row[yAxis.columnName])) || 0;
         const key = yAxis.columnName;
         
-        if (!group[key]) {
+        if (!group[key] || typeof group[key] === 'string') {
           group[key] = { sum: 0, count: 0, min: Infinity, max: -Infinity, values: [] };
         }
 
-        group[key].sum += value;
-        group[key].count += 1;
-        group[key].min = Math.min(group[key].min, value);
-        group[key].max = Math.max(group[key].max, value);
-        group[key].values.push(value);
+        const stats = group[key] as GroupStats;
+        stats.sum += value;
+        stats.count += 1;
+        stats.min = Math.min(stats.min, value);
+        stats.max = Math.max(stats.max, value);
+        stats.values.push(value);
       });
     });
 
     return Array.from(grouped.values()).map((group) => {
-      const result: any = { [cfg.xAxis!.columnName]: group[cfg.xAxis!.columnName] };
+      const result: ChartData = { [cfg.xAxis!.columnName]: group[cfg.xAxis!.columnName] } as ChartData;
 
       cfg.yAxis.forEach((yAxis) => {
-        const stats = group[yAxis.columnName];
+        const stats = group[yAxis.columnName] as {
+          sum: number;
+          count: number; 
+          min: number;
+          max: number;
+          values: number[];
+        };
         const agg = yAxis.aggregation || 'sum';
 
         switch (agg) {
@@ -308,7 +329,7 @@ export function ChartBuilder({
           </ResponsiveContainer>
         );
 
-      case 'pie':
+      case 'pie': {
         const pieData = chartData.map((item) => ({
           name: item[config.xAxis!.columnName],
           value: item[config.yAxis[0]?.columnName] || 0,
@@ -335,6 +356,7 @@ export function ChartBuilder({
             </PieChart>
           </ResponsiveContainer>
         );
+      }
 
       case 'scatter':
         return (

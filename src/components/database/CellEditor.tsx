@@ -10,10 +10,12 @@ import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import type { ColumnType, TableSchema } from '@/types/database';
 
+export type CellValue = string | number | boolean | Date | null | string[] | undefined;
+
 export interface CellEditorProps {
   column: TableSchema;
-  value: any;
-  onSave: (value: any) => void;
+  value: CellValue;
+  onSave: (value: CellValue) => void;
   onCancel: () => void;
   selectOptions?: string[];
   relationOptions?: Array<{ id: string; label: string }>;
@@ -29,7 +31,7 @@ export default function CellEditor({
 }: CellEditorProps) {
   const columnType = column.column_type;
   const columnName = column.column_name;
-  const [value, setValue] = useState(initialValue);
+  const [value, setValue] = useState<CellValue>(initialValue);
   const [isValid, setIsValid] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -37,58 +39,66 @@ export default function CellEditor({
     setValue(initialValue);
   }, [initialValue]);
 
-  const validate = (val: any): boolean => {
+  const validate = (val: CellValue): boolean => {
     switch (columnType) {
-      case 'email':
+      case 'email': {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        const isValidEmail = !val || emailRegex.test(val);
+        const isValidEmail = !val || emailRegex.test(String(val));
         setIsValid(isValidEmail);
         setErrorMessage(isValidEmail ? '' : 'Некорректный email');
         return isValidEmail;
+      }
 
-      case 'url':
+      case 'url': {
         const urlRegex = /^https?:\/\/.+/;
-        const isValidUrl = !val || urlRegex.test(val);
+        const isValidUrl = !val || urlRegex.test(String(val));
         setIsValid(isValidUrl);
         setErrorMessage(isValidUrl ? '' : 'URL должен начинаться с http:// или https://');
         return isValidUrl;
+      }
 
-      case 'phone':
-        const phoneRegex = /^[\d\s\-\+\(\)]+$/;
+      case 'phone': {
+        const phoneRegex = /^[\d\s\-+()]+$/;
         const cleanPhone = String(val || '').replace(/\s/g, '');
-        const isValidPhone = !val || (phoneRegex.test(val) && cleanPhone.length >= 7);
+        const isValidPhone = !val || (phoneRegex.test(String(val)) && cleanPhone.length >= 7);
         setIsValid(isValidPhone);
         setErrorMessage(isValidPhone ? '' : 'Некорректный номер телефона');
         return isValidPhone;
+      }
 
-      case 'number':
-        const isValidNumber = !val || !isNaN(parseFloat(val));
+      case 'number': {
+        const isValidNumber = !val || !isNaN(parseFloat(String(val)));
         setIsValid(isValidNumber);
         setErrorMessage(isValidNumber ? '' : 'Должно быть числом');
         return isValidNumber;
+      }
 
-      default:
+      default: {
         setIsValid(true);
         setErrorMessage('');
         return true;
+      }
     }
   };
 
   const handleSave = () => {
     if (validate(value)) {
-      let processedValue = value;
+      let processedValue: CellValue = value;
 
       // Обработка типов данных
       switch (columnType) {
-        case 'number':
-          processedValue = value ? parseFloat(value) : null;
+        case 'number': {
+          processedValue = value ? parseFloat(String(value)) : null;
           break;
-        case 'boolean':
+        }
+        case 'boolean': {
           processedValue = Boolean(value);
           break;
-        case 'date':
-          processedValue = value ? new Date(value).toISOString() : null;
+        }
+        case 'date': {
+          processedValue = value ? new Date(String(value)).toISOString() : null;
           break;
+        }
       }
 
       onSave(processedValue);
@@ -107,10 +117,10 @@ export default function CellEditor({
   // Render different editors based on column type
   const renderEditor = () => {
     switch (columnType) {
-      case 'text':
+      case 'text': {
         return (
           <Input
-            value={value || ''}
+            value={String(value || '')}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={`Введите ${columnName.toLowerCase()}...`}
@@ -118,12 +128,13 @@ export default function CellEditor({
             className={!isValid ? 'border-destructive' : ''}
           />
         );
+      }
 
-      case 'number':
+      case 'number': {
         return (
           <Input
             type="number"
-            value={value || ''}
+            value={String(value || '')}
             onChange={(e) => {
               setValue(e.target.value);
               validate(e.target.value);
@@ -134,12 +145,13 @@ export default function CellEditor({
             className={!isValid ? 'border-destructive' : ''}
           />
         );
+      }
 
-      case 'email':
+      case 'email': {
         return (
           <Input
             type="email"
-            value={value || ''}
+            value={String(value || '')}
             onChange={(e) => {
               setValue(e.target.value);
               validate(e.target.value);
@@ -150,12 +162,13 @@ export default function CellEditor({
             className={!isValid ? 'border-destructive' : ''}
           />
         );
+      }
 
-      case 'url':
+      case 'url': {
         return (
           <Input
             type="url"
-            value={value || ''}
+            value={String(value || '')}
             onChange={(e) => {
               setValue(e.target.value);
               validate(e.target.value);
@@ -166,12 +179,13 @@ export default function CellEditor({
             className={!isValid ? 'border-destructive' : ''}
           />
         );
+      }
 
-      case 'phone':
+      case 'phone': {
         return (
           <Input
             type="tel"
-            value={value || ''}
+            value={String(value || '')}
             onChange={(e) => {
               setValue(e.target.value);
               validate(e.target.value);
@@ -182,8 +196,9 @@ export default function CellEditor({
             className={!isValid ? 'border-destructive' : ''}
           />
         );
+      }
 
-      case 'date':
+      case 'date': {
         return (
           <Popover>
             <PopoverTrigger asChild>
@@ -192,21 +207,22 @@ export default function CellEditor({
                 className="w-full justify-start text-left font-normal"
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                {value ? format(new Date(value), 'PPP', { locale: ru }) : 'Выберите дату'}
+                {value ? format(new Date(String(value)), 'PPP', { locale: ru }) : 'Выберите дату'}
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="start">
               <Calendar
                 mode="single"
-                selected={value ? new Date(value) : undefined}
-                onSelect={(date) => setValue(date)}
+                selected={value ? new Date(String(value)) : undefined}
+                onSelect={(date) => setValue(date || null)}
                 initialFocus
               />
             </PopoverContent>
           </Popover>
         );
+      }
 
-      case 'boolean':
+      case 'boolean': {
         return (
           <div className="flex items-center justify-between p-2 border rounded-md">
             <span className="text-sm">{value ? 'Да' : 'Нет'}</span>
@@ -216,10 +232,11 @@ export default function CellEditor({
             />
           </div>
         );
+      }
 
-      case 'select':
+      case 'select': {
         return (
-          <Select value={value || ''} onValueChange={setValue}>
+          <Select value={String(value || '')} onValueChange={setValue}>
             <SelectTrigger>
               <SelectValue placeholder="Выберите значение" />
             </SelectTrigger>
@@ -232,8 +249,9 @@ export default function CellEditor({
             </SelectContent>
           </Select>
         );
+      }
 
-      case 'multi_select':
+      case 'multi_select': {
         return (
           <div className="space-y-2">
             {selectOptions.map((option) => {
@@ -264,10 +282,11 @@ export default function CellEditor({
             })}
           </div>
         );
+      }
 
-      case 'relation':
+      case 'relation': {
         return (
-          <Select value={value || ''} onValueChange={setValue}>
+          <Select value={String(value || '')} onValueChange={setValue}>
             <SelectTrigger>
               <SelectValue placeholder="Выберите связанную запись" />
             </SelectTrigger>
@@ -280,42 +299,55 @@ export default function CellEditor({
             </SelectContent>
           </Select>
         );
+      }
 
-      case 'file':
+      case 'file': {
         return (
           <Input
             type="file"
-            onChange={(e) => {
+            onChange={async (e) => {
               const file = e.target.files?.[0];
               if (file) {
-                // TODO: Загрузка файла
-                setValue(file.name);
+                // Сохраняем информацию о файле
+                const fileInfo = {
+                  name: file.name,
+                  size: file.size,
+                  type: file.type,
+                  lastModified: file.lastModified,
+                };
+                
+                // В реальном приложении здесь бы была загрузка на сервер
+                // Пока сохраняем только метаданные файла
+                setValue(JSON.stringify(fileInfo));
               }
             }}
             autoFocus
           />
         );
+      }
 
       case 'formula':
       case 'rollup':
-      case 'lookup':
+      case 'lookup': {
         return (
           <div className="p-2 border rounded-md bg-muted text-sm text-muted-foreground">
             Вычисляемое поле (только для чтения)
-            <div className="mt-1 font-mono">{value || 'Нет данных'}</div>
+            <div className="mt-1 font-mono">{String(value || 'Нет данных')}</div>
           </div>
         );
+      }
 
-      default:
+      default: {
         return (
           <Input
-            value={value || ''}
+            value={String(value || '')}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={`Введите ${columnName.toLowerCase()}...`}
             autoFocus
           />
         );
+      }
     }
   };
 

@@ -1,5 +1,13 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  GlassCard, 
+  GlassCardContent, 
+  GlassCardDescription, 
+  GlassCardHeader, 
+  GlassCardTitle,
+  AuroraBackground,
+  FadeIn
+} from '@/components/aurora';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -26,8 +34,8 @@ export default function LoginPage() {
 
     try {
       await login(credentials);
-    } catch (err: any) {
-      setError(err.message || 'Ошибка входа. Проверьте данные.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка входа. Проверьте данные.');
     } finally {
       setIsLoading(false);
     }
@@ -36,20 +44,29 @@ export default function LoginPage() {
   const isValid = credentials.email && credentials.password;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1">
+    <AuroraBackground variant="aurora" intensity="subtle">
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <FadeIn direction="up" duration={600}>
+          <GlassCard 
+            className="w-full max-w-md"
+            intensity="strong"
+            variant="elevated"
+            animated={true}
+          >
+            <GlassCardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
             <div className="p-3 bg-primary/10 rounded-full">
               <Database className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">Вход в VHData</CardTitle>
-          <CardDescription className="text-center">
-            Введите свои учетные данные для входа
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
+              <GlassCardTitle className="text-2xl text-center" gradient={true}>
+                Вход в VHData
+              </GlassCardTitle>
+              <GlassCardDescription className="text-center">
+                Введите свои учетные данные для входа
+              </GlassCardDescription>
+            </GlassCardHeader>
+            <GlassCardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <Alert variant="destructive">
@@ -134,8 +151,10 @@ export default function LoginPage() {
               <p>Все данные защищены шифрованием</p>
             </div>
           </div>
-        </CardContent>
-      </Card>
-    </div>
+            </GlassCardContent>
+          </GlassCard>
+        </FadeIn>
+      </div>
+    </AuroraBackground>
   );
 }

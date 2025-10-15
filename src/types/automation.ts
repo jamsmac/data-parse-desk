@@ -2,6 +2,12 @@
 // AUTOMATION TYPES
 // =====================================================
 
+export interface FilterCondition {
+  field: string;
+  operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'greater_than' | 'less_than' | 'in' | 'not_in' | 'is_empty' | 'is_not_empty';
+  value?: string | number | boolean | null | (string | number | boolean)[];
+}
+
 export interface ScheduledTask {
   id: string;
   database_id: string;
@@ -47,7 +53,7 @@ export interface ExportTaskConfig {
   type: 'export';
   table_id: string;
   format: 'csv' | 'xlsx' | 'json';
-  filters?: any[];
+  filters?: FilterCondition[];
   destination: ExportDestination;
   notify_on_complete: boolean;
 }
@@ -63,7 +69,7 @@ export interface BackupTaskConfig {
 export interface WorkflowTaskConfig {
   type: 'workflow';
   workflow_id: string;
-  input_data?: Record<string, any>;
+  input_data?: Record<string, unknown>;
 }
 
 export interface ReportTaskConfig {
@@ -141,15 +147,15 @@ export interface WebhookTriggerConfig {
 export interface RecordTriggerConfig {
   type: 'record_created' | 'record_updated' | 'record_deleted';
   table_id: string;
-  filters?: any[];
+  filters?: FilterCondition[];
 }
 
 export interface FieldChangedTriggerConfig {
   type: 'field_changed';
   table_id: string;
   column_name: string;
-  from_value?: any;
-  to_value?: any;
+  from_value?: string | number | boolean | null;
+  to_value?: string | number | boolean | null;
 }
 
 export interface WorkflowCondition {
@@ -157,7 +163,7 @@ export interface WorkflowCondition {
   type: 'field_equals' | 'field_contains' | 'field_greater_than' | 'field_less_than' | 'custom_logic';
   field?: string;
   operator?: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'greater_than' | 'less_than' | 'is_empty' | 'is_not_empty';
-  value?: any;
+  value?: string | number | boolean | null;
   logic?: string; // JavaScript expression
   conjunction: 'and' | 'or';
 }
@@ -184,14 +190,14 @@ export type ActionConfig =
 export interface CreateRecordActionConfig {
   type: 'create_record';
   table_id: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 }
 
 export interface UpdateRecordActionConfig {
   type: 'update_record';
   table_id: string;
   record_id: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
 }
 
 export interface DeleteRecordActionConfig {
@@ -224,7 +230,7 @@ export interface CallWebhookActionConfig {
   url: string;
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
   headers?: Record<string, string>;
-  body?: any;
+  body?: Record<string, unknown> | string | FormData;
   timeout?: number; // seconds
 }
 
@@ -283,9 +289,9 @@ export interface WebhookLog {
   id: string;
   webhook_id: string;
   event: WebhookEvent;
-  payload: any;
+  payload: Record<string, unknown>;
   response_status?: number;
-  response_body?: any;
+  response_body?: Record<string, unknown> | string;
   error_message?: string;
   created_at: string;
 }
@@ -384,7 +390,7 @@ export interface WorkflowExecution {
   id: string;
   workflow_id: string;
   trigger_type: string;
-  trigger_data?: any;
+  trigger_data?: Record<string, unknown>;
   status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
   started_at: string;
   completed_at?: string;
@@ -401,8 +407,8 @@ export interface ExecutionStep {
   started_at?: string;
   completed_at?: string;
   duration_ms?: number;
-  input?: any;
-  output?: any;
+  input?: Record<string, unknown>;
+  output?: Record<string, unknown>;
   error_message?: string;
   retry_count?: number;
 }

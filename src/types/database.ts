@@ -36,7 +36,7 @@ export interface TableSchema {
   column_name: string;
   column_type: ColumnType;
   is_required: boolean;
-  default_value?: any;
+  default_value?: string | number | boolean | Date | null;
   position: number;
   created_at: string;
   updated_at: string;
@@ -50,7 +50,7 @@ export interface ColumnSchema {
   name: string;
   type: ColumnType;
   required?: boolean;
-  defaultValue?: any;
+  defaultValue?: string | number | boolean | Date | null;
 }
 
 // Конфигурация связи
@@ -109,7 +109,7 @@ export interface UploadHistory {
 
 // Типы для фильтрации и сортировки
 export interface TableFilters {
-  [columnName: string]: any;
+  [columnName: string]: string | number | boolean | Date | null | string[] | number[];
 }
 
 export interface TableSorting {
@@ -146,14 +146,14 @@ export interface ValidationResult {
 export interface ValidationError {
   row: number;
   column: string;
-  value: any;
+  value: unknown;
   message: string;
 }
 
 export interface ValidationWarning {
   row: number;
   column: string;
-  value: any;
+  value: unknown;
   message: string;
 }
 
@@ -170,12 +170,12 @@ export interface ChartConfig {
 // Типы для автоматизации
 export interface WorkflowTrigger {
   type: 'schedule' | 'webhook' | 'data_change';
-  config: any;
+  config: Record<string, unknown>;
 }
 
 export interface WorkflowAction {
   type: 'send_email' | 'update_row' | 'create_row' | 'http_request';
-  config: any;
+  config: Record<string, unknown>;
 }
 
 export interface Workflow {
@@ -215,14 +215,14 @@ export interface ActivityLog {
   action: 'create' | 'update' | 'delete' | 'import';
   entity_type: 'database' | 'row' | 'column';
   entity_id: string;
-  changes?: Record<string, any>;
+  changes?: Record<string, unknown>;
   created_at: string;
 }
 
 // Типы для работы с файлами
 export interface ParsedFileData {
   headers: string[];
-  rows: Record<string, any>[];
+  rows: Record<string, unknown>[];
   totalRows: number;
 }
 

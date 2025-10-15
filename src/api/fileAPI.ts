@@ -1,5 +1,27 @@
 import { supabase } from '@/integrations/supabase/client';
-import { ColumnMapping, ValidationResult } from '@/types/database';
+import { ColumnMapping, ValidationResult, TableFilters } from '@/types/database';
+import { AnyObject, TableRow } from '@/types/common';
+
+interface ParsedFile {
+  headers: string[];
+  rows: TableRow[];
+  totalRows: number;
+}
+
+interface FileUploadResult {
+  fileId: string;
+  fileName: string;
+}
+
+interface ImportResult {
+  imported: number;
+  failed: number;
+}
+
+interface SchemaDefinition {
+  type: string;
+  required: boolean;
+}
 
 export class FileAPI {
   // Загрузка файла
@@ -7,7 +29,7 @@ export class FileAPI {
     file: File,
     databaseId: string,
     userId: string
-  ): Promise<{ fileId: string; fileName: string }> {
+  ): Promise<FileUploadResult> {
     const fileExt = file.name.split('.').pop();
     const fileName = `${Date.now()}_${file.name}`;
     const filePath = `${userId}/${databaseId}/${fileName}`;
@@ -25,11 +47,7 @@ export class FileAPI {
   }
 
   // Парсинг файла
-  static async parseFile(file: File): Promise<{
-    headers: string[];
-    rows: Record<string, any>[];
-    totalRows: number;
-  }> {
+  static async parseFile(file: File): Promise<ParsedFile> {
     const ext = file.name.split('.').pop()?.toLowerCase();
 
     if (ext === 'csv') {
@@ -44,11 +62,7 @@ export class FileAPI {
   }
 
   // Парсинг CSV
-  private static async parseCSV(file: File): Promise<{
-    headers: string[];
-    rows: Record<string, any>[];
-    totalRows: number;
-  }> {
+  private static async parseCSV(file: File): Promise<ParsedFile> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
 
@@ -63,11 +77,11 @@ export class FileAPI {
           }
 
           const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
-          const rows: Record<string, any>[] = [];
+          const rows: TableRow[] = [];
 
           for (let i = 1; i < lines.length; i++) {
             const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
-            const row: Record<string, any> = {};
+            const row: TableRow = {};
 
             headers.forEach((header, index) => {
               row[header] = values[index] || '';
@@ -92,22 +106,14 @@ export class FileAPI {
   }
 
   // Парсинг Excel
-  private static async parseExcel(file: File): Promise<{
-    headers: string[];
-    rows: Record<string, any>[];
-    totalRows: number;
-  }> {
+  private static async parseExcel(file: File): Promise<ParsedFile> {
     // Для простоты, можно использовать библиотеку xlsx
     // npm install xlsx
     throw new Error('Excel парсинг будет реализован с библиотекой xlsx');
   }
 
   // Парсинг JSON
-  private static async parseJSON(file: File): Promise<{
-    headers: string[];
-    rows: Record<string, any>[];
-    totalRows: number;
-  }> {
+  private static async parseJSON(file: File): Promise<ParsedFile> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
 
@@ -218,9 +224,9 @@ export class FileAPI {
 
   // Валидация данных перед импортом
   static validateData(
-    rows: Record<string, any>[],
+    rows: TableRow[],
     mapping: ColumnMapping[],
-    schemas: Record<string, { type: string; required: boolean }>
+    schemas: Record<string, SchemaDefinition>
   ): ValidationResult {
     const errors: ValidationResult['errors'] = [];
     const warnings: ValidationResult['warnings'] = [];
@@ -245,7 +251,7 @@ export class FileAPI {
         // Проверка типов данных
         if (value !== null && value !== undefined && value !== '') {
           switch (schema.type) {
-            case 'number':
+            case 'number': {
               if (isNaN(Number(value))) {
                 errors.push({
                   row: rowIndex + 1,
@@ -255,8 +261,9 @@ export class FileAPI {
                 });
               }
               break;
+            }
 
-            case 'email':
+            case 'email': {
               const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
               if (!emailRegex.test(String(value))) {
                 errors.push({
@@ -267,8 +274,9 @@ export class FileAPI {
                 });
               }
               break;
+            }
 
-            case 'url':
+            case 'url': {
               try {
                 new URL(String(value));
               } catch {
@@ -280,8 +288,9 @@ export class FileAPI {
                 });
               }
               break;
+            }
 
-            case 'boolean':
+            case 'boolean': {
               const booleanValues = ['true', 'false', '1', '0', 'yes', 'no', 'да', 'нет'];
               if (!booleanValues.includes(String(value).toLowerCase())) {
                 warnings.push({
@@ -292,6 +301,7 @@ export class FileAPI {
                 });
               }
               break;
+            }
           }
         }
       });
@@ -307,14 +317,14 @@ export class FileAPI {
   // Импорт данных в базу
   static async importData(
     databaseId: string,
-    rows: Record<string, any>[],
+    rows: TableRow[],
     mapping: ColumnMapping[]
-  ): Promise<{ imported: number; failed: number }> {
+  ): Promise<ImportResult> {
     let imported = 0;
     let failed = 0;
 
     const mappedRows = rows.map((row) => {
-      const mappedRow: Record<string, any> = {};
+      const mappedRow: TableRow = {};
 
       mapping.forEach((map) => {
         if (map.targetColumn) {
@@ -331,11 +341,11 @@ export class FileAPI {
       const batch = mappedRows.slice(i, i + batchSize);
 
       try {
-        const { data, error } = await supabase
-          .rpc('bulk_insert_table_rows', {
-            p_database_id: databaseId,
-            p_rows: batch as any,
-          });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data, error } = await (supabase.rpc as any)('bulk_insert_table_rows', {
+          p_database_id: databaseId,
+          p_rows: batch,
+        });
 
         if (error) {
           failed += batch.length;
@@ -348,5 +358,70 @@ export class FileAPI {
     }
 
     return { imported, failed };
+  }
+
+  // Получение данных таблицы для экспорта
+  static async getTableData(
+    databaseId: string, 
+    filters?: TableFilters
+  ): Promise<TableRow[]> {
+    try {
+      // Используем RPC функцию для получения данных таблицы
+      // В реальном приложении эта функция должна быть создана в Supabase
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.rpc as any)('get_table_data', {
+        p_database_id: databaseId,
+        p_filters: filters ? JSON.stringify(filters) : null,
+      });
+
+      if (error) {
+        console.error('Error fetching table data:', error);
+        // Fallback: возвращаем пустой массив если функция не существует
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      console.error('Error in getTableData:', error);
+      // Возвращаем пустой массив как fallback
+      return [];
+    }
+  }
+
+  // Конвертация данных в CSV формат
+  static convertToCSV(data: TableRow[]): string {
+    if (data.length === 0) {
+      return '';
+    }
+
+    // Получаем заголовки из первого объекта
+    const headers = Object.keys(data[0]);
+    
+    // Функция для экранирования значений CSV
+    const escapeCSV = (value: unknown): string => {
+      if (value === null || value === undefined) {
+        return '';
+      }
+      
+      const stringValue = String(value);
+      
+      // Если значение содержит запятую, кавычку или перенос строки, оборачиваем в кавычки
+      if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+        return `"${stringValue.replace(/"/g, '""')}"`;
+      }
+      
+      return stringValue;
+    };
+
+    // Создаем строку заголовков
+    const csvHeaders = headers.map(h => escapeCSV(h)).join(',');
+    
+    // Создаем строки данных
+    const csvRows = data.map(row => {
+      return headers.map(header => escapeCSV(row[header])).join(',');
+    });
+
+    // Объединяем все в одну строку
+    return [csvHeaders, ...csvRows].join('\n');
   }
 }

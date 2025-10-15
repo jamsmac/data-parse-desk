@@ -1,24 +1,43 @@
 import { useState, useEffect } from 'react';
 import { Plus, Database, Search, Grid, List } from 'lucide-react';
 import { useDatabases, useCreateDatabase } from '../hooks/useDatabases';
-import { supabase } from '@/integrations/supabase/client';
-import { Button } from '../components/ui/button';
+import { useAuth } from '../contexts/AuthContext';
 import { Input } from '../components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog';
 import { Label } from '../components/ui/label';
 import { Textarea } from '../components/ui/textarea';
-import { Skeleton } from '../components/ui/skeleton';
 import { Badge } from '../components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+
+// 🌟 Aurora Design System imports
+import {
+  GlassCard,
+  GlassCardHeader,
+  GlassCardTitle,
+  GlassCardDescription,
+  GlassCardContent,
+  AuroraBackground,
+  AuroraContainer,
+  FadeIn,
+  StaggerChildren,
+  AnimatedList,
+  FluidButton,
+  GlassDialog as Dialog,
+  GlassDialogContent as DialogContent,
+  GlassDialogDescription as DialogDescription,
+  GlassDialogFooter as DialogFooter,
+  GlassDialogHeader as DialogHeader,
+  GlassDialogTitle as DialogTitle,
+  GlassDialogTrigger as DialogTrigger,
+} from '@/components/aurora';
 
 /**
  * Главная страница - Dashboard со списком баз данных
  */
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [userId, setUserId] = useState<string | null>(null);
+  const { user, isLoading: authLoading } = useAuth();
+  const userId = user?.id || null;
   const { data: databases, isLoading, error } = useDatabases(userId || '');
   const createDatabase = useCreateDatabase();
 
@@ -63,23 +82,15 @@ export default function Dashboard() {
   // Иконки для выбора
   const availableIcons = ['📊', '📈', '📉', '💼', '🗂️', '📋', '📁', '🏢', '💰', '👥', '🎯', '📝', '🔧', '⚙️', '🌟'];
 
-  // Получение текущего пользователя
+  // Редирект на страницу входа, если пользователь не авторизован
   useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-      } else {
-        // Если пользователь не авторизован, используем временный ID для разработки
-        // TODO: В production добавить редирект на страницу входа
-        setUserId('00000000-0000-0000-0000-000000000000');
-      }
-    };
-    getUser();
-  }, []);
+    if (!authLoading && !user) {
+      navigate('/login');
+    }
+  }, [authLoading, user, navigate]);
 
-  // Не показываем контент пока не получим userId
-  if (!userId) {
+  // Показываем загрузку пока идет проверка авторизации
+  if (authLoading || !userId) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -91,27 +102,33 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-      {/* Header */}
-      <div className="border-b bg-white/50 dark:bg-slate-900/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                VHData Platform
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                Управляйте данными как профессионал
-              </p>
-            </div>
+    // 🌟 Aurora Background обертывает весь Dashboard
+    <AuroraBackground variant="aurora" intensity="subtle">
+      <div className="min-h-screen">
+        {/* Header */}
+        <div className="border-b backdrop-blur-md bg-background/50 sticky top-0 z-10">
+          <div className="container mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              {/* 🌟 FadeIn анимация для заголовка */}
+              <FadeIn direction="down" duration={600}>
+                <div>
+                  <h1 className="text-3xl font-bold bg-gradient-to-r from-fluid-cyan to-fluid-purple bg-clip-text text-transparent">
+                    VHData Platform
+                  </h1>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Управляйте данными как профессионал
+                  </p>
+                </div>
+              </FadeIn>
             
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="lg" className="gap-2">
-                  <Plus className="h-5 w-5" />
-                  Создать базу данных
-                </Button>
-              </DialogTrigger>
+            <FadeIn direction="down" delay={200}>
+              <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <FluidButton variant="primary" size="lg" className="gap-2">
+                    <Plus className="h-5 w-5" />
+                    Создать базу данных
+                  </FluidButton>
+                </DialogTrigger>
               <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                   <DialogTitle>Новая база данных</DialogTitle>
@@ -182,17 +199,18 @@ export default function Dashboard() {
                     </div>
                   </div>
                 </div>
-                
+
                 <DialogFooter>
-                  <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                  <FluidButton variant="secondary" onClick={() => setIsCreateDialogOpen(false)}>
                     Отмена
-                  </Button>
-                  <Button onClick={handleCreateDatabase} disabled={createDatabase.isPending}>
+                  </FluidButton>
+                  <FluidButton variant="primary" onClick={handleCreateDatabase} disabled={createDatabase.isPending}>
                     {createDatabase.isPending ? 'Создание...' : 'Создать'}
-                  </Button>
+                  </FluidButton>
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            </FadeIn>
           </div>
         </div>
       </div>
@@ -200,146 +218,158 @@ export default function Dashboard() {
       {/* Main Content */}
       <div className="container mx-auto px-4 py-8">
         {/* Search and View Controls */}
-        <div className="flex items-center gap-4 mb-6">
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Поиск баз данных..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
+        <FadeIn direction="up" delay={300}>
+          <div className="flex items-center gap-4 mb-6">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Поиск баз данных..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 glass-input"
+              />
+            </div>
+
+            <div className="flex gap-1 border rounded-lg p-1 glass-subtle">
+              <FluidButton
+                variant={viewMode === 'grid' ? 'primary' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('grid')}
+              >
+                <Grid className="h-4 w-4" />
+              </FluidButton>
+              <FluidButton
+                variant={viewMode === 'list' ? 'primary' : 'ghost'}
+                size="sm"
+                onClick={() => setViewMode('list')}
+              >
+                <List className="h-4 w-4" />
+              </FluidButton>
+            </div>
           </div>
-          
-          <div className="flex gap-1 border rounded-lg p-1">
-            <Button
-              variant={viewMode === 'grid' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('grid')}
-            >
-              <Grid className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={viewMode === 'list' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setViewMode('list')}
-            >
-              <List className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        </FadeIn>
 
         {/* Loading State */}
         {isLoading && (
           <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
             {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Card key={i}>
-                <CardHeader>
-                  <Skeleton className="h-6 w-3/4" />
-                  <Skeleton className="h-4 w-1/2" />
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-20 w-full" />
-                </CardContent>
-              </Card>
+              <GlassCard key={i} intensity="light" animated={false}>
+                <div className="h-32 animate-pulse bg-muted/20 rounded" />
+              </GlassCard>
             ))}
           </div>
         )}
 
         {/* Error State */}
         {error && (
-          <Card className="border-destructive">
-            <CardHeader>
-              <CardTitle className="text-destructive">Ошибка загрузки</CardTitle>
-              <CardDescription>Не удалось загрузить базы данных</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">{error.message}</p>
-            </CardContent>
-          </Card>
+          <FadeIn>
+            <GlassCard intensity="medium" className="border-destructive">
+              <GlassCardHeader>
+                <GlassCardTitle className="text-destructive">Ошибка загрузки</GlassCardTitle>
+                <GlassCardDescription>Не удалось загрузить базы данных</GlassCardDescription>
+              </GlassCardHeader>
+              <GlassCardContent>
+                <p className="text-sm text-muted-foreground">{error.message}</p>
+              </GlassCardContent>
+            </GlassCard>
+          </FadeIn>
         )}
 
         {/* Empty State */}
         {!isLoading && !error && filteredDatabases?.length === 0 && (
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-16">
-              <Database className="h-16 w-16 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-semibold mb-2">
-                {searchQuery ? 'Базы данных не найдены' : 'Нет баз данных'}
-              </h3>
-              <p className="text-sm text-muted-foreground mb-4">
-                {searchQuery
-                  ? 'Попробуйте изменить поисковый запрос'
-                  : 'Создайте свою первую базу данных для начала работы'}
-              </p>
-              {!searchQuery && (
-                <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Создать базу данных
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+          <FadeIn>
+            <GlassCard intensity="medium" className="border-dashed">
+              <GlassCardContent className="flex flex-col items-center justify-center py-16">
+                <Database className="h-16 w-16 text-muted-foreground mb-4 animate-float" />
+                <h3 className="text-lg font-semibold mb-2">
+                  {searchQuery ? 'Базы данных не найдены' : 'Нет баз данных'}
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {searchQuery
+                    ? 'Попробуйте изменить поисковый запрос'
+                    : 'Создайте свою первую базу данных для начала работы'}
+                </p>
+                {!searchQuery && (
+                  <FluidButton variant="primary" onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Создать базу данных
+                  </FluidButton>
+                )}
+              </GlassCardContent>
+            </GlassCard>
+          </FadeIn>
         )}
 
-        {/* Databases Grid */}
+        {/* 🌟 Databases Grid с AnimatedList */}
         {!isLoading && !error && filteredDatabases && filteredDatabases.length > 0 && (
-          <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
+          <AnimatedList
+            direction="bottom"
+            stagger={0.05}
+            className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}
+          >
             {filteredDatabases.map((database) => (
-              <Card
+              <GlassCard
                 key={database.id}
-                className="cursor-pointer transition-all hover:shadow-lg hover:-translate-y-1"
+                intensity="medium"
+                variant="interactive"
+                className="cursor-pointer"
                 onClick={() => navigate(`/database/${database.id}`)}
               >
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl"
-                        style={{ backgroundColor: database.color + '20' }}
-                      >
-                        {database.icon}
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">{database.name}</CardTitle>
-                        <CardDescription className="text-xs">
-                          {new Date(database.created_at).toLocaleDateString('ru-RU')}
-                        </CardDescription>
+                  <GlassCardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className="w-12 h-12 rounded-lg flex items-center justify-center text-2xl glass-subtle"
+                          style={{ 
+                            backgroundColor: database.color ? `${database.color}20` : undefined,
+                            borderColor: database.color ? `${database.color}40` : undefined,
+                          }}
+                        >
+                          {database.icon || '📊'}
+                        </div>
+                        <div>
+                          <GlassCardTitle className="text-lg">{database.name}</GlassCardTitle>
+                          <GlassCardDescription className="text-xs">
+                            {new Date(database.created_at).toLocaleDateString('ru-RU')}
+                          </GlassCardDescription>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </CardHeader>
-                
-                <CardContent>
-                  {database.description && (
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                      {database.description}
-                    </p>
-                  )}
+                  </GlassCardHeader>
                   
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="text-xs">
-                      База данных
-                    </Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  <GlassCardContent>
+                    {database.description && (
+                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
+                        {database.description}
+                      </p>
+                    )}
+                    
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="text-xs glass-badge">
+                        База данных
+                      </Badge>
+                    </div>
+                  </GlassCardContent>
+                </GlassCard>
+              ))}
+          </AnimatedList>
         )}
 
         {/* Statistics */}
         {!isLoading && databases && databases.length > 0 && (
-          <div className="mt-8 flex items-center justify-center gap-8 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Database className="h-4 w-4" />
-              <span>
-                {databases.length} {databases.length === 1 ? 'база' : 'баз'} данных
-              </span>
+          <FadeIn delay={400}>
+            <div className="mt-8 flex items-center justify-center gap-8 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <Database className="h-4 w-4" />
+                <span>
+                  {databases.length} {databases.length === 1 ? 'база' : 'баз'} данных
+                </span>
+              </div>
             </div>
-          </div>
+          </FadeIn>
         )}
       </div>
     </div>
+    </AuroraBackground>
   );
 }

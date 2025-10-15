@@ -1,5 +1,14 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { 
+  GlassCard, 
+  GlassCardContent, 
+  GlassCardDescription, 
+  GlassCardHeader, 
+  GlassCardTitle,
+  AuroraBackground,
+  FadeIn,
+  StaggerChildren
+} from '@/components/aurora';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -40,13 +49,15 @@ export default function ProfilePage() {
   // Early return after all hooks
   if (!user) {
     return (
-      <div className="container mx-auto p-6 max-w-4xl">
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-center text-muted-foreground">Загрузка...</p>
-          </CardContent>
-        </Card>
-      </div>
+      <AuroraBackground variant="aurora" intensity="subtle">
+        <div className="container mx-auto p-6 max-w-4xl">
+          <GlassCard intensity="medium">
+            <GlassCardContent className="pt-6">
+              <p className="text-center text-muted-foreground">Загрузка...</p>
+            </GlassCardContent>
+          </GlassCard>
+        </div>
+      </AuroraBackground>
     );
   }
 
@@ -58,8 +69,8 @@ export default function ProfilePage() {
     try {
       await updateProfile({ full_name: profileData.full_name });
       setSuccess('Профиль успешно обновлен');
-    } catch (err: any) {
-      setError(err.message || 'Ошибка обновления профиля');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка обновления профиля');
     } finally {
       setIsLoading(false);
     }
@@ -85,8 +96,8 @@ export default function ProfilePage() {
       await updatePassword(passwordData.current, passwordData.new);
       setSuccess('Пароль успешно изменен');
       setPasswordData({ current: '', new: '', confirm: '' });
-    } catch (err: any) {
-      setError(err.message || 'Ошибка изменения пароля');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Ошибка изменения пароля');
     } finally {
       setIsLoading(false);
     }
@@ -113,31 +124,42 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold">Профиль</h1>
-          <p className="text-muted-foreground mt-2">
-            Управление личной информацией и настройками безопасности
-          </p>
-        </div>
+    <AuroraBackground variant="aurora" intensity="subtle">
+      <div className="container mx-auto p-6 max-w-4xl">
+        <StaggerChildren staggerDelay={100}>
+          <div className="space-y-6">
+            {/* Header */}
+            <FadeIn direction="down" duration={500}>
+              <div>
+                <h1 className="text-3xl font-bold bg-gradient-to-r from-fluid-cyan to-fluid-purple bg-clip-text text-transparent">
+                  Профиль
+                </h1>
+                <p className="text-muted-foreground mt-2">
+                  Управление личной информацией и настройками безопасности
+                </p>
+              </div>
+            </FadeIn>
 
-        {/* Alerts */}
-        {success && (
-          <Alert>
-            <AlertDescription>{success}</AlertDescription>
-          </Alert>
-        )}
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
+            {/* Alerts */}
+            {success && (
+              <FadeIn>
+                <Alert>
+                  <AlertDescription>{success}</AlertDescription>
+                </Alert>
+              </FadeIn>
+            )}
+            {error && (
+              <FadeIn>
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              </FadeIn>
+            )}
 
-        {/* Avatar Card */}
-        <Card>
-          <CardContent className="pt-6">
+            {/* Avatar Card */}
+            <FadeIn delay={100}>
+              <GlassCard intensity="medium" variant="interactive">
+                <GlassCardContent className="pt-6">
             <div className="flex items-center gap-6">
               <div className="relative">
                 <Avatar className="h-24 w-24">
@@ -167,11 +189,13 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+                </GlassCardContent>
+              </GlassCard>
+            </FadeIn>
 
-        {/* Tabs */}
-        <Tabs defaultValue="profile" className="w-full">
+            {/* Tabs */}
+            <FadeIn delay={200}>
+              <Tabs defaultValue="profile" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="profile">
               <UserIcon className="mr-2 h-4 w-4" />
@@ -187,16 +211,16 @@ export default function ProfilePage() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Profile Tab */}
-          <TabsContent value="profile" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Личная информация</CardTitle>
-                <CardDescription>
-                  Обновите свою личную информацию и контактные данные
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+                {/* Profile Tab */}
+                <TabsContent value="profile" className="space-y-4">
+                  <GlassCard intensity="medium" variant="elevated">
+                    <GlassCardHeader>
+                      <GlassCardTitle>Личная информация</GlassCardTitle>
+                      <GlassCardDescription>
+                        Обновите свою личную информацию и контактные данные
+                      </GlassCardDescription>
+                    </GlassCardHeader>
+                    <GlassCardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="full_name">Полное имя</Label>
                   <Input
@@ -238,16 +262,16 @@ export default function ProfilePage() {
                       </>
                     )}
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
+                    </div>
+                    </GlassCardContent>
+                  </GlassCard>
 
-            {/* Account Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Информация об аккаунте</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+                  {/* Account Info */}
+                  <GlassCard intensity="medium" variant="elevated">
+                    <GlassCardHeader>
+                      <GlassCardTitle>Информация об аккаунте</GlassCardTitle>
+                    </GlassCardHeader>
+                    <GlassCardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground">ID пользователя</p>
@@ -271,21 +295,21 @@ export default function ProfilePage() {
                         : 'Н/Д'}
                     </p>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    </div>
+                    </GlassCardContent>
+                  </GlassCard>
+                </TabsContent>
 
-          {/* Security Tab */}
-          <TabsContent value="security" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Изменить пароль</CardTitle>
-                <CardDescription>
-                  Убедитесь, что ваш пароль надежный и безопасный
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
+                {/* Security Tab */}
+                <TabsContent value="security" className="space-y-4">
+                  <GlassCard intensity="medium" variant="elevated">
+                    <GlassCardHeader>
+                      <GlassCardTitle>Изменить пароль</GlassCardTitle>
+                      <GlassCardDescription>
+                        Убедитесь, что ваш пароль надежный и безопасный
+                      </GlassCardDescription>
+                    </GlassCardHeader>
+                    <GlassCardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="current_password">Текущий пароль</Label>
                   <Input
@@ -338,17 +362,17 @@ export default function ProfilePage() {
                     </>
                   )}
                 </Button>
-              </CardContent>
-            </Card>
+                    </GlassCardContent>
+                  </GlassCard>
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Активные сессии</CardTitle>
-                <CardDescription>
-                  Управление устройствами, на которых выполнен вход
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
+                  <GlassCard intensity="medium" variant="elevated">
+                    <GlassCardHeader>
+                      <GlassCardTitle>Активные сессии</GlassCardTitle>
+                      <GlassCardDescription>
+                        Управление устройствами, на которых выполнен вход
+                      </GlassCardDescription>
+                    </GlassCardHeader>
+                    <GlassCardContent>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between p-3 border rounded-lg">
                     <div>
@@ -358,28 +382,31 @@ export default function ProfilePage() {
                     <Badge>Активно</Badge>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    </GlassCardContent>
+                  </GlassCard>
+                </TabsContent>
 
-          {/* Notifications Tab */}
-          <TabsContent value="notifications">
-            <Card>
-              <CardHeader>
-                <CardTitle>Настройки уведомлений</CardTitle>
-                <CardDescription>
-                  Управление способами получения уведомлений
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  Настройки уведомлений доступны в разделе Уведомления
-                </p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                {/* Notifications Tab */}
+                <TabsContent value="notifications">
+                  <GlassCard intensity="medium" variant="elevated">
+                    <GlassCardHeader>
+                      <GlassCardTitle>Настройки уведомлений</GlassCardTitle>
+                      <GlassCardDescription>
+                        Управление способами получения уведомлений
+                      </GlassCardDescription>
+                    </GlassCardHeader>
+                    <GlassCardContent>
+                      <p className="text-sm text-muted-foreground">
+                        Настройки уведомлений доступны в разделе Уведомления
+                      </p>
+                    </GlassCardContent>
+                  </GlassCard>
+                </TabsContent>
+              </Tabs>
+            </FadeIn>
+          </div>
+        </StaggerChildren>
       </div>
-    </div>
+    </AuroraBackground>
   );
 }

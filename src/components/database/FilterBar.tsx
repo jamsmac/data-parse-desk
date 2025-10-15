@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { Card } from '../ui/card';
+import { GlassCard, FadeIn, StaggerChildren } from '@/components/aurora';
 import type { TableSchema, ColumnType } from '@/types/database';
 import type { FilterOperator } from '@/utils/sqlBuilder';
 
@@ -13,13 +13,13 @@ export interface FilterCondition {
   id: string;
   column: string;
   operator: FilterOperator;
-  value: any;
+  value: string | number | boolean | null | [string | number, string | number];
 }
 
 export interface FilterBarProps {
   columns: TableSchema[];
-  filters: Record<string, any>;
-  onFiltersChange: (filters: Record<string, any>) => void;
+  filters: Record<string, string | number | boolean | null>;
+  onFiltersChange: (filters: Record<string, string | number | boolean | null>) => void;
 }
 
 const OPERATORS: Record<string, { value: FilterOperator; label: string; types: ColumnType[] }[]> = {
@@ -193,7 +193,7 @@ export default function FilterBar({ columns, filters: externalFilters, onFilters
       return (
         <Input
           type="date"
-          value={filter.value || ''}
+          value={typeof filter.value === 'string' ? filter.value : ''}
           onChange={(e) => updateFilter(filter.id, { value: e.target.value })}
           className="w-[180px]"
         />
@@ -205,7 +205,7 @@ export default function FilterBar({ columns, filters: externalFilters, onFilters
         <Input
           type="number"
           placeholder="Значение"
-          value={filter.value || ''}
+          value={typeof filter.value === 'number' || typeof filter.value === 'string' ? filter.value : ''}
           onChange={(e) => updateFilter(filter.id, { value: e.target.value })}
           className="w-[150px]"
         />
@@ -216,7 +216,7 @@ export default function FilterBar({ columns, filters: externalFilters, onFilters
     return (
       <Input
         placeholder="Значение"
-        value={filter.value || ''}
+        value={typeof filter.value === 'string' ? filter.value : ''}
         onChange={(e) => updateFilter(filter.id, { value: e.target.value })}
         className="w-[200px]"
       />
@@ -259,9 +259,11 @@ export default function FilterBar({ columns, filters: externalFilters, onFilters
                   Нет активных фильтров. Добавьте фильтр для начала.
                 </p>
               ) : (
-                <div className="space-y-2">
-                  {filters.map((filter, index) => (
-                    <Card key={filter.id} className="p-3">
+                <StaggerChildren staggerDelay={50}>
+                  <div className="space-y-2">
+                    {filters.map((filter, index) => (
+                      <FadeIn key={filter.id}>
+                        <GlassCard intensity="light" className="p-3">
                       <div className="flex items-center gap-2">
                         {index > 0 && (
                           <span className="text-xs text-muted-foreground font-medium">И</span>
@@ -309,9 +311,11 @@ export default function FilterBar({ columns, filters: externalFilters, onFilters
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
-                    </Card>
-                  ))}
-                </div>
+                        </GlassCard>
+                      </FadeIn>
+                    ))}
+                  </div>
+                </StaggerChildren>
               )}
 
               <Button

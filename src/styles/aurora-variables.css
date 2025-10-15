@@ -1,0 +1,123 @@
+:root {
+  /* Основные градиенты */
+  --aurora-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --aurora-secondary: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  --aurora-dark: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+  
+  /* Акцентные цвета */
+  --fluid-cyan: #5DFDCB;
+  --fluid-purple: #7C4DFF;
+  --fluid-pink: #FF6B6B;
+  --nebula-blue: #4ECDC4;
+  
+  /* Glass morphism */
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px rgba(31, 38, 135, 0.15);
+  --glass-blur: 10px;
+  
+  /* Анимации */
+  --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-medium: 600ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-bounce: 800ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  
+  /* Дополнительные градиенты для вариаций */
+  --aurora-ocean: linear-gradient(135deg, #2E3192 0%, #1BFFFF 100%);
+  --aurora-sunset: linear-gradient(135deg, #FF512F 0%, #DD2476 100%);
+  --aurora-forest: linear-gradient(135deg, #134E5E 0%, #71B280 100%);
+  --aurora-nebula: linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%);
+  
+  /* Интенсивность glass эффекта */
+  --glass-light: rgba(255, 255, 255, 0.03);
+  --glass-medium: rgba(255, 255, 255, 0.05);
+  --glass-strong: rgba(255, 255, 255, 0.08);
+  
+  /* Borders для glass */
+  --glass-border-light: rgba(255, 255, 255, 0.05);
+  --glass-border-medium: rgba(255, 255, 255, 0.1);
+  --glass-border-strong: rgba(255, 255, 255, 0.15);
+  
+  /* Тени для разной глубины */
+  --shadow-sm: 0 2px 8px rgba(31, 38, 135, 0.1);
+  --shadow-md: 0 8px 32px rgba(31, 38, 135, 0.15);
+  --shadow-lg: 0 16px 48px rgba(31, 38, 135, 0.2);
+  --shadow-xl: 0 24px 64px rgba(31, 38, 135, 0.25);
+  
+  /* Glow эффекты */
+  --glow-cyan: 0 0 20px rgba(93, 253, 203, 0.5);
+  --glow-purple: 0 0 20px rgba(124, 77, 255, 0.5);
+  --glow-pink: 0 0 20px rgba(255, 107, 107, 0.5);
+  --glow-blue: 0 0 20px rgba(78, 205, 196, 0.5);
+  
+  /* Spacing для консистентности */
+  --space-aurora-xs: 0.5rem;
+  --space-aurora-sm: 1rem;
+  --space-aurora-md: 1.5rem;
+  --space-aurora-lg: 2rem;
+  --space-aurora-xl: 3rem;
+  
+  /* Border radius */
+  --radius-aurora-sm: 8px;
+  --radius-aurora-md: 12px;
+  --radius-aurora-lg: 16px;
+  --radius-aurora-xl: 24px;
+  --radius-aurora-full: 9999px;
+}
+
+/* Dark theme variations */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --glass-bg: rgba(255, 255, 255, 0.08);
+    --glass-border: rgba(255, 255, 255, 0.15);
+    --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Utility classes for quick access */
+.aurora-primary {
+  background: var(--aurora-primary);
+}
+
+.aurora-secondary {
+  background: var(--aurora-secondary);
+}
+
+.aurora-dark {
+  background: var(--aurora-dark);
+}
+
+.aurora-ocean {
+  background: var(--aurora-ocean);
+}
+
+.aurora-sunset {
+  background: var(--aurora-sunset);
+}
+
+.aurora-forest {
+  background: var(--aurora-forest);
+}
+
+.aurora-nebula {
+  background: var(--aurora-nebula);
+}
+
+.glass-effect {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+}
+
+.transition-smooth {
+  transition: all var(--transition-smooth);
+}
+
+.transition-medium {
+  transition: all var(--transition-medium);
+}
+
+.transition-bounce {
+  transition: all var(--transition-bounce);
+}

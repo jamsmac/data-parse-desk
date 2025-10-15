@@ -9,17 +9,26 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { ArrowUpDown, Download } from 'lucide-react';
 import { TableSchema } from '@/types/database';
 import { AggregationType } from '@/types/charts';
+import { TableRow as DataRow } from '@/types/common';
 
 export interface PivotTableProps {
-  data: any[];
+  data: DataRow[];
   columns: TableSchema[];
-  onExport?: (data: any[][]) => void;
+  onExport?: (data: unknown[][]) => void;
 }
 
 interface PivotConfig {
   rows: string[];
   columns: string[];
   values: { column: string; aggregation: AggregationType }[];
+}
+
+interface CellStats {
+  sum: number;
+  count: number;
+  min: number;
+  max: number;
+  values: number[];
 }
 
 export function PivotTable({ data, columns, onExport }: PivotTableProps) {
@@ -41,7 +50,7 @@ export function PivotTable({ data, columns, onExport }: PivotTableProps) {
       return null;
     }
 
-    const grouped = new Map<string, Map<string, any>>();
+    const grouped = new Map<string, Map<string, Record<string, CellStats>>>();
 
     // Group data
     data.forEach((row) => {
@@ -62,7 +71,7 @@ export function PivotTable({ data, columns, onExport }: PivotTableProps) {
       const cell = rowGroup.get(colKey)!;
 
       config.values.forEach((valueConfig) => {
-        const value = parseFloat(row[valueConfig.column]) || 0;
+        const value = parseFloat(String(row[valueConfig.column])) || 0;
         const key = valueConfig.column;
 
         if (!cell[key]) {
@@ -88,7 +97,7 @@ export function PivotTable({ data, columns, onExport }: PivotTableProps) {
     const sortedColKeys = Array.from(allColKeys).sort();
 
     // Build pivot table
-    const result: any[][] = [];
+    const result: (string | number)[][] = [];
 
     // Header row
     const header = [
@@ -102,7 +111,7 @@ export function PivotTable({ data, columns, onExport }: PivotTableProps) {
     // Data rows
     grouped.forEach((rowGroup, rowKey) => {
       const rowValues = rowKey.split('|');
-      const dataRow: any[] = [...rowValues];
+      const dataRow: (string | number)[] = [...rowValues];
 
       sortedColKeys.forEach((colKey) => {
         const cell = rowGroup.get(colKey);
@@ -387,7 +396,7 @@ export function PivotTable({ data, columns, onExport }: PivotTableProps) {
                         {i < config.rows.length ? (
                           <Badge variant="outline">{header}</Badge>
                         ) : (
-                          <span className="text-xs">{header.split('|').join(' - ')}</span>
+                          <span className="text-xs">{String(header).split('|').join(' - ')}</span>
                         )}
                       </TableHead>
                     ))}

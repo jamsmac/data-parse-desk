@@ -3,6 +3,7 @@
  */
 
 import type { TableFilters, TableSorting, TablePagination } from '../types/database';
+import type { TableRow } from '../types/common';
 
 /**
  * Типы операторов для фильтрации
@@ -29,7 +30,7 @@ export type FilterOperator =
 export interface ExtendedFilter {
   column: string;
   operator: FilterOperator;
-  value: any;
+  value: unknown;
 }
 
 /**
@@ -67,12 +68,12 @@ export class SQLBuilder {
   /**
    * Строит WHERE условие для фильтров
    */
-  buildWhereClause(): { sql: string; params: any[] } {
+  buildWhereClause(): { sql: string; params: unknown[] } {
     if (!this.config.filters) {
       return { sql: '', params: [] };
     }
 
-    const params: any[] = [];
+    const params: unknown[] = [];
     const conditions: string[] = [];
 
     // Простые фильтры (объект)
@@ -107,7 +108,7 @@ export class SQLBuilder {
   /**
    * Строит условие для одного фильтра
    */
-  private buildFilterCondition(filter: ExtendedFilter, params: any[]): string | null {
+  private buildFilterCondition(filter: ExtendedFilter, params: unknown[]): string | null {
     const column = this.escapeIdentifier(filter.column);
 
     switch (filter.operator) {
@@ -151,13 +152,14 @@ export class SQLBuilder {
         params.push(`%${filter.value}`);
         return `${column} ILIKE $${params.length}`;
 
-      case 'in':
+      case 'in': {
         if (!Array.isArray(filter.value)) return null;
-        const placeholders = filter.value.map(val => {
+        const placeholders = filter.value.map((val: unknown) => {
           params.push(val);
           return `$${params.length}`;
         });
         return `${column} IN (${placeholders.join(', ')})`;
+      }
 
       case 'is':
         if (filter.value === null) {
@@ -167,13 +169,14 @@ export class SQLBuilder {
         }
         return null;
 
-      case 'between':
+      case 'between': {
         if (!Array.isArray(filter.value) || filter.value.length !== 2) return null;
         params.push(filter.value[0]);
         const param1 = params.length;
         params.push(filter.value[1]);
         const param2 = params.length;
         return `${column} BETWEEN $${param1} AND $${param2}`;
+      }
 
       case 'contains':
         params.push(filter.value);
@@ -253,7 +256,7 @@ export class SQLBuilder {
   /**
    * Строит полный SELECT запрос
    */
-  buildSelectQuery(): { sql: string; params: any[] } {
+  buildSelectQuery(): { sql: string; params: unknown[] } {
     const select = this.buildSelectClause();
     const from = this.escapeIdentifier(this.config.tableName);
     const joins = this.buildJoinClauses();
@@ -279,7 +282,7 @@ export class SQLBuilder {
   /**
    * Строит COUNT запрос для получения общего количества
    */
-  buildCountQuery(): { sql: string; params: any[] } {
+  buildCountQuery(): { sql: string; params: unknown[] } {
     const from = this.escapeIdentifier(this.config.tableName);
     const joins = this.buildJoinClauses();
     const { sql: where, params } = this.buildWhereClause();
@@ -373,8 +376,8 @@ export function validateQueryConfig(config: QueryConfig): {
  */
 export function buildInsertQuery(
   tableName: string,
-  data: Record<string, any>
-): { sql: string; params: any[] } {
+  data: TableRow
+): { sql: string; params: unknown[] } {
   const columns = Object.keys(data);
   const params = Object.values(data);
 
@@ -393,10 +396,10 @@ export function buildInsertQuery(
 export function buildUpdateQuery(
   tableName: string,
   id: string,
-  data: Record<string, any>
-): { sql: string; params: any[] } {
+  data: TableRow
+): { sql: string; params: unknown[] } {
   const updates: string[] = [];
-  const params: any[] = [];
+  const params: unknown[] = [];
 
   for (const [column, value] of Object.entries(data)) {
     params.push(value);
@@ -417,7 +420,7 @@ export function buildUpdateQuery(
 export function buildDeleteQuery(
   tableName: string,
   id: string
-): { sql: string; params: any[] } {
+): { sql: string; params: unknown[] } {
   return {
     sql: `DELETE FROM "${tableName.replace(/"/g, '""')}" WHERE id = $1`,
     params: [id],
@@ -429,14 +432,14 @@ export function buildDeleteQuery(
  */
 export function buildBulkInsertQuery(
   tableName: string,
-  data: Record<string, any>[]
-): { sql: string; params: any[] } {
+  data: TableRow[]
+): { sql: string; params: unknown[] } {
   if (data.length === 0) {
     throw new Error('Нет данных для вставки');
   }
 
   const columns = Object.keys(data[0]);
-  const params: any[] = [];
+  const params: unknown[] = [];
   const valueSets: string[] = [];
 
   for (const row of data) {

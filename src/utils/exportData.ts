@@ -1,5 +1,6 @@
-import * as XLSX from 'xlsx';
+import * as ExcelJS from 'exceljs';
 import { NormalizedRow } from './parseData';
+import type { TableRow } from '@/types/common';
 
 export function exportToCSV(data: NormalizedRow[], visibleColumns: string[], fileName: string = 'export.csv') {
   if (data.length === 0) return;
@@ -29,25 +30,42 @@ export function exportToCSV(data: NormalizedRow[], visibleColumns: string[], fil
   link.click();
 }
 
-export function exportToExcel(data: NormalizedRow[], visibleColumns: string[], fileName: string = 'export.xlsx') {
+export async function exportToExcel(data: NormalizedRow[], visibleColumns: string[], fileName: string = 'export.xlsx') {
   if (data.length === 0) return;
 
-  // Create filtered data with only visible columns
-  const filteredData = data.map(row => {
-    const filtered: any = {};
+  // Create workbook and worksheet
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Data');
+
+  // Add headers
+  worksheet.columns = visibleColumns.map(col => ({
+    header: col,
+    key: col,
+    width: 15
+  }));
+
+  // Add rows
+  data.forEach(row => {
+    const rowData: TableRow = {};
     visibleColumns.forEach(col => {
-      filtered[col] = row[col];
+      rowData[col] = row[col];
     });
-    return filtered;
+    worksheet.addRow(rowData);
   });
 
-  // Create worksheet
-  const worksheet = XLSX.utils.json_to_sheet(filteredData, { header: visibleColumns });
-  
-  // Create workbook
-  const workbook = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
+  // Style headers
+  worksheet.getRow(1).font = { bold: true };
+  worksheet.getRow(1).fill = {
+    type: 'pattern',
+    pattern: 'solid',
+    fgColor: { argb: 'FFE0E0E0' }
+  };
 
-  // Download
-  XLSX.writeFile(workbook, fileName);
+  // Generate buffer and download
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = fileName;
+  link.click();
 }

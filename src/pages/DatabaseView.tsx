@@ -145,7 +145,7 @@ export default function DatabaseView() {
   // Используем схему таблицы для получения колонок
   const columns = tableSchema || [];
   
-  const handleCellEdit = async (rowId: string, column: string, value: any) => {
+  const handleCellEdit = async (rowId: string, column: string, value: unknown) => {
     try {
       await updateRow.mutateAsync({ 
         rowId, 
@@ -331,55 +331,58 @@ export default function DatabaseView() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {tableData.data.map((row, index) => (
-                      <TableRow key={row.id || index}>
-                        <TableCell className="font-medium">
-                          {(pagination.page - 1) * pagination.pageSize + index + 1}
-                        </TableCell>
-                        {columns.map((col) => (
-                          <TableCell 
-                            key={col.id}
-                            className="cursor-pointer hover:bg-muted/50"
-                            onClick={() => row.id && setEditingCell({ rowId: row.id, column: col.column_name })}
-                          >
-                            {editingCell?.rowId === row.id && editingCell?.column === col.column_name ? (
-                              <CellEditor
-                                column={col}
-                                value={row[col.column_name]}
-                                onSave={(value) => handleCellEdit(row.id, col.column_name, value)}
-                                onCancel={() => setEditingCell(null)}
-                              />
-                            ) : (
-                              <>
-                                {row[col.column_name] !== null && row[col.column_name] !== undefined 
-                                  ? String(row[col.column_name]) 
-                                  : '-'}
-                              </>
-                            )}
+                    {tableData.data.map((row, index) => {
+                      const rowId = row.id ? String(row.id) : String(index);
+                      return (
+                        <TableRow key={rowId}>
+                          <TableCell className="font-medium">
+                            {(pagination.page - 1) * pagination.pageSize + index + 1}
                           </TableCell>
-                        ))}
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="sm">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem>Редактировать</DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem 
-                                className="text-destructive"
-                                onClick={() => row.id && handleDeleteRow(row.id)}
-                              >
-                                <Trash2 className="h-4 w-4 mr-2" />
-                                Удалить
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          {columns.map((col) => (
+                            <TableCell 
+                              key={col.id}
+                              className="cursor-pointer hover:bg-muted/50"
+                              onClick={() => row.id && setEditingCell({ rowId: String(row.id), column: col.column_name })}
+                            >
+                              {editingCell?.rowId === String(row.id) && editingCell?.column === col.column_name ? (
+                                <CellEditor
+                                  column={col}
+                                  value={row[col.column_name] as string | number | boolean | null | undefined}
+                                  onSave={(value) => handleCellEdit(String(row.id), col.column_name, value)}
+                                  onCancel={() => setEditingCell(null)}
+                                />
+                              ) : (
+                                <>
+                                  {row[col.column_name] !== null && row[col.column_name] !== undefined 
+                                    ? String(row[col.column_name]) 
+                                    : '-'}
+                                </>
+                              )}
+                            </TableCell>
+                          ))}
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem>Редактировать</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  className="text-destructive"
+                                  onClick={() => row.id && handleDeleteRow(String(row.id))}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Удалить
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>

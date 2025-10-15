@@ -1,5 +1,6 @@
 import * as ExcelJS from 'exceljs';
 import { detectColumns, normalizeRow, NormalizedRow } from './parseData';
+import type { TableRow } from '@/types/common';
 
 export interface ParseResult {
   data: NormalizedRow[];
@@ -26,27 +27,59 @@ export async function parseFile(file: File): Promise<ParseResult> {
 async function parseCSV(file: File, fileName: string): Promise<ParseResult> {
   const text = await file.text();
   
+  // Normalize line endings
+  const normalizedText = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  
   // Auto-detect delimiter
-  const firstLine = text.split('\n')[0];
+  const firstLine = normalizedText.split('\n')[0];
   const delimiter = firstLine.includes(';') ? ';' : ',';
 
-  const lines = text.split('\n').filter(line => line.trim());
+  const lines = normalizedText.split('\n').filter(line => line.trim());
   if (lines.length === 0) {
     throw new Error('CSV file is empty');
   }
 
-  const headers = lines[0].split(delimiter).map(h => h.trim().replace(/^["']|["']$/g, ''));
+  // Parse CSV with proper quote handling
+  const parseCSVLine = (line: string, delimiter: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      const nextChar = line[i + 1];
+      
+      if (char === '"' || char === "'") {
+        if (inQuotes && (nextChar === '"' || nextChar === "'")) {
+          // Escaped quote
+          current += char;
+          i++; // Skip next quote
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === delimiter && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  };
+
+  const headers = parseCSVLine(lines[0], delimiter);
   const { dateColumns, amountColumns } = detectColumns(headers);
 
   const data: NormalizedRow[] = [];
 
   for (let i = 1; i < lines.length; i++) {
-    const values = lines[i].split(delimiter).map(v => v.trim().replace(/^["']|["']$/g, ''));
+    const values = parseCSVLine(lines[i], delimiter);
     if (values.length !== headers.length) continue;
 
-    const row: any = {};
+    const row: TableRow = {};
     headers.forEach((header, index) => {
-      row[header] = values[index];
+      row[header] = values[index] || '';
     });
 
     const normalized = normalizeRow(row, dateColumns, amountColumns, fileName);
@@ -85,11 +118,11 @@ async function parseExcel(file: File, fileName: string): Promise<ParseResult> {
   const { dateColumns, amountColumns } = detectColumns(headers);
 
   // Parse data rows
-  const jsonData: any[] = [];
+  const jsonData: TableRow[] = [];
   worksheet.eachRow((row, rowNumber) => {
     if (rowNumber === 1) return; // Skip header row
     
-    const rowData: any = {};
+    const rowData: TableRow = {};
     row.eachCell((cell, colNumber) => {
       const header = headers[colNumber - 1];
       if (header) {

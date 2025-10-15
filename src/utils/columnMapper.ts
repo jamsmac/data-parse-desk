@@ -3,6 +3,7 @@
  */
 
 import type { TableSchema, ColumnMapping } from '../types/database';
+import type { TableRow, AnyObject } from '@/types/common';
 
 /**
  * Вычисляет расстояние Левенштейна между двумя строками
@@ -108,11 +109,11 @@ export function suggestColumnMapping(
  * Применяет маппинг к данным
  */
 export function applyColumnMapping(
-  data: Record<string, any>[],
+  data: TableRow[],
   mapping: ColumnMapping[]
-): Record<string, any>[] {
+): TableRow[] {
   return data.map(row => {
-    const mappedRow: Record<string, any> = {};
+    const mappedRow: TableRow = {};
 
     for (const map of mapping) {
       if (map.targetColumn && row[map.sourceColumn] !== undefined) {
@@ -127,14 +128,14 @@ export function applyColumnMapping(
 /**
  * Определяет тип колонки на основе данных
  */
-export function inferColumnType(values: any[]): string {
+export function inferColumnType(values: unknown[]): string {
   const nonNullValues = values.filter(v => v != null && v !== '');
 
   if (nonNullValues.length === 0) return 'text';
 
   // Проверяем, все ли значения числа
   const allNumbers = nonNullValues.every(v => {
-    const num = typeof v === 'number' ? v : parseFloat(v);
+    const num = typeof v === 'number' ? v : parseFloat(String(v));
     return !isNaN(num) && isFinite(num);
   });
 
@@ -142,7 +143,7 @@ export function inferColumnType(values: any[]): string {
 
   // Проверяем, все ли значения даты
   const allDates = nonNullValues.every(v => {
-    const date = new Date(v);
+    const date = new Date(String(v));
     return !isNaN(date.getTime());
   });
 
@@ -169,7 +170,7 @@ export function inferColumnType(values: any[]): string {
   if (allUrls) return 'url';
 
   // Проверяем телефон
-  const phoneRegex = /^[\d\s\-\+\(\)]+$/;
+  const phoneRegex = /^[\d\s\-+()]+$/;
   const allPhones = nonNullValues.every(v => {
     const str = String(v).replace(/\s/g, '');
     return phoneRegex.test(str) && str.length >= 7 && str.length <= 20;
@@ -184,7 +185,7 @@ export function inferColumnType(values: any[]): string {
  * Анализирует данные файла и предлагает схему
  */
 export function suggestSchema(
-  data: Record<string, any>[],
+  data: TableRow[],
   existingColumns?: string[]
 ): Array<{
   column_name: string;

@@ -4,13 +4,22 @@ import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '../ui/dialog';
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
+import { 
+  GlassDialog as Dialog, 
+  GlassDialogContent as DialogContent, 
+  GlassDialogDescription as DialogDescription, 
+  GlassDialogFooter as DialogFooter, 
+  GlassDialogHeader as DialogHeader, 
+  GlassDialogTitle as DialogTitle, 
+  GlassDialogTrigger as DialogTrigger 
+} from '@/components/aurora';
+import { GlassCard, GlassCardContent, FadeIn, StaggerChildren } from '@/components/aurora';
 import { Switch } from '../ui/switch';
 import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
 import { toast } from 'sonner';
 import type { TableSchema, ColumnType } from '@/types/database';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface ColumnManagerProps {
   open: boolean;
@@ -54,7 +63,18 @@ export default function ColumnManager({ open, onOpenChange, databaseId, columns 
     }
 
     try {
-      // TODO: Вызвать API для создания колонки
+      // Вызов API для создания колонки
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await (supabase.rpc as any)('add_column_to_database', {
+        p_database_id: databaseId,
+        p_column_name: newColumn.column_name,
+        p_column_type: newColumn.column_type,
+        p_is_required: newColumn.is_required,
+        p_default_value: newColumn.default_value || null,
+      });
+
+      if (error) throw error;
+
       toast.success('Колонка добавлена');
       setIsAddDialogOpen(false);
       setNewColumn({
@@ -72,7 +92,15 @@ export default function ColumnManager({ open, onOpenChange, databaseId, columns 
 
   const handleDeleteColumn = async (columnId: string) => {
     try {
-      // TODO: Вызвать API для удаления колонки
+      // Вызов API для удаления колонки
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.rpc as any)('delete_column_from_database', {
+        p_database_id: databaseId,
+        p_column_id: columnId,
+      });
+
+      if (error) throw error;
+
       toast.success('Колонка удалена');
       // Refresh будет через React Query invalidation
     } catch (error) {
@@ -83,7 +111,19 @@ export default function ColumnManager({ open, onOpenChange, databaseId, columns 
 
   const handleUpdateColumn = async (column: TableSchema) => {
     try {
-      // TODO: Вызвать API для обновления колонки
+      // Вызов API для обновления колонки
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error } = await (supabase.rpc as any)('update_database_column', {
+        p_database_id: databaseId,
+        p_column_id: column.id,
+        p_column_name: column.column_name,
+        p_column_type: column.column_type,
+        p_is_required: column.is_required,
+        p_default_value: column.default_value,
+      });
+
+      if (error) throw error;
+
       toast.success('Колонка обновлена');
       setEditingColumn(null);
       // Refresh будет через React Query invalidation
@@ -99,7 +139,7 @@ export default function ColumnManager({ open, onOpenChange, databaseId, columns 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent size="xl" className="max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Управление колонками</DialogTitle>
           <DialogDescription>
@@ -117,7 +157,7 @@ export default function ColumnManager({ open, onOpenChange, databaseId, columns 
               Добавить колонку
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent size="md">
             <DialogHeader>
               <DialogTitle>Новая колонка</DialogTitle>
               <DialogDescription>
@@ -197,23 +237,23 @@ export default function ColumnManager({ open, onOpenChange, databaseId, columns 
         </Dialog>
       </div>
 
-      <Card>
-        <CardContent className="p-0">
+      <FadeIn>
+        <GlassCard intensity="medium">
+          <GlassCardContent className="p-0">
           {columns.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">
               <p>Нет колонок. Добавьте первую колонку для начала работы.</p>
             </div>
           ) : (
-            <div className="divide-y">
+            <StaggerChildren staggerDelay={50}>
+              <div className="divide-y">
               {columns.map((column, index) => {
                 const typeInfo = getColumnTypeInfo(column.column_type);
                 const isEditing = editingColumn?.id === column.id;
 
                 return (
-                  <div
-                    key={column.id}
-                    className="flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors"
-                  >
+                  <FadeIn key={column.id}>
+                    <div className="flex items-center gap-3 p-4 hover:bg-muted/50 transition-colors">
                     <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
                     
                     <div className="flex-1">
@@ -239,7 +279,7 @@ export default function ColumnManager({ open, onOpenChange, databaseId, columns 
                         {column.default_value && (
                           <>
                             <span>•</span>
-                            <span>По умолчанию: {column.default_value}</span>
+                            <span>По умолчанию: {String(column.default_value)}</span>
                           </>
                         )}
                       </div>
@@ -283,13 +323,16 @@ export default function ColumnManager({ open, onOpenChange, databaseId, columns 
                         </>
                       )}
                     </div>
-                  </div>
+                    </div>
+                  </FadeIn>
                 );
               })}
-            </div>
+              </div>
+            </StaggerChildren>
           )}
-        </CardContent>
-      </Card>
+          </GlassCardContent>
+        </GlassCard>
+      </FadeIn>
         </div>
       </DialogContent>
     </Dialog>

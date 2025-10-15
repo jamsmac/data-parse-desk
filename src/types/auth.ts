@@ -58,7 +58,7 @@ export interface Activity {
   entity_type: 'database' | 'row' | 'column' | 'chart' | 'report';
   entity_id: string;
   entity_name?: string;
-  changes?: Record<string, any>;
+  changes?: Record<string, { old: unknown; new: unknown }>;
   created_at: string;
 }
 
