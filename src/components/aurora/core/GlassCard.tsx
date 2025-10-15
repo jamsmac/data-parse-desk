@@ -3,7 +3,7 @@
  * Fluid Aurora Design System - Компонент карточки с glass-morphism эффектом
  */
 
-import React, { forwardRef, HTMLAttributes, useState, useEffect } from 'react';
+import React, { forwardRef, HTMLAttributes, useState, useEffect, memo } from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { getBrowserCapabilities } from '@/lib/aurora/performanceDetector';
@@ -39,7 +39,7 @@ export interface GlassCardProps extends Omit<HTMLMotionProps<'div'>, 'ref'> {
 
 /**
  * GlassCard - базовый компонент карточки с эффектом glass morphism
- * 
+ *
  * @example
  * ```tsx
  * <GlassCard variant="elevated" intensity="medium">
@@ -48,7 +48,7 @@ export interface GlassCardProps extends Omit<HTMLMotionProps<'div'>, 'ref'> {
  * </GlassCard>
  * ```
  */
-export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
+export const GlassCard = memo(forwardRef<HTMLDivElement, GlassCardProps>(
   (
     {
       children,
@@ -190,7 +190,7 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
       </motion.div>
     );
   }
-);
+));
 
 GlassCard.displayName = 'GlassCard';
 
@@ -202,7 +202,7 @@ export interface GlassCardHeaderProps extends HTMLAttributes<HTMLDivElement> {
   className?: string;
 }
 
-export const GlassCardHeader = forwardRef<HTMLDivElement, GlassCardHeaderProps>(
+export const GlassCardHeader = React.memo(forwardRef<HTMLDivElement, GlassCardHeaderProps>(
   ({ children, className, ...props }, ref) => {
     return (
       <div
@@ -214,7 +214,7 @@ export const GlassCardHeader = forwardRef<HTMLDivElement, GlassCardHeaderProps>(
       </div>
     );
   }
-);
+));
 
 GlassCardHeader.displayName = 'GlassCardHeader';
 
@@ -227,7 +227,7 @@ export interface GlassCardTitleProps extends HTMLAttributes<HTMLHeadingElement> 
   gradient?: boolean;
 }
 
-export const GlassCardTitle = forwardRef<HTMLParagraphElement, GlassCardTitleProps>(
+export const GlassCardTitle = React.memo(forwardRef<HTMLParagraphElement, GlassCardTitleProps>(
   ({ children, className, gradient = false, ...props }, ref) => {
     return (
       <h3
@@ -243,7 +243,7 @@ export const GlassCardTitle = forwardRef<HTMLParagraphElement, GlassCardTitlePro
       </h3>
     );
   }
-);
+));
 
 GlassCardTitle.displayName = 'GlassCardTitle';
 
@@ -255,7 +255,7 @@ export interface GlassCardDescriptionProps extends HTMLAttributes<HTMLParagraphE
   className?: string;
 }
 
-export const GlassCardDescription = forwardRef<
+export const GlassCardDescription = React.memo(forwardRef<
   HTMLParagraphElement,
   GlassCardDescriptionProps
 >(({ children, className, ...props }, ref) => {
@@ -268,7 +268,7 @@ export const GlassCardDescription = forwardRef<
       {children}
     </p>
   );
-});
+}));
 
 GlassCardDescription.displayName = 'GlassCardDescription';
 
@@ -280,7 +280,7 @@ export interface GlassCardContentProps extends HTMLAttributes<HTMLDivElement> {
   className?: string;
 }
 
-export const GlassCardContent = forwardRef<HTMLDivElement, GlassCardContentProps>(
+export const GlassCardContent = React.memo(forwardRef<HTMLDivElement, GlassCardContentProps>(
   ({ children, className, ...props }, ref) => {
     return (
       <div ref={ref} className={cn('pt-0', className)} {...props}>
@@ -288,7 +288,7 @@ export const GlassCardContent = forwardRef<HTMLDivElement, GlassCardContentProps
       </div>
     );
   }
-);
+));
 
 GlassCardContent.displayName = 'GlassCardContent';
 
@@ -300,7 +300,7 @@ export interface GlassCardFooterProps extends HTMLAttributes<HTMLDivElement> {
   className?: string;
 }
 
-export const GlassCardFooter = forwardRef<HTMLDivElement, GlassCardFooterProps>(
+export const GlassCardFooter = React.memo(forwardRef<HTMLDivElement, GlassCardFooterProps>(
   ({ children, className, ...props }, ref) => {
     return (
       <div
@@ -312,6 +312,6 @@ export const GlassCardFooter = forwardRef<HTMLDivElement, GlassCardFooterProps>(
       </div>
     );
   }
-);
+));
 
 GlassCardFooter.displayName = 'GlassCardFooter';

@@ -3,10 +3,11 @@
  * Анимированный список с stagger эффектом и intersection observer
  */
 
-import React, { forwardRef, HTMLAttributes, useRef, useEffect, useState } from 'react';
+import React, { forwardRef, HTMLAttributes, useRef, useEffect, useState, memo, useMemo } from 'react';
 import { motion, HTMLMotionProps, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useStaggerContainer, useStaggerItem, AnimationDirection } from '@/hooks/aurora/useAuroraAnimation';
+import { useReducedMotion } from '@/hooks/aurora/useReducedMotion';
 
 export interface AnimatedListProps extends Omit<HTMLMotionProps<'div'>, 'ref'> {
   /** Дочерние элементы */
@@ -37,9 +38,15 @@ export interface AnimatedListProps extends Omit<HTMLMotionProps<'div'>, 'ref'> {
   className?: string;
 }
 
+// Пороги производительности
+const PERFORMANCE_THRESHOLDS = {
+  LARGE_LIST: 20,      // Уменьшаем stagger для списков > 20 элементов
+  VERY_LARGE_LIST: 50, // Используем CSS вместо Framer Motion для списков > 50
+} as const;
+
 /**
  * AnimatedList - список с анимацией появления элементов
- * 
+ *
  * @example
  * ```tsx
  * <AnimatedList direction="bottom" stagger={0.1}>
@@ -49,7 +56,7 @@ export interface AnimatedListProps extends Omit<HTMLMotionProps<'div'>, 'ref'> {
  * </AnimatedList>
  * ```
  */
-export const AnimatedList = forwardRef<HTMLDivElement, AnimatedListProps>(
+export const AnimatedList = memo(forwardRef<HTMLDivElement, AnimatedListProps>(
   (
     {
       children,
@@ -67,8 +74,23 @@ export const AnimatedList = forwardRef<HTMLDivElement, AnimatedListProps>(
   ) => {
     const [isInView, setIsInView] = useState(!useInView);
     const containerRef = useRef<HTMLDivElement>(null);
-    
-    const containerVariants = useStaggerContainer(stagger);
+    const prefersReducedMotion = useReducedMotion();
+
+    // Преобразуем children в массив для анализа
+    const childrenArray = useMemo(() => React.Children.toArray(children), [children]);
+    const childCount = childrenArray.length;
+
+    // Оптимизация: адаптивный stagger в зависимости от количества элементов
+    const effectiveStagger = useMemo(() => {
+      if (prefersReducedMotion) return 0;
+      if (childCount > PERFORMANCE_THRESHOLDS.LARGE_LIST) return 0;
+      return stagger;
+    }, [childCount, stagger, prefersReducedMotion]);
+
+    // Определяем, использовать ли Framer Motion или CSS
+    const useFramerMotion = childCount <= PERFORMANCE_THRESHOLDS.VERY_LARGE_LIST;
+
+    const containerVariants = useStaggerContainer(effectiveStagger);
     const itemVariants = useStaggerItem({ direction, duration });
 
     // Intersection Observer с fallback
@@ -101,9 +123,40 @@ export const AnimatedList = forwardRef<HTMLDivElement, AnimatedListProps>(
       return () => observer.disconnect();
     }, [useInView, threshold, rootMargin, once]);
 
-    // Преобразуем children в массив для анимации
-    const childrenArray = React.Children.toArray(children);
+    // Для очень больших списков используем простой CSS
+    if (!useFramerMotion) {
+      return (
+        <div
+          ref={(node) => {
+            if (typeof ref === 'function') {
+              ref(node);
+            } else if (ref) {
+              ref.current = node;
+            }
+            if (containerRef) {
+              containerRef.current = node;
+            }
+          }}
+          className={cn('flex flex-col gap-4', className)}
+          {...(props as HTMLAttributes<HTMLDivElement>)}
+        >
+          {childrenArray.map((child, index) => (
+            <div
+              key={index}
+              className="animate-fade-in"
+              style={{
+                animationDelay: `${index * 20}ms`,
+                animationFillMode: 'backwards',
+              }}
+            >
+              {child}
+            </div>
+          ))}
+        </div>
+      );
+    }
 
+    // Для обычных списков используем Framer Motion
     return (
       <motion.div
         ref={(node) => {
@@ -137,7 +190,7 @@ export const AnimatedList = forwardRef<HTMLDivElement, AnimatedListProps>(
       </motion.div>
     );
   }
-);
+));
 
 AnimatedList.displayName = 'AnimatedList';
 

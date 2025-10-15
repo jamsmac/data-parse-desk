@@ -14,8 +14,12 @@
     "test:ui": "vitest --ui",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:regression": "vitest run tests/regression/aurora-fixes.test.ts",
+    "test:regression:watch": "vitest watch tests/regression/aurora-fixes.test.ts",
     "prepare": "husky install",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "aurora:rollback": "bash rollback-aurora.sh",
+    "aurora:check": "npm run type-check && npm run lint && npm run test:regression"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

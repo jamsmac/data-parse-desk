@@ -64,15 +64,24 @@ export default function DatabaseView() {
 
   // Получение текущего пользователя
   useEffect(() => {
+    let isMounted = true;
+
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setUserId(user.id);
-      } else {
-        setUserId('00000000-0000-0000-0000-000000000000');
+      if (isMounted) {
+        if (user) {
+          setUserId(user.id);
+        } else {
+          setUserId('00000000-0000-0000-0000-000000000000');
+        }
       }
     };
+
     getUser();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Loading state

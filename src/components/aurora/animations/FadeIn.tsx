@@ -3,29 +3,30 @@
  * Aurora Design System - Анимация появления с затуханием
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import { motion, HTMLMotionProps, Variants } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useReducedMotion } from '@/hooks/aurora/useReducedMotion';
 
 export interface FadeInProps extends Omit<HTMLMotionProps<'div'>, 'variants'> {
   /** Дочерние элементы */
   children: React.ReactNode;
-  
+
   /** Направление появления */
   direction?: 'up' | 'down' | 'left' | 'right' | 'none';
-  
+
   /** Задержка анимации (мс) */
   delay?: number;
-  
+
   /** Длительность анимации (мс) */
   duration?: number;
-  
+
   /** Расстояние смещения (px) */
   distance?: number;
-  
+
   /** Анимировать только при первом появлении */
   once?: boolean;
-  
+
   /** Дополнительные CSS классы */
   className?: string;
 
@@ -35,7 +36,7 @@ export interface FadeInProps extends Omit<HTMLMotionProps<'div'>, 'variants'> {
 
 /**
  * FadeIn - компонент для плавного появления элементов
- * 
+ *
  * @example
  * ```tsx
  * <FadeIn direction="up" delay={200}>
@@ -43,7 +44,7 @@ export interface FadeInProps extends Omit<HTMLMotionProps<'div'>, 'variants'> {
  * </FadeIn>
  * ```
  */
-export const FadeIn: React.FC<FadeInProps> = ({
+export const FadeIn: React.FC<FadeInProps> = memo(({
   children,
   direction = 'up',
   delay = 0,
@@ -54,8 +55,15 @@ export const FadeIn: React.FC<FadeInProps> = ({
   viewport = true,
   ...props
 }) => {
+  const prefersReducedMotion = useReducedMotion();
+
   // Определяем начальные позиции в зависимости от направления
   const getDirectionOffset = () => {
+    // Если пользователь предпочитает меньше анимаций, не двигаем элемент
+    if (prefersReducedMotion) {
+      return { x: 0, y: 0 };
+    }
+
     switch (direction) {
       case 'up':
         return { y: distance, x: 0 };
@@ -84,8 +92,8 @@ export const FadeIn: React.FC<FadeInProps> = ({
       x: 0,
       y: 0,
       transition: {
-        duration: duration / 1000,
-        delay: delay / 1000,
+        duration: prefersReducedMotion ? 0.01 : duration / 1000,
+        delay: prefersReducedMotion ? 0 : delay / 1000,
         ease: [0.4, 0, 0.2, 1], // cubic-bezier easing
       },
     },
@@ -111,7 +119,7 @@ export const FadeIn: React.FC<FadeInProps> = ({
       {children}
     </motion.div>
   );
-};
+});
 
 FadeIn.displayName = 'FadeIn';
 

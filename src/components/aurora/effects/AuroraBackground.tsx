@@ -3,7 +3,7 @@
  * Aurora Design System - Динамический градиентный фон с эффектом северного сияния
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, memo } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -64,7 +64,7 @@ const colorSchemes: Record<AuroraVariant, string[]> = {
 
 /**
  * AuroraBackground - Фоновый компонент с анимированными градиентами
- * 
+ *
  * @example
  * ```tsx
  * <AuroraBackground variant="aurora" intensity="medium">
@@ -72,7 +72,7 @@ const colorSchemes: Record<AuroraVariant, string[]> = {
  * </AuroraBackground>
  * ```
  */
-export const AuroraBackground: React.FC<AuroraBackgroundProps> = ({
+export const AuroraBackground: React.FC<AuroraBackgroundProps> = memo(({
   children,
   variant = 'aurora',
   intensity = 'medium',
@@ -84,6 +84,10 @@ export const AuroraBackground: React.FC<AuroraBackgroundProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isMounted, setIsMounted] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+
+  // Определяем, мобильное ли устройство
+  const [isMobile, setIsMobile] = useState(false);
 
   // Получаем цвета для выбранного варианта
   const colors = colorSchemes[variant];
@@ -102,9 +106,36 @@ export const AuroraBackground: React.FC<AuroraBackgroundProps> = ({
     strong: '800px',
   }[intensity];
 
-  // Parallax эффект при движении мыши
+  // Определяем мобильное устройство и управляем видимостью
   useEffect(() => {
-    if (!parallax || !animated) return;
+    setIsMounted(true);
+    setIsMobile(window.innerWidth < 768);
+
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Отслеживание видимости страницы для остановки анимаций
+  useEffect(() => {
+    if (!animated) return;
+
+    const handleVisibilityChange = () => {
+      setIsVisible(!document.hidden);
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [animated]);
+
+  // Parallax эффект при движении мыши (только на десктопе)
+  useEffect(() => {
+    if (!parallax || !animated || isMobile) return;
 
     const handleMouseMove = (e: MouseEvent) => {
       const x = (e.clientX / window.innerWidth - 0.5) * 30;
@@ -114,11 +145,7 @@ export const AuroraBackground: React.FC<AuroraBackgroundProps> = ({
 
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [parallax, animated]);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
+  }, [parallax, animated, isMobile]);
 
   // Не показываем анимации до монтирования (SSR compatibility)
   if (!isMounted) {
@@ -150,7 +177,7 @@ export const AuroraBackground: React.FC<AuroraBackgroundProps> = ({
             top: '-10%',
             left: '-10%',
           }}
-          animate={animated ? {
+          animate={animated && isVisible ? {
             x: [0, 100, 0],
             y: [0, 50, 0],
             scale: [1, 1.1, 1],
@@ -172,7 +199,7 @@ export const AuroraBackground: React.FC<AuroraBackgroundProps> = ({
             top: '50%',
             right: '-10%',
           }}
-          animate={animated ? {
+          animate={animated && isVisible ? {
             x: [0, -80, 0],
             y: [0, -60, 0],
             scale: [1, 1.15, 1],
@@ -194,7 +221,7 @@ export const AuroraBackground: React.FC<AuroraBackgroundProps> = ({
             bottom: '-10%',
             left: '30%',
           }}
-          animate={animated ? {
+          animate={animated && isVisible ? {
             x: [0, 60, 0],
             y: [0, -80, 0],
             scale: [1, 1.2, 1],
@@ -207,8 +234,8 @@ export const AuroraBackground: React.FC<AuroraBackgroundProps> = ({
         />
       </div>
 
-      {/* Parallax overlay (если включен) */}
-      {parallax && animated && (
+      {/* Parallax overlay (если включен и не мобильное устройство) */}
+      {parallax && animated && !isMobile && isVisible && (
         <motion.div
           className="absolute inset-0 pointer-events-none"
           style={{
@@ -232,7 +259,7 @@ export const AuroraBackground: React.FC<AuroraBackgroundProps> = ({
       <div className="relative z-10">{children}</div>
     </div>
   );
-};
+});
 
 AuroraBackground.displayName = 'AuroraBackground';
 

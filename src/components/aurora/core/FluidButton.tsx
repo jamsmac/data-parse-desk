@@ -3,7 +3,7 @@
  * Fluid Aurora Design System - Кнопка с жидкой анимацией и ripple эффектом
  */
 
-import React, { forwardRef, ButtonHTMLAttributes, useState, MouseEvent } from 'react';
+import React, { forwardRef, ButtonHTMLAttributes, useState, MouseEvent, memo, useCallback, useRef, useEffect } from 'react';
 import { motion, HTMLMotionProps } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -39,7 +39,7 @@ interface RippleEffect {
 
 /**
  * FluidButton - кнопка с жидкой анимацией и ripple эффектом
- * 
+ *
  * @example
  * ```tsx
  * <FluidButton variant="primary" size="md" onClick={() => console.log('Clicked')}>
@@ -47,7 +47,7 @@ interface RippleEffect {
  * </FluidButton>
  * ```
  */
-export const FluidButton = forwardRef<HTMLButtonElement, FluidButtonProps>(
+export const FluidButton = memo(forwardRef<HTMLButtonElement, FluidButtonProps>(
   (
     {
       children,
@@ -62,6 +62,15 @@ export const FluidButton = forwardRef<HTMLButtonElement, FluidButtonProps>(
     ref
   ) => {
     const [ripples, setRipples] = useState<RippleEffect[]>([]);
+    const timeoutsRef = useRef<Set<NodeJS.Timeout>>(new Set());
+
+    // ✅ Cleanup всех таймаутов при размонтировании
+    useEffect(() => {
+      return () => {
+        timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+        timeoutsRef.current.clear();
+      };
+    }, []);
 
     // Варианты кнопок
     const variantClasses = {
@@ -100,8 +109,8 @@ export const FluidButton = forwardRef<HTMLButtonElement, FluidButtonProps>(
     // Disabled стили
     const disabledClasses = 'opacity-50 cursor-not-allowed pointer-events-none';
 
-    // Обработка клика с ripple эффектом
-    const handleClick = (e: MouseEvent<HTMLButtonElement>) => {
+    // Обработка клика с ripple эффектом (мемоизирована)
+    const handleClick = useCallback((e: MouseEvent<HTMLButtonElement>) => {
       if (disabled) return;
 
       if (ripple) {
@@ -110,7 +119,7 @@ export const FluidButton = forwardRef<HTMLButtonElement, FluidButtonProps>(
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         const size = Math.max(rect.width, rect.height) * 2;
-        
+
         const newRipple: RippleEffect = {
           x,
           y,
@@ -120,16 +129,19 @@ export const FluidButton = forwardRef<HTMLButtonElement, FluidButtonProps>(
 
         setRipples((prev) => [...prev, newRipple]);
 
-        // Удаляем ripple после анимации
-        setTimeout(() => {
+        // ✅ Отслеживаем timeout
+        const timeout = setTimeout(() => {
           setRipples((prev) => prev.filter((r) => r.id !== newRipple.id));
+          timeoutsRef.current.delete(timeout);
         }, 600);
+
+        timeoutsRef.current.add(timeout);
       }
 
       if (onClick) {
         onClick(e);
       }
-    };
+    }, [disabled, ripple, onClick]);
 
     // Keyboard support для accessibility
     const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
@@ -156,11 +168,15 @@ export const FluidButton = forwardRef<HTMLButtonElement, FluidButtonProps>(
 
           setRipples((prev) => [...prev, newRipple]);
 
-          setTimeout(() => {
+          // ✅ Отслеживаем timeout в keyboard handler
+          const timeout = setTimeout(() => {
             setRipples((prev) => prev.filter((r) => r.id !== newRipple.id));
+            timeoutsRef.current.delete(timeout);
           }, 600);
+
+          timeoutsRef.current.add(timeout);
         }
-        
+
         // Вызываем onClick с синтетическим событием
         if (onClick) {
           onClick(e as unknown as MouseEvent<HTMLButtonElement>);
@@ -234,7 +250,7 @@ export const FluidButton = forwardRef<HTMLButtonElement, FluidButtonProps>(
       </motion.button>
     );
   }
-);
+));
 
 FluidButton.displayName = 'FluidButton';
 

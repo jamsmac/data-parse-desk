@@ -11,6 +11,10 @@ export type { GlassContainerProps } from './core/GlassContainer';
 export * from './core/GlassCard';
 export * from './core/FluidButton';
 
+// Error Handling
+export { ErrorBoundary, ErrorBoundaryWrapper } from './ErrorBoundary';
+export type { ErrorBoundaryProps, ErrorBoundaryWrapperProps } from './ErrorBoundary';
+
 // Layouts
 export * from './layouts/GlassDialog';
 export * from './layouts/AuroraContainer';

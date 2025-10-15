@@ -59,6 +59,9 @@ export const FileImportDialog: React.FC<FileImportDialogProps> = ({
   const [useMLMapping, setUseMLMapping] = useState(true);
   const [mappingFeedback, setMappingFeedback] = useState<Record<string, boolean>>({});
 
+  // ✅ Ref для отслеживания interval при импорте
+  const progressIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
+
   const parseFileMutation = useParseFile();
   const importDataMutation = useImportData(databaseId);
 
@@ -263,7 +266,8 @@ export const FileImportDialog: React.FC<FileImportDialogProps> = ({
 
     try {
       // Simulate progress (in real implementation, track actual progress)
-      const progressInterval = setInterval(() => {
+      // ✅ Сохраняем в ref для cleanup
+      progressIntervalRef.current = setInterval(() => {
         setImportProgress(prev => Math.min(prev + 10, 90));
       }, 200);
 
@@ -280,7 +284,6 @@ export const FileImportDialog: React.FC<FileImportDialogProps> = ({
         columnMapping: columnMappings,
       });
 
-      clearInterval(progressInterval);
       setImportProgress(100);
 
       toast({
@@ -320,8 +323,27 @@ export const FileImportDialog: React.FC<FileImportDialogProps> = ({
       });
       setStep('preview');
       setImportProgress(0);
+    } finally {
+      // ✅ ВСЕГДА очищаем интервал
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
     }
   };
+
+  // ✅ КРИТИЧЕСКИЙ Cleanup при размонтировании компонента
+  useEffect(() => {
+    return () => {
+      // Очищаем interval если компонент unmount во время импорта
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+        progressIntervalRef.current = null;
+      }
+      // Сбрасываем прогресс при размонтировании
+      setImportProgress(0);
+    };
+  }, []);
 
   const handleClose = () => {
     setFile(null);
