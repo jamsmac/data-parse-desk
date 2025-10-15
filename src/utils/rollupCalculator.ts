@@ -55,12 +55,18 @@ const performAggregation = (
     case 'count':
       return values.length;
 
-    case 'sum':
-      return values.reduce((acc: number, val) => acc + (Number(val) || 0), 0);
+    case 'sum': {
+      // Суммируем только числовые значения, некорректные значения пропускаем
+      const numbers = values.map(val => Number(val)).filter(num => !isNaN(num));
+      return numbers.reduce((acc, num) => acc + num, 0);
+    }
 
     case 'avg': {
-      const sum = values.reduce((acc: number, val) => acc + (Number(val) || 0), 0);
-      return sum / values.length;
+      // Вычисляем среднее только по числовым значениям, некорректные значения пропускаем
+      const numbers = values.map(val => Number(val)).filter(num => !isNaN(num));
+      if (numbers.length === 0) return null;
+      const sum = numbers.reduce((acc, num) => acc + num, 0);
+      return sum / numbers.length;
     }
 
     case 'min': {

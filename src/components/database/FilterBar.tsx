@@ -6,7 +6,7 @@ import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { GlassCard, FadeIn, StaggerChildren } from '@/components/aurora';
-import type { TableSchema, ColumnType } from '@/types/database';
+import type { TableSchema, ColumnType, TableFilters } from '@/types/database';
 import type { FilterOperator } from '@/utils/sqlBuilder';
 
 export interface FilterCondition {
@@ -18,8 +18,8 @@ export interface FilterCondition {
 
 export interface FilterBarProps {
   columns: TableSchema[];
-  filters: Record<string, string | number | boolean | null>;
-  onFiltersChange: (filters: Record<string, string | number | boolean | null>) => void;
+  filters: TableFilters;
+  onFiltersChange: (filters: TableFilters) => void;
 }
 
 const OPERATORS: Record<string, { value: FilterOperator; label: string; types: ColumnType[] }[]> = {
