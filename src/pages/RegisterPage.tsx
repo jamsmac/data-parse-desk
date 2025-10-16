@@ -20,57 +20,30 @@ import { useAuth } from '@/contexts/AuthContext';
 
 export default function RegisterPage() {
   const { register } = useAuth();
-  const [formData, setFormData] = useState<RegisterData & { confirmPassword: string }>({
+  const [formData, setFormData] = useState<RegisterData>({
     email: '',
     password: '',
-    confirmPassword: '',
     full_name: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
-  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
-  const passwordRequirements = [
-    { label: 'Минимум 8 символов', valid: formData.password.length >= 8 },
-    { label: 'Содержит цифру', valid: /\d/.test(formData.password) },
-    { label: 'Содержит заглавную букву', valid: /[A-Z]/.test(formData.password) },
-    { label: 'Содержит строчную букву', valid: /[a-z]/.test(formData.password) },
-  ];
-
-  const passwordsMatch = formData.password === formData.confirmPassword;
-  const allRequirementsMet = passwordRequirements.every((req) => req.valid);
-  const isValid =
-    formData.email &&
-    formData.password &&
-    passwordsMatch &&
-    allRequirementsMet &&
-    acceptedTerms;
+  const isValid = formData.email && formData.password.length >= 6;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    if (!passwordsMatch) {
-      setError('Пароли не совпадают');
-      return;
-    }
-
-    if (!allRequirementsMet) {
-      setError('Пароль не соответствует требованиям');
-      return;
-    }
-
-    if (!acceptedTerms) {
-      setError('Необходимо принять условия использования');
+    if (formData.password.length < 6) {
+      setError('Пароль должен содержать минимум 6 символов');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const { confirmPassword, ...registerData } = formData;
-      await register(registerData);
+      await register(formData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка регистрации. Попробуйте снова.');
     } finally {
@@ -144,7 +117,7 @@ export default function RegisterPage() {
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
+                  placeholder="Минимум 6 символов"
                   value={formData.password}
                   onChange={(e) =>
                     setFormData((prev) => ({ ...prev, password: e.target.value }))
@@ -167,64 +140,9 @@ export default function RegisterPage() {
                   )}
                 </Button>
               </div>
-
-              {/* Password Requirements */}
-              {formData.password && (
-                <div className="space-y-1 mt-2">
-                  {passwordRequirements.map((req, index) => (
-                    <div key={index} className="flex items-center gap-2 text-xs">
-                      <CheckCircle2
-                        className={`h-3 w-3 ${
-                          req.valid ? 'text-green-500' : 'text-muted-foreground'
-                        }`}
-                      />
-                      <span className={req.valid ? 'text-green-600' : 'text-muted-foreground'}>
-                        {req.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+              {formData.password && formData.password.length < 6 && (
+                <p className="text-xs text-muted-foreground">Минимум 6 символов</p>
               )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Подтвердите пароль</Label>
-              <Input
-                id="confirmPassword"
-                type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
-                value={formData.confirmPassword}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, confirmPassword: e.target.value }))
-                }
-                disabled={isLoading}
-                required
-              />
-              {formData.confirmPassword && !passwordsMatch && (
-                <p className="text-xs text-destructive">Пароли не совпадают</p>
-              )}
-            </div>
-
-            <div className="flex items-start space-x-2">
-              <Checkbox
-                id="terms"
-                checked={acceptedTerms}
-                onCheckedChange={(checked) => setAcceptedTerms(checked as boolean)}
-                disabled={isLoading}
-              />
-              <label
-                htmlFor="terms"
-                className="text-sm text-muted-foreground leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                Я принимаю{' '}
-                <Link to="/terms" className="text-primary hover:underline">
-                  условия использования
-                </Link>{' '}
-                и{' '}
-                <Link to="/privacy" className="text-primary hover:underline">
-                  политику конфиденциальности
-                </Link>
-              </label>
             </div>
 
             <Button type="submit" className="w-full" disabled={!isValid || isLoading}>
@@ -248,8 +166,7 @@ export default function RegisterPage() {
 
           <div className="mt-6 pt-6 border-t">
             <div className="text-center text-xs text-muted-foreground space-y-1">
-              <p>Безопасная регистрация через Supabase Auth</p>
-              <p>Ваши данные надежно защищены</p>
+              <p>После регистрации вы будете автоматически авторизованы</p>
             </div>
           </div>
             </GlassCardContent>

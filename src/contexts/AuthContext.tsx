@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (data: RegisterData) => {
-    const { error } = await supabase.auth.signUp({
+    const { data: authData, error } = await supabase.auth.signUp({
       email: data.email,
       password: data.password,
       options: {
@@ -102,10 +102,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     toast({
       title: 'Регистрация успешна',
-      description: 'Проверьте email для подтверждения аккаунта',
+      description: 'Добро пожаловать!',
     });
 
-    navigate('/login');
+    // С auto-confirm пользователь сразу авторизован
+    navigate('/dashboard');
   };
 
   const logout = async () => {
