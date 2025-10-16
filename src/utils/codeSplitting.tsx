@@ -103,7 +103,7 @@ export class PreloadManager {
    * Предзагрузка на основе роута
    */
   static async preloadForRoute(route: string) {
-    const routeComponents: Record<string, () => Promise<any>> = {
+    const routeComponents: Record<string, () => Promise<ComponentType<unknown>>> = {
       '/dashboard': () => import('../pages/Dashboard'),
       '/database': () => import('../pages/DatabaseView'),
       '/analytics': () => import('../pages/Analytics'),
