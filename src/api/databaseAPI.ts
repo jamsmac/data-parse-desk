@@ -89,14 +89,44 @@ export class DatabaseAPI {
     return data ?? [];
   }
 
-  // Create database via RPC (tests expect RPC path)
-  static async createDatabase(request: {
-    name: string;
-    description?: string;
-    icon?: string;
-    color?: string;
-    user_id: string;
-  }): Promise<Database> {
+  // Create database - supports both RPC path and table insert path (unit tests)
+  static async createDatabase(request: any, maybeUserId?: string): Promise<Database> {
+    // Unit tests pass { display_name, icon_name, color_hex } and a separate user id argument
+    if (request && 'display_name' in request) {
+      const displayName: string = request.display_name;
+      const iconName: string | undefined = request.icon_name;
+      const colorHex: string | undefined = request.color_hex;
+      const description: string | undefined = request.description;
+      const userId: string | undefined = maybeUserId;
+      if (!userId) throw new Error('user_id is required');
+
+      const system_name = String(displayName)
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_+|_+$/g, '');
+      const table_name = `user_${system_name}`;
+
+      const supabase = getSupabase();
+      const { data: inserted, error } = await supabase
+        .from('databases')
+        .insert({
+          system_name,
+          display_name: displayName,
+          description: description ?? null,
+          icon_name: iconName ?? 'database',
+          color_hex: colorHex ?? '#3B82F6',
+          table_name,
+          created_by: userId,
+        })
+        .select();
+      if (error) throw new Error(error.message);
+      const created = Array.isArray(inserted) ? inserted[0] : inserted;
+
+      await supabase.rpc('create_dynamic_table', { p_table_name: table_name });
+      return created as unknown as Database;
+    }
+
+    // Default path: RPC create
     return await callRPC('create_database', request as any);
   }
 
@@ -117,7 +147,17 @@ export class DatabaseAPI {
   }
 
   static async deleteDatabase(id: string): Promise<void> {
-    await callRPC('delete_database', { p_id: id } as any);
+    const supabase = getSupabase();
+    // Best-effort drop of dynamic table if exists
+    const { data: dbRow } = await supabase
+      .from('databases')
+      .select('table_name')
+      .eq('id', id)
+      .single();
+    if (dbRow?.table_name) {
+      await supabase.rpc('drop_dynamic_table', { p_table_name: dbRow.table_name });
+    }
+    await supabase.from('databases').delete().eq('id', id);
   }
 
   // CRUD для table_schemas
@@ -135,8 +175,13 @@ export class DatabaseAPI {
   }
 
   static async getTableSchemas(databaseId: string): Promise<TableSchema[]> {
-    const result = await callRPC('get_table_schemas', { p_database_id: databaseId } as any);
-    return result || [];
+    const supabase = getSupabase();
+    const { data, error } = await supabase
+      .from('table_schemas')
+      .select('*')
+      .eq('database_id', databaseId);
+    if (error) throw new Error(error.message);
+    return data ?? [];
   }
 
   static async getTableSchema(databaseId: string): Promise<TableSchema[]> {
@@ -147,7 +192,14 @@ export class DatabaseAPI {
     id: string,
     updates: Partial<TableSchema>
   ): Promise<TableSchema> {
-    return await callRPC('update_table_schema', { p_id: id, p_updates: updates } as any);
+    const supabase = getSupabase();
+    await supabase.rpc('alter_dynamic_table', { p_table_schema_id: id, p_updates: updates });
+    const { data, error } = await supabase
+      .from('table_schemas')
+      .select('*')
+      .eq('id', id);
+    if (error) throw new Error(error.message);
+    return (data?.[0] ?? null) as unknown as TableSchema;
   }
 
   static async deleteTableSchema(id: string): Promise<void> {
@@ -171,6 +223,27 @@ export class DatabaseAPI {
     sorting?: { column: string; direction: 'asc' | 'desc' },
     pagination?: { page: number; pageSize: number } | { page: number; pageSize: number; filters: Array<{ column: string; operator: string; value: unknown }>; sortBy?: string; sortOrder?: 'asc' | 'desc' }
   ): Promise<{ data: AnyObject[]; total: number }> {
+    // Support v2-style options passed as the second argument
+    if (filters && typeof filters === 'object' && 'filters' in (filters as any)) {
+      const opts = filters as unknown as {
+        page?: number;
+        pageSize?: number;
+        filters: Array<{ column: string; operator: string; value: unknown }>;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+      };
+      const client = getSupabase();
+      const { data, error } = await client.rpc('get_table_data', {
+        table_name: databaseId,
+        page: opts.page,
+        pageSize: opts.pageSize,
+        filters: opts.filters,
+        sortBy: opts.sortBy,
+        sortOrder: opts.sortOrder,
+      });
+      if (error) throw new Error(error.message);
+      return (data as any) || { data: [], total: 0 };
+    }
     if (pagination && 'filters' in pagination) {
       const opts = pagination as { page: number; pageSize: number; filters: Array<{ column: string; operator: string; value: unknown }>; sortBy?: string; sortOrder?: 'asc' | 'desc' };
       const client = getSupabase();
