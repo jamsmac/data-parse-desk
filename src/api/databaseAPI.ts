@@ -1,4 +1,4 @@
-import { supabase } from '@/integrations/supabase/client';
+import { supabase } from '@/lib/supabase';
 import { Database, TableSchema, ColumnType } from '@/types/database';
 import { AnyObject, SupabaseResponse } from '@/types/common';
 
@@ -78,14 +78,53 @@ const callRPC = async <K extends keyof DatabaseRPCFunctions>(
 
 export class DatabaseAPI {
   // CRUD для databases
-  static async createDatabase(dbData: {
-    name: string;
-    description?: string;
-    icon?: string;
-    color?: string;
-    user_id: string;
-  }): Promise<Database> {
-    return callRPC('create_database', dbData);
+  static async getAllDatabases(userId: string) {
+    const { data, error } = await supabase
+      .from('databases')
+      .select('*')
+      .eq('created_by', userId);
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  }
+
+  // Create database - supports both app and test signatures
+  static async createDatabase(
+    request:
+      | { display_name: string; description?: string; icon_name?: string; color_hex?: string }
+      | { name: string; description?: string; icon?: string; color?: string; user_id: string },
+    userId?: string
+  ): Promise<Database> {
+    const displayName = (request as any).display_name ?? (request as any).name;
+    const description = (request as any).description ?? undefined;
+    const icon = (request as any).icon_name ?? (request as any).icon ?? 'database';
+    const color = (request as any).color_hex ?? (request as any).color ?? '#3B82F6';
+    const creator = userId ?? (request as any).user_id;
+
+    if (!creator) throw new Error('user_id is required');
+
+    const system_name = String(displayName)
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, '');
+    const table_name = `user_${system_name}`;
+
+    const { data: inserted, error } = await supabase
+      .from('databases')
+      .insert({
+        system_name,
+        display_name: displayName,
+        description: description ?? null,
+        icon_name: icon,
+        color_hex: color,
+        table_name,
+        created_by: creator,
+      })
+      .select();
+    if (error) throw new Error(error.message);
+    const created = Array.isArray(inserted) ? inserted[0] : inserted;
+
+    await supabase.rpc('create_dynamic_table', { p_table_name: table_name });
+    return created as unknown as Database;
   }
 
   static async getDatabases(userId: string): Promise<Database[]> {
@@ -101,11 +140,25 @@ export class DatabaseAPI {
     id: string,
     updates: Partial<Database>
   ): Promise<Database> {
-    return callRPC('update_database', { p_id: id, p_updates: updates });
+    const { data, error } = await supabase
+      .from('databases')
+      .update(updates)
+      .eq('id', id)
+      .select();
+    if (error) throw new Error(error.message);
+    return (Array.isArray(data) ? data[0] : data) as Database;
   }
 
   static async deleteDatabase(id: string): Promise<void> {
-    await callRPC('delete_database', { p_id: id });
+    const { data: dbRow } = await supabase
+      .from('databases')
+      .select('table_name')
+      .eq('id', id)
+      .single();
+    if (dbRow?.table_name) {
+      await supabase.rpc('drop_dynamic_table', { p_table_name: dbRow.table_name });
+    }
+    await supabase.from('databases').delete().eq('id', id);
   }
 
   // CRUD для table_schemas
@@ -123,15 +176,29 @@ export class DatabaseAPI {
   }
 
   static async getTableSchemas(databaseId: string): Promise<TableSchema[]> {
-    const result = await callRPC('get_table_schemas', { p_database_id: databaseId });
-    return result || [];
+    const { data, error } = await supabase
+      .from('table_schemas')
+      .select('*')
+      .eq('database_id', databaseId);
+    if (error) throw new Error(error.message);
+    return data ?? [];
+  }
+
+  static async getTableSchema(databaseId: string): Promise<TableSchema[]> {
+    return this.getTableSchemas(databaseId);
   }
 
   static async updateTableSchema(
     id: string,
     updates: Partial<TableSchema>
   ): Promise<TableSchema> {
-    return callRPC('update_table_schema', { p_id: id, p_updates: updates });
+    await supabase.rpc('alter_dynamic_table', { p_table_schema_id: id, p_updates: updates });
+    const { data, error } = await supabase
+      .from('table_schemas')
+      .select('*')
+      .eq('id', id);
+    if (error) throw new Error(error.message);
+    return (data?.[0] ?? null) as unknown as TableSchema;
   }
 
   static async deleteTableSchema(id: string): Promise<void> {
@@ -153,15 +220,28 @@ export class DatabaseAPI {
     databaseId: string,
     filters?: Record<string, unknown>,
     sorting?: { column: string; direction: 'asc' | 'desc' },
-    pagination?: { page: number; pageSize: number }
+    pagination?: { page: number; pageSize: number } | { page: number; pageSize: number; filters: Array<{ column: string; operator: string; value: unknown }>; sortBy?: string; sortOrder?: 'asc' | 'desc' }
   ): Promise<{ data: AnyObject[]; total: number }> {
+    if (pagination && 'filters' in pagination) {
+      const opts = pagination as { page: number; pageSize: number; filters: Array<{ column: string; operator: string; value: unknown }>; sortBy?: string; sortOrder?: 'asc' | 'desc' };
+      const { data, error } = await supabase.rpc('get_table_data', {
+        table_name: databaseId,
+        page: opts.page,
+        pageSize: opts.pageSize,
+        filters: opts.filters,
+        sortBy: opts.sortBy,
+        sortOrder: opts.sortOrder,
+      });
+      if (error) throw new Error(error.message);
+      return (data as any) || { data: [], total: 0 };
+    }
+
     const result = await callRPC('get_table_data', {
       p_database_id: databaseId,
       p_filters: filters || {},
       p_sorting: sorting || null,
-      p_pagination: pagination || null
+      p_pagination: (pagination as any) || null
     });
-    
     return result || { data: [], total: 0 };
   }
 

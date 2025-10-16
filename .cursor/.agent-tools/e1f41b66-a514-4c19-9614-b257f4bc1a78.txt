@@ -1,0 +1,175 @@
+
+> vite_react_shadcn_ts@0.0.0 test:run
+> vitest run
+
+
+ RUN  v3.2.4 /workspace
+
+ ❯ tests/unit/utils/formulaEngine.test.ts (23 tests | 18 failed) 30ms
+   ✓ FormulaEngine > parseFormula > should parse simple mathematical expressions 2ms
+   × FormulaEngine > parseFormula > should parse function calls 6ms
+     → Invalid syntax: Error: Unexpected token: function SUM
+   × FormulaEngine > parseFormula > should parse nested functions 0ms
+     → Invalid syntax: Error: Unexpected token: function IF
+   × FormulaEngine > parseFormula > should handle parentheses correctly 7ms
+     → Invalid syntax: RangeError: Maximum call stack size exceeded
+   × FormulaEngine > parseFormula > should throw error for invalid syntax 3ms
+     → expected [Function] to throw an error
+   × FormulaEngine > evaluateFormula > should evaluate simple mathematical expressions 2ms
+     → expected 2 to be 8 // Object.is equality
+   ✓ FormulaEngine > evaluateFormula > should evaluate column references 0ms
+   × FormulaEngine > evaluateFormula > should evaluate mathematical functions 0ms
+     → Error evaluating formula: Error: Unknown function: ABS
+   × FormulaEngine > evaluateFormula > should evaluate string functions 0ms
+     → Error evaluating formula: Error: Unknown function: UPPER
+   × FormulaEngine > evaluateFormula > should evaluate date functions 0ms
+     → Error evaluating formula: Error: Unknown function: YEAR
+   × FormulaEngine > evaluateFormula > should evaluate logical functions 0ms
+     → Error evaluating formula: Error: Unknown function: IF
+   × FormulaEngine > evaluateFormula > should evaluate aggregation functions 0ms
+     → Error evaluating formula: Error: Unknown function: SUM
+   × FormulaEngine > evaluateFormula > should handle complex nested expressions 0ms
+     → Error evaluating formula: Error: Unknown function: SUM
+   × FormulaEngine > evaluateFormula > should throw error for invalid expressions 1ms
+     → expected [Function] to throw an error
+   × FormulaEngine > validateFormula > should validate correct formulas 1ms
+     → expected { valid: true } to be true // Object.is equality
+   × FormulaEngine > validateFormula > should reject invalid formulas 1ms
+     → expected { valid: false, …(1) } to be false // Object.is equality
+   × FormulaEngine > getAvailableFunctions > should return all available functions 1ms
+     → expected [] to include 'SUM'
+   ✓ FormulaEngine > getAvailableFunctions > should categorize functions correctly 0ms
+   ✓ FormulaEngine > FormulaEngine class > should create formula with dependencies 0ms
+   × FormulaEngine > FormulaEngine class > should evaluate formula with context 0ms
+     → expected 110.00000000000001 to be 110 // Object.is equality
+   ✓ FormulaEngine > FormulaEngine class > should track dependencies correctly 0ms
+   × FormulaEngine > FormulaEngine class > should recalculate dependent formulas 0ms
+     → expected NaN to be 210 // Object.is equality
+   × FormulaEngine > FormulaEngine class > should handle circular dependencies 0ms
+     → expected [Function] to throw an error
+ ❯ src/api/__tests__/databaseAPI.test.ts (24 tests | 6 failed) 19ms
+   × DatabaseAPI > createDatabase > должен создать новую базу данных 7ms
+     → supabase.from is not a function
+   × DatabaseAPI > createDatabase > должен выбросить ошибку при неудачном создании 5ms
+     → expected [Function] to throw error including 'Database creation failed' but got 'supabase.from i…'
+   ✓ DatabaseAPI > getDatabases > должен получить список баз данных пользователя 1ms
+   ✓ DatabaseAPI > getDatabases > должен вернуть пустой массив при отсутствии данных 0ms
+   ✓ DatabaseAPI > getDatabase > должен получить конкретную базу данных 0ms
+   × DatabaseAPI > updateDatabase > должен обновить базу данных 0ms
+     → supabase.from is not a function
+   × DatabaseAPI > deleteDatabase > должен удалить базу данных 0ms
+     → supabase.from is not a function
+   ✓ DatabaseAPI > createTableSchema > должен создать схему таблицы 0ms
+   × DatabaseAPI > getTableSchemas > должен получить схемы таблиц 0ms
+     → supabase.from is not a function
+   × DatabaseAPI > getTableSchemas > должен вернуть пустой массив при отсутствии схем 0ms
+     → supabase.from is not a function
+   ✓ DatabaseAPI > getTableData > должен получить данные таблицы 0ms
+   ✓ DatabaseAPI > getTableData > должен применить фильтры и сортировку 0ms
+   ✓ DatabaseAPI > getTableData > должен вернуть пустой результат при отсутствии данных 0ms
+   ✓ DatabaseAPI > insertTableRow > должен вставить строку в таблицу 0ms
+   ✓ DatabaseAPI > updateTableRow > должен обновить строку в таблице 0ms
+   ✓ DatabaseAPI > deleteTableRow > должен удалить строку из таблицы 0ms
+   ✓ DatabaseAPI > bulkInsertTableRows > должен вставить множество строк 0ms
+   ✓ DatabaseAPI > bulkInsertTableRows > должен вернуть пустой массив при отсутствии данных 0ms
+   ✓ DatabaseAPI > bulkDeleteTableRows > должен удалить множество строк 0ms
+   ✓ DatabaseAPI > getDatabaseStats > должен получить статистику базы данных 0ms
+   ✓ DatabaseAPI > getDatabaseStats > должен вернуть значения по умолчанию при отсутствии данных 0ms
+   ✓ DatabaseAPI > reorderColumns > должен переупорядочить колонки 0ms
+   ✓ DatabaseAPI > обработка ошибок > должен выбросить ошибку при неудачном вызове RPC 0ms
+   ✓ DatabaseAPI > обработка ошибок > должен обработать сетевые ошибки 0ms
+ ❯ tests/unit/api/databaseAPI.test.ts (10 tests | 3 failed) 18ms
+   ✓ DatabaseAPI > getAllDatabases > should return all databases for user 2ms
+   ✓ DatabaseAPI > getAllDatabases > should handle errors gracefully 1ms
+   ✓ DatabaseAPI > createDatabase > should create a new database 1ms
+   ✓ DatabaseAPI > createDatabase > should generate system_name from display_name 1ms
+   ✓ DatabaseAPI > updateDatabase > should update database properties 0ms
+   × DatabaseAPI > deleteDatabase > should delete database and related data 6ms
+     → supabase.from(...).select is not a function
+   ✓ DatabaseAPI > getTableData > should fetch table data with pagination 0ms
+   × DatabaseAPI > getTableData > should handle filters correctly 4ms
+     → expected "spy" to be called with arguments: [ 'get_table_data', …(1) ]
+
+Received: 
+
+  1st spy call:
+
+  [
+    "get_table_data",
+-   ObjectContaining {
+-     "filters": ArrayContaining [
+-       ObjectContaining {
++   {
++     "p_database_id": "user_test_db",
++     "p_filters": {
++       "filters": [
++         {
+            "column": "name",
+            "operator": "contains",
+            "value": "test",
+          },
+-       ObjectContaining {
++         {
+            "column": "value",
+            "operator": "gte",
+            "value": 100,
+          },
+        ],
++       "page": 0,
++       "pageSize": 10,
++       "sortBy": "name",
++       "sortOrder": "asc",
++     },
++     "p_pagination": null,
++     "p_sorting": null,
+    },
+  ]
+
+
+Number of calls: 1
+
+   ✓ DatabaseAPI > getTableSchema > should fetch table schema 0ms
+   × DatabaseAPI > updateTableSchema > should update table schema 0ms
+     → supabase.from(...).select is not a function
+ ✓ src/components/aurora/__tests__/AuroraBackground.test.tsx (29 tests) 458ms
+ ✓ src/components/ui/__tests__/button.test.tsx (4 tests) 146ms
+ ✓ src/components/common/__tests__/LoadingSpinner.test.tsx (3 tests) 134ms
+ ✓ src/components/aurora/__tests__/Animations.test.tsx (35 tests) 106ms
+ ✓ src/components/aurora/__tests__/GlassCard.test.tsx (30 tests) 77ms
+ ✓ src/utils/__tests__/parseData.test.ts (30 tests) 27ms
+ ✓ src/api/__tests__/fileAPI.test.ts (26 tests) 20ms
+stderr | src/utils/__tests__/formulaEngine.test.ts > FormulaEngine > calculateFormula > Обработка ошибок > должен возвращать ошибку при неизвестной функции
+Ошибка вычисления формулы: Error: Unknown function: unknown_func
+    at parsePrimary (/workspace/src/utils/formulaEngine.ts:411:15)
+    at parseUnary (/workspace/src/utils/formulaEngine.ts:357:12)
+    at parseMulDiv (/workspace/src/utils/formulaEngine.ts:330:16)
+    at parseAddSub (/workspace/src/utils/formulaEngine.ts:307:16)
+    at parseComparison (/workspace/src/utils/formulaEngine.ts:276:16)
+    at parseEquality (/workspace/src/utils/formulaEngine.ts:258:16)
+    at parseAnd (/workspace/src/utils/formulaEngine.ts:246:16)
+    at parseOr (/workspace/src/utils/formulaEngine.ts:234:16)
+    at parseExpression (/workspace/src/utils/formulaEngine.ts:230:12)
+    at evaluate (/workspace/src/utils/formulaEngine.ts:455:10)
+
+ ✓ src/utils/__tests__/formulaEngine.test.ts (37 tests) 16ms
+ ✓ src/api/__tests__/relationAPI.test.ts (27 tests) 11ms
+ ✓ tests/memory-leaks.test.tsx (11 tests) 10ms
+ ✓ tests/regression/aurora-fixes.test.ts (15 tests) 5ms
+ ✓ src/utils/__tests__/columnMapper.test.ts (8 tests) 4ms
+ ❯ src/utils/__tests__/fileParser.test.ts (14 tests | 1 failed) 11165ms
+   ✓ FileParser > parseFile > CSV файлы > должен парсить простой CSV файл 3ms
+   ✓ FileParser > parseFile > CSV файлы > должен обрабатывать CSV с запятыми в кавычках 1ms
+   ✓ FileParser > parseFile > CSV файлы > должен обрабатывать пустые значения в CSV 1ms
+   ✓ FileParser > parseFile > CSV файлы > должен обрабатывать различные разделители строк 0ms
+   ✓ FileParser > parseFile > CSV файлы > должен обрабатывать Unicode символы 0ms
+   ✓ FileParser > parseFile > Excel файлы > должен отклонять файлы Excel (временно не поддерживается) 0ms
+   ✓ FileParser > parseFile > Обработка ошибок > должен отклонять файлы неподдерживаемых форматов 1ms
+   ✓ FileParser > parseFile > Обработка ошибок > должен отклонять пустые файлы 0ms
+   × FileParser > parseFile > Обработка ошибок > должен проверять размер файлов 11139ms
+     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+   ✓ FileParser > parseFile > Нормализация данных > должен добавлять нормализованные поля даты 13ms
+   ✓ FileParser > parseFile > Нормализация данных > должен добавлять нормализованные поля суммы 0ms
+   ✓ FileParser > parseFile > Нормализация данных > должен генерировать уникальные ID для строк 0ms
+   ✓ FileParser > parseFile > Производительность > должен обрабатывать большие файлы эффективно 4ms
+   ✓ FileParser > parseFile > Совместимость с различными кодировками > должен корректно читать UTF-8 0ms

@@ -7,8 +7,8 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { DatabaseAPI } from '../../../src/api/databaseAPI';
 import type { Database, CreateDatabaseRequest, UpdateDatabaseRequest } from '../../../src/types/database';
 
-// Мок для Supabase
-const mockSupabase = {
+// Мок для Supabase (hoisted, чтобы избежать ошибок инициализации)
+const mockSupabase = vi.hoisted(() => ({
   from: vi.fn(() => ({
     select: vi.fn(() => ({
       eq: vi.fn(() => ({
@@ -28,9 +28,9 @@ const mockSupabase = {
     }))
   })),
   rpc: vi.fn(() => Promise.resolve({ data: null, error: null }))
-};
+}));
 
-// Мок для DatabaseAPI
+// Мок для DatabaseAPI (используем hoisted mock)
 vi.mock('../../../src/lib/supabase', () => ({
   supabase: mockSupabase
 }));
