@@ -1,0 +1,858 @@
+
+> vite_react_shadcn_ts@0.0.0 test:coverage
+> vitest run --coverage
+
+
+ RUN  v3.2.4 /workspace
+      Coverage enabled with v8
+
+ ✓ src/api/__tests__/databaseAPI.test.ts (24 tests) 9ms
+ ✓ src/api/__tests__/relationAPI.test.ts (27 tests) 12ms
+ ✓ src/api/__tests__/fileAPI.test.ts (26 tests) 20ms
+stderr | src/utils/__tests__/formulaEngine.test.ts > FormulaEngine > calculateFormula > Обработка ошибок > должен возвращать ошибку при неизвестной функции
+Ошибка вычисления формулы: Error: Unknown function: unknown_func
+    at parsePrimary (/workspace/src/utils/formulaEngine.ts:411:15)
+    at parseUnary (/workspace/src/utils/formulaEngine.ts:357:12)
+    at parseMulDiv (/workspace/src/utils/formulaEngine.ts:330:16)
+    at parseAddSub (/workspace/src/utils/formulaEngine.ts:307:16)
+    at parseComparison (/workspace/src/utils/formulaEngine.ts:276:16)
+    at parseEquality (/workspace/src/utils/formulaEngine.ts:258:16)
+    at parseAnd (/workspace/src/utils/formulaEngine.ts:246:16)
+    at parseOr (/workspace/src/utils/formulaEngine.ts:234:16)
+    at parseExpression (/workspace/src/utils/formulaEngine.ts:230:12)
+    at evaluate (/workspace/src/utils/formulaEngine.ts:455:10)
+
+ ✓ src/utils/__tests__/parseData.test.ts (30 tests) 35ms
+ ✓ src/utils/__tests__/formulaEngine.test.ts (37 tests) 20ms
+ ❯ tests/unit/utils/formulaEngine.test.ts (23 tests | 18 failed) 26ms
+   ✓ FormulaEngine > parseFormula > should parse simple mathematical expressions 2ms
+   × FormulaEngine > parseFormula > should parse function calls 7ms
+     → Invalid syntax: Error: Unexpected token: function SUM
+   × FormulaEngine > parseFormula > should parse nested functions 0ms
+     → Invalid syntax: Error: Unexpected token: function IF
+   × FormulaEngine > parseFormula > should handle parentheses correctly 2ms
+     → Invalid syntax: RangeError: Maximum call stack size exceeded
+   × FormulaEngine > parseFormula > should throw error for invalid syntax 3ms
+     → expected [Function] to throw an error
+   × FormulaEngine > evaluateFormula > should evaluate simple mathematical expressions 2ms
+     → expected 2 to be 8 // Object.is equality
+   ✓ FormulaEngine > evaluateFormula > should evaluate column references 0ms
+   × FormulaEngine > evaluateFormula > should evaluate mathematical functions 0ms
+     → Error evaluating formula: Error: Unknown function: ABS
+   × FormulaEngine > evaluateFormula > should evaluate string functions 0ms
+     → Error evaluating formula: Error: Unknown function: UPPER
+   × FormulaEngine > evaluateFormula > should evaluate date functions 0ms
+     → Error evaluating formula: Error: Unknown function: YEAR
+   × FormulaEngine > evaluateFormula > should evaluate logical functions 0ms
+     → Error evaluating formula: Error: Unknown function: IF
+   × FormulaEngine > evaluateFormula > should evaluate aggregation functions 0ms
+     → Error evaluating formula: Error: Unknown function: SUM
+   × FormulaEngine > evaluateFormula > should handle complex nested expressions 0ms
+     → Error evaluating formula: Error: Unknown function: SUM
+   × FormulaEngine > evaluateFormula > should throw error for invalid expressions 0ms
+     → expected [Function] to throw an error
+   × FormulaEngine > validateFormula > should validate correct formulas 1ms
+     → expected { valid: true } to be true // Object.is equality
+   × FormulaEngine > validateFormula > should reject invalid formulas 1ms
+     → expected { valid: false, …(1) } to be false // Object.is equality
+   × FormulaEngine > getAvailableFunctions > should return all available functions 1ms
+     → expected [] to include 'SUM'
+   ✓ FormulaEngine > getAvailableFunctions > should categorize functions correctly 0ms
+   ✓ FormulaEngine > FormulaEngine class > should create formula with dependencies 0ms
+   × FormulaEngine > FormulaEngine class > should evaluate formula with context 0ms
+     → expected 110.00000000000001 to be 110 // Object.is equality
+   ✓ FormulaEngine > FormulaEngine class > should track dependencies correctly 0ms
+   × FormulaEngine > FormulaEngine class > should recalculate dependent formulas 0ms
+     → expected NaN to be 210 // Object.is equality
+   × FormulaEngine > FormulaEngine class > should handle circular dependencies 0ms
+     → expected [Function] to throw an error
+ ✓ src/components/aurora/__tests__/Animations.test.tsx (35 tests) 160ms
+ ✓ src/components/aurora/__tests__/GlassCard.test.tsx (30 tests) 88ms
+ ❯ tests/unit/api/databaseAPI.test.ts (10 tests | 10 failed) 2742ms
+   × DatabaseAPI > getAllDatabases > should return all databases for user 15ms
+     → DatabaseAPI.getAllDatabases is not a function
+   × DatabaseAPI > getAllDatabases > should handle errors gracefully 0ms
+     → DatabaseAPI.getAllDatabases is not a function
+   × DatabaseAPI > createDatabase > should create a new database 909ms
+     → Could not find the function public.create_database(color_hex, description, display_name, icon_name) in the schema cache
+   × DatabaseAPI > createDatabase > should generate system_name from display_name 654ms
+     → Could not find the function public.create_database(color_hex, description, display_name, icon_name) in the schema cache
+   × DatabaseAPI > updateDatabase > should update database properties 242ms
+     → Could not find the function public.update_database(p_id, p_updates) in the schema cache
+   × DatabaseAPI > deleteDatabase > should delete database and related data 258ms
+     → Could not find the function public.delete_database(p_id) in the schema cache
+   × DatabaseAPI > getTableData > should fetch table data with pagination 212ms
+     → Could not find the function public.get_table_data(p_database_id, p_filters, p_pagination, p_sorting) in the schema cache
+   × DatabaseAPI > getTableData > should handle filters correctly 238ms
+     → Could not find the function public.get_table_data(p_database_id, p_filters, p_pagination, p_sorting) in the schema cache
+   × DatabaseAPI > getTableSchema > should fetch table schema 1ms
+     → DatabaseAPI.getTableSchema is not a function
+   × DatabaseAPI > updateTableSchema > should update table schema 211ms
+     → Could not find the function public.update_table_schema(p_id, p_updates) in the schema cache
+ ✓ tests/memory-leaks.test.tsx (11 tests) 15ms
+ ❯ tests/regression/aurora-fixes.test.ts (15 tests | 3 failed) 20ms
+   ✓ Aurora Fixes - Regression Tests > CSS Imports Order > should have @import statements before other CSS rules 1ms
+   ✓ Aurora Fixes - Regression Tests > React.memo Usage > should wrap GlassCard subcomponents in React.memo 0ms
+   ✓ Aurora Fixes - Regression Tests > useEffect Cleanup > should have cleanup in AuroraBackground useEffect 0ms
+   × Aurora Fixes - Regression Tests > useEffect Cleanup > should have cleanup in AnimatedList IntersectionObserver 9ms
+     → expected 'import React from \'react\';\n\nexpor…' to contain 'IntersectionObserver'
+   ✓ Aurora Fixes - Regression Tests > useEffect Cleanup > should have cleanup in useReducedMotion hook 0ms
+   × Aurora Fixes - Regression Tests > prefers-reduced-motion Support > should import useReducedMotion in FadeIn 6ms
+     → expected 'import React from \'react\';\n\nexpor…' to contain 'import { useReducedMotion } from \'@/…'
+   ✓ Aurora Fixes - Regression Tests > prefers-reduced-motion Support > should import useReducedMotion in StaggerChildren 0ms
+   ✓ Aurora Fixes - Regression Tests > ErrorBoundary Component > should have ErrorBoundary component 0ms
+   ✓ Aurora Fixes - Regression Tests > ErrorBoundary Component > should export ErrorBoundary from aurora index 0ms
+   ✓ Aurora Fixes - Regression Tests > Accessibility Features > should have keyboard support in GlassCard interactive variant 0ms
+   ✓ Aurora Fixes - Regression Tests > Accessibility Features > should have keyboard support in FluidButton 0ms
+   ✓ Aurora Fixes - Regression Tests > Performance Optimizations > should use memo for DataTable 0ms
+   ✓ Aurora Fixes - Regression Tests > Performance Optimizations > should have backdrop-filter fallback in GlassCard 0ms
+   ✓ Aurora Fixes - Regression Tests > Configuration Files > should have aurora-fixes.config.ts 0ms
+   × Aurora Fixes - Regression Tests > Code Quality > should have displayName for all Aurora components 1ms
+     → expected 'import React from \'react\';\n\nexpor…' to contain '.displayName ='
+ ✓ src/components/aurora/__tests__/AuroraBackground.test.tsx (29 tests) 622ms
+ ✓ src/utils/__tests__/columnMapper.test.ts (8 tests) 5ms
+ ✓ src/components/ui/__tests__/button.test.tsx (4 tests) 221ms
+ ✓ src/components/common/__tests__/LoadingSpinner.test.tsx (3 tests) 169ms
+ ❯ src/utils/__tests__/fileParser.test.ts (14 tests | 1 failed) 14802ms
+   ✓ FileParser > parseFile > CSV файлы > должен парсить простой CSV файл 3ms
+   ✓ FileParser > parseFile > CSV файлы > должен обрабатывать CSV с запятыми в кавычках 1ms
+   ✓ FileParser > parseFile > CSV файлы > должен обрабатывать пустые значения в CSV 0ms
+   ✓ FileParser > parseFile > CSV файлы > должен обрабатывать различные разделители строк 0ms
+   ✓ FileParser > parseFile > CSV файлы > должен обрабатывать Unicode символы 0ms
+   ✓ FileParser > parseFile > Excel файлы > должен отклонять файлы Excel (временно не поддерживается) 0ms
+   ✓ FileParser > parseFile > Обработка ошибок > должен отклонять файлы неподдерживаемых форматов 1ms
+   ✓ FileParser > parseFile > Обработка ошибок > должен отклонять пустые файлы 0ms
+   × FileParser > parseFile > Обработка ошибок > должен проверять размер файлов 14770ms
+     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+   ✓ FileParser > parseFile > Нормализация данных > должен добавлять нормализованные поля даты 16ms
+   ✓ FileParser > parseFile > Нормализация данных > должен добавлять нормализованные поля суммы 1ms
+   ✓ FileParser > parseFile > Нормализация данных > должен генерировать уникальные ID для строк 0ms
+   ✓ FileParser > parseFile > Производительность > должен обрабатывать большие файлы эффективно 6ms
+   ✓ FileParser > parseFile > Совместимость с различными кодировками > должен корректно читать UTF-8 0ms
+stderr | tests/performance/performance.test.ts > Performance Tests > Rollup Calculation Performance > should calculate rollup for 1K records within 100ms
+Error resolving relation: {
+  code: 'PGRST202',
+  details: 'Searched for the function public.get_table_data with parameters p_database_id, p_filters, p_limit, p_offset, p_sort_by, p_sort_order or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.',
+  hint: 'Perhaps you meant to call the function public.get_user_databases',
+  message: 'Could not find the function public.get_table_data(p_database_id, p_filters, p_limit, p_offset, p_sort_by, p_sort_order) in the schema cache'
+}
+
+stderr | tests/performance/performance.test.ts > Performance Tests > Rollup Calculation Performance > should calculate rollup for 10K records within 500ms
+Error resolving relation: {
+  code: 'PGRST202',
+  details: 'Searched for the function public.get_table_data with parameters p_database_id, p_filters, p_limit, p_offset, p_sort_by, p_sort_order or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.',
+  hint: 'Perhaps you meant to call the function public.get_user_databases',
+  message: 'Could not find the function public.get_table_data(p_database_id, p_filters, p_limit, p_offset, p_sort_by, p_sort_order) in the schema cache'
+}
+
+stderr | tests/performance/performance.test.ts > Performance Tests > Rollup Calculation Performance > should calculate rollup for 100K records within 2 seconds
+Error resolving relation: {
+  code: 'PGRST202',
+  details: 'Searched for the function public.get_table_data with parameters p_database_id, p_filters, p_limit, p_offset, p_sort_by, p_sort_order or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.',
+  hint: 'Perhaps you meant to call the function public.get_user_databases',
+  message: 'Could not find the function public.get_table_data(p_database_id, p_filters, p_limit, p_offset, p_sort_by, p_sort_order) in the schema cache'
+}
+
+stderr | tests/performance/performance.test.ts > Performance Tests > Rollup Calculation Performance > should handle different rollup types efficiently
+Error resolving relation: {
+  code: 'PGRST202',
+  details: 'Searched for the function public.get_table_data with parameters p_database_id, p_filters, p_limit, p_offset, p_sort_by, p_sort_order or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.',
+  hint: 'Perhaps you meant to call the function public.get_user_databases',
+  message: 'Could not find the function public.get_table_data(p_database_id, p_filters, p_limit, p_offset, p_sort_by, p_sort_order) in the schema cache'
+}
+
+stderr | tests/performance/performance.test.ts > Performance Tests > Rollup Calculation Performance > should handle different rollup types efficiently
+Error resolving relation: {
+  code: 'PGRST202',
+  details: 'Searched for the function public.get_table_data with parameters p_database_id, p_filters, p_limit, p_offset, p_sort_by, p_sort_order or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.',
+  hint: 'Perhaps you meant to call the function public.get_user_databases',
+  message: 'Could not find the function public.get_table_data(p_database_id, p_filters, p_limit, p_offset, p_sort_by, p_sort_order) in the schema cache'
+}
+
+stderr | tests/performance/performance.test.ts > Performance Tests > Rollup Calculation Performance > should handle different rollup types efficiently
+Error resolving relation: {
+  code: 'PGRST202',
+  details: 'Searched for the function public.get_table_data with parameters p_database_id, p_filters, p_limit, p_offset, p_sort_by, p_sort_order or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.',
+  hint: 'Perhaps you meant to call the function public.get_user_databases',
+  message: 'Could not find the function public.get_table_data(p_database_id, p_filters, p_limit, p_offset, p_sort_by, p_sort_order) in the schema cache'
+}
+
+stderr | tests/performance/performance.test.ts > Performance Tests > Rollup Calculation Performance > should handle different rollup types efficiently
+Error resolving relation: {
+  code: 'PGRST202',
+  details: 'Searched for the function public.get_table_data with parameters p_database_id, p_filters, p_limit, p_offset, p_sort_by, p_sort_order or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.',
+  hint: 'Perhaps you meant to call the function public.get_user_databases',
+  message: 'Could not find the function public.get_table_data(p_database_id, p_filters, p_limit, p_offset, p_sort_by, p_sort_order) in the schema cache'
+}
+
+stderr | tests/performance/performance.test.ts > Performance Tests > Rollup Calculation Performance > should handle different rollup types efficiently
+Error resolving relation: {
+  code: 'PGRST202',
+  details: 'Searched for the function public.get_table_data with parameters p_database_id, p_filters, p_limit, p_offset, p_sort_by, p_sort_order or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.',
+  hint: 'Perhaps you meant to call the function public.get_user_databases',
+  message: 'Could not find the function public.get_table_data(p_database_id, p_filters, p_limit, p_offset, p_sort_by, p_sort_order) in the schema cache'
+}
+
+stderr | tests/performance/performance.test.ts > Performance Tests > Rollup Calculation Performance > should handle different rollup types efficiently
+Error resolving relation: {
+  code: 'PGRST202',
+  details: 'Searched for the function public.get_table_data with parameters p_database_id, p_filters, p_limit, p_offset, p_sort_by, p_sort_order or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.',
+  hint: 'Perhaps you meant to call the function public.get_user_databases',
+  message: 'Could not find the function public.get_table_data(p_database_id, p_filters, p_limit, p_offset, p_sort_by, p_sort_order) in the schema cache'
+}
+
+stderr | tests/performance/performance.test.ts
+Error resolving relation: {
+  code: 'PGRST202',
+  details: 'Searched for the function public.get_table_data with parameters p_database_id, p_filters, p_limit, p_offset, p_sort_by, p_sort_order or with a single unnamed json/jsonb parameter, but no matches were found in the schema cache.',
+  hint: 'Perhaps you meant to call the function public.get_user_databases',
+  message: 'Could not find the function public.get_table_data(p_database_id, p_filters, p_limit, p_offset, p_sort_by, p_sort_order) in the schema cache'
+}
+
+ ❯ tests/performance/performance.test.ts (13 tests | 10 failed) 451255ms
+   × Performance Tests > File Parsing Performance > should parse 1MB file within 2 seconds 3166ms
+     → Cannot read properties of undefined (reading 'duration')
+   × Performance Tests > File Parsing Performance > should parse 10MB file within 10 seconds 33324ms
+     → Cannot read properties of undefined (reading 'duration')
+   × Performance Tests > File Parsing Performance > should parse 50MB file within 30 seconds 157252ms
+     → Cannot read properties of undefined (reading 'duration')
+   × Performance Tests > File Parsing Performance > should handle memory efficiently during large file parsing 154741ms
+     → Cannot read properties of undefined (reading 'memoryPeak')
+   ✓ Performance Tests > Dashboard Load Performance > should load dashboard within 3 seconds 101ms
+   ✓ Performance Tests > Dashboard Load Performance > should handle large datasets efficiently 201ms
+   × Performance Tests > Rollup Calculation Performance > should calculate rollup for 1K records within 100ms 708ms
+     → expected 705.7481210000115 to be less than 100
+   × Performance Tests > Rollup Calculation Performance > should calculate rollup for 10K records within 500ms 1174ms
+     → expected 1173.3549899999634 to be less than 500
+   × Performance Tests > Rollup Calculation Performance > should calculate rollup for 100K records within 2 seconds 1954ms
+     → expected false to be true // Object.is equality
+   ✓ Performance Tests > Rollup Calculation Performance > should handle different rollup types efficiently  1444ms
+   × Performance Tests > Memory Usage > should not leak memory during file parsing 76171ms
+     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+   × Performance Tests > Memory Usage > should handle concurrent operations efficiently 5957ms
+     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+   × Performance Tests > Performance Regression Tests > should maintain consistent performance across multiple runs 15061ms
+     → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 42 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/performance/performance.test.ts > Performance Tests > File Parsing Performance > should parse 1MB file within 2 seconds
+TypeError: Cannot read properties of undefined (reading 'duration')
+ ❯ tests/performance/performance.test.ts:83:22
+     81|       const { metrics } = await performanceTester.testFileParsing(file…
+     82|       
+     83|       expect(metrics.duration).toBeLessThan(2000);
+       |                      ^
+     84|       expect(metrics.rowsPerSecond).toBeGreaterThan(5000);
+     85|       
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/42]⎯
+
+ FAIL  tests/performance/performance.test.ts > Performance Tests > File Parsing Performance > should parse 10MB file within 10 seconds
+TypeError: Cannot read properties of undefined (reading 'duration')
+ ❯ tests/performance/performance.test.ts:95:22
+     93|       const { metrics } = await performanceTester.testFileParsing(file…
+     94|       
+     95|       expect(metrics.duration).toBeLessThan(10000);
+       |                      ^
+     96|       expect(metrics.rowsPerSecond).toBeGreaterThan(10000);
+     97|       
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/42]⎯
+
+ FAIL  tests/performance/performance.test.ts > Performance Tests > File Parsing Performance > should parse 50MB file within 30 seconds
+TypeError: Cannot read properties of undefined (reading 'duration')
+ ❯ tests/performance/performance.test.ts:107:22
+    105|       const { metrics } = await performanceTester.testFileParsing(file…
+    106|       
+    107|       expect(metrics.duration).toBeLessThan(30000);
+       |                      ^
+    108|       expect(metrics.rowsPerSecond).toBeGreaterThan(15000);
+    109|       
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/42]⎯
+
+ FAIL  tests/performance/performance.test.ts > Performance Tests > File Parsing Performance > should handle memory efficiently during large file parsing
+TypeError: Cannot read properties of undefined (reading 'memoryPeak')
+ ❯ tests/performance/performance.test.ts:120:22
+    118|       
+    119|       // Проверяем, что использование памяти не превышает 200MB
+    120|       expect(metrics.memoryPeak).toBeLessThan(200 * 1024 * 1024);
+       |                      ^
+    121|       
+    122|       const validation = performanceTester.validatePerformance(metrics…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/42]⎯
+
+ FAIL  tests/performance/performance.test.ts > Performance Tests > Rollup Calculation Performance > should calculate rollup for 1K records within 100ms
+AssertionError: expected 705.7481210000115 to be less than 100
+ ❯ tests/performance/performance.test.ts:168:32
+    166|       
+    167|       expect(metrics).toBeDefined();
+    168|       expect(metrics.duration).toBeLessThan(100);
+       |                                ^
+    169|       expect(metrics.recordCount).toBe(1000);
+    170|       
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/42]⎯
+
+ FAIL  tests/performance/performance.test.ts > Performance Tests > Rollup Calculation Performance > should calculate rollup for 10K records within 500ms
+AssertionError: expected 1173.3549899999634 to be less than 500
+ ❯ tests/performance/performance.test.ts:183:32
+    181|       
+    182|       expect(metrics).toBeDefined();
+    183|       expect(metrics.duration).toBeLessThan(500);
+       |                                ^
+    184|       expect(metrics.recordCount).toBe(10000);
+    185|       
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/42]⎯
+
+ FAIL  tests/performance/performance.test.ts > Performance Tests > Rollup Calculation Performance > should calculate rollup for 100K records within 2 seconds
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/performance/performance.test.ts:202:33
+    200|       
+    201|       const validation = performanceTester.validatePerformance(metrics…
+    202|       expect(validation.passed).toBe(true);
+       |                                 ^
+    203|     });
+    204| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/42]⎯
+
+ FAIL  tests/performance/performance.test.ts > Performance Tests > Memory Usage > should not leak memory during file parsing
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ tests/performance/performance.test.ts:226:5
+    224| 
+    225|   describe('Memory Usage', () => {
+    226|     it('should not leak memory during file parsing', async () => {
+       |     ^
+    227|       const initialMemory = process.memoryUsage();
+    228|       
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/42]⎯
+
+ FAIL  tests/performance/performance.test.ts > Performance Tests > Memory Usage > should handle concurrent operations efficiently
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ tests/performance/performance.test.ts:248:5
+    246|     });
+    247| 
+    248|     it('should handle concurrent operations efficiently', async () => {
+       |     ^
+    249|       const startTime = performance.now();
+    250|       
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/42]⎯
+
+ FAIL  tests/performance/performance.test.ts > Performance Tests > Performance Regression Tests > should maintain consistent performance across multiple runs
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ tests/performance/performance.test.ts:274:5
+    272| 
+    273|   describe('Performance Regression Tests', () => {
+    274|     it('should maintain consistent performance across multiple runs', …
+       |     ^
+    275|       const file = createMockFile(5, 50000);
+    276|       const durations: number[] = [];
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/42]⎯
+
+ FAIL  tests/regression/aurora-fixes.test.ts > Aurora Fixes - Regression Tests > useEffect Cleanup > should have cleanup in AnimatedList IntersectionObserver
+AssertionError: expected 'import React from \'react\';\n\nexpor…' to contain 'IntersectionObserver'
+
+- Expected
++ Received
+
+- IntersectionObserver
++ import React from 'react';
++
++ export interface AnimatedListProps {
++   children: React.ReactNode;
++   className?: string;
++   direction?: string;
++   stagger?: number;
++ }
++
++ export function AnimatedList({ children, className }: AnimatedListProps) {
++   return <div className={className}>{children}</div>;
++ }
++
+
+ ❯ tests/regression/aurora-fixes.test.ts:68:23
+     66| 
+     67|       // Проверяем наличие cleanup для IntersectionObserver
+     68|       expect(content).toContain('IntersectionObserver');
+       |                       ^
+     69|       expect(content).toContain('observer.disconnect()');
+     70|       expect(content).toContain('return () => observer.disconnect()');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/42]⎯
+
+ FAIL  tests/regression/aurora-fixes.test.ts > Aurora Fixes - Regression Tests > prefers-reduced-motion Support > should import useReducedMotion in FadeIn
+AssertionError: expected 'import React from \'react\';\n\nexpor…' to contain 'import { useReducedMotion } from \'@/…'
+
+- Expected
++ Received
+
+- import { useReducedMotion } from '@/hooks/aurora/useReducedMotion'
++ import React from 'react';
++
++ export interface FadeInProps {
++   children: React.ReactNode;
++   direction?: 'up' | 'down' | 'left' | 'right' | 'none';
++   delay?: number;
++   duration?: number;
++   distance?: number;
++   once?: boolean;
++   className?: string;
++   viewport?: boolean;
++ }
++
++ export function FadeIn({ children, className }: FadeInProps) {
++   return <div className={className}>{children}</div>;
++ }
++
+
+ ❯ tests/regression/aurora-fixes.test.ts:88:23
+     86|       const content = readFileSync(fadeInPath, 'utf-8');
+     87| 
+     88|       expect(content).toContain("import { useReducedMotion } from '@/h…
+       |                       ^
+     89|       expect(content).toContain('const prefersReducedMotion = useReduc…
+     90|       expect(content).toContain('prefersReducedMotion ?');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/42]⎯
+
+ FAIL  tests/regression/aurora-fixes.test.ts > Aurora Fixes - Regression Tests > Code Quality > should have displayName for all Aurora components
+AssertionError: expected 'import React from \'react\';\n\nexpor…' to contain '.displayName ='
+
+- Expected
++ Received
+
+- .displayName =
++ import React from 'react';
++
++ export interface FadeInProps {
++   children: React.ReactNode;
++   direction?: 'up' | 'down' | 'left' | 'right' | 'none';
++   delay?: number;
++   duration?: number;
++   distance?: number;
++   once?: boolean;
++   className?: string;
++   viewport?: boolean;
++ }
++
++ export function FadeIn({ children, className }: FadeInProps) {
++   return <div className={className}>{children}</div>;
++ }
++
+
+ ❯ forEach tests/regression/aurora-fixes.test.ts:188:25
+    186|         const fullPath = join(projectRoot, componentPath);
+    187|         const content = readFileSync(fullPath, 'utf-8');
+    188|         expect(content).toContain('.displayName =');
+       |                         ^
+    189|       });
+    190|     });
+ ❯ tests/regression/aurora-fixes.test.ts:185:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/42]⎯
+
+ FAIL  src/utils/__tests__/fileParser.test.ts > FileParser > parseFile > Обработка ошибок > должен проверять размер файлов
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ src/utils/__tests__/fileParser.test.ts:126:7
+    124|       });
+    125| 
+    126|       it('должен проверять размер файлов', async () => {
+       |       ^
+    127|         // Создаем файл больше 50MB
+    128|         const largeContent = new Array(60 * 1024 * 1024).fill('a').joi…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/42]⎯
+
+ FAIL  tests/unit/api/databaseAPI.test.ts > DatabaseAPI > getAllDatabases > should return all databases for user
+TypeError: DatabaseAPI.getAllDatabases is not a function
+ ❯ tests/unit/api/databaseAPI.test.ts:65:40
+     63|       });
+     64| 
+     65|       const result = await DatabaseAPI.getAllDatabases('user-123');
+       |                                        ^
+     66|       
+     67|       expect(result).toEqual(mockDatabases);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/42]⎯
+
+ FAIL  tests/unit/api/databaseAPI.test.ts > DatabaseAPI > getAllDatabases > should handle errors gracefully
+TypeError: DatabaseAPI.getAllDatabases is not a function
+ ❯ tests/unit/api/databaseAPI.test.ts:78:32
+     76|       });
+     77| 
+     78|       await expect(DatabaseAPI.getAllDatabases('user-123')).rejects.to…
+       |                                ^
+     79|     });
+     80|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/42]⎯
+
+ FAIL  tests/unit/api/databaseAPI.test.ts > DatabaseAPI > createDatabase > should create a new database
+Unknown Error: Could not find the function public.create_database(color_hex, description, display_name, icon_name) in the schema cache
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/42]⎯
+
+ FAIL  tests/unit/api/databaseAPI.test.ts > DatabaseAPI > createDatabase > should generate system_name from display_name
+Unknown Error: Could not find the function public.create_database(color_hex, description, display_name, icon_name) in the schema cache
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/42]⎯
+
+ FAIL  tests/unit/api/databaseAPI.test.ts > DatabaseAPI > updateDatabase > should update database properties
+Unknown Error: Could not find the function public.update_database(p_id, p_updates) in the schema cache
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/42]⎯
+
+ FAIL  tests/unit/api/databaseAPI.test.ts > DatabaseAPI > deleteDatabase > should delete database and related data
+Unknown Error: Could not find the function public.delete_database(p_id) in the schema cache
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/42]⎯
+
+ FAIL  tests/unit/api/databaseAPI.test.ts > DatabaseAPI > getTableData > should fetch table data with pagination
+Unknown Error: Could not find the function public.get_table_data(p_database_id, p_filters, p_pagination, p_sorting) in the schema cache
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/42]⎯
+
+ FAIL  tests/unit/api/databaseAPI.test.ts > DatabaseAPI > getTableData > should handle filters correctly
+Unknown Error: Could not find the function public.get_table_data(p_database_id, p_filters, p_pagination, p_sorting) in the schema cache
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/42]⎯
+
+ FAIL  tests/unit/api/databaseAPI.test.ts > DatabaseAPI > getTableSchema > should fetch table schema
+TypeError: DatabaseAPI.getTableSchema is not a function
+ ❯ tests/unit/api/databaseAPI.test.ts:257:40
+    255|       });
+    256| 
+    257|       const result = await DatabaseAPI.getTableSchema('1');
+       |                                        ^
+    258|       
+    259|       expect(result).toEqual(mockSchema);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/42]⎯
+
+ FAIL  tests/unit/api/databaseAPI.test.ts > DatabaseAPI > updateTableSchema > should update table schema
+Unknown Error: Could not find the function public.update_table_schema(p_id, p_updates) in the schema cache
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/42]⎯
+
+ FAIL  tests/unit/utils/formulaEngine.test.ts > FormulaEngine > parseFormula > should parse function calls
+Error: Invalid syntax: Error: Unexpected token: function SUM
+ ❯ parseFormula src/utils/formulaEngine.ts:815:11
+    813|     return parseExpression(tokens);
+    814|   } catch (error) {
+    815|     throw new Error(`Invalid syntax: ${error}`);
+       |           ^
+    816|   }
+    817| }
+ ❯ tests/unit/utils/formulaEngine.test.ts:33:22
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/42]⎯
+
+ FAIL  tests/unit/utils/formulaEngine.test.ts > FormulaEngine > parseFormula > should parse nested functions
+Error: Invalid syntax: Error: Unexpected token: function IF
+ ❯ parseFormula src/utils/formulaEngine.ts:815:11
+    813|     return parseExpression(tokens);
+    814|   } catch (error) {
+    815|     throw new Error(`Invalid syntax: ${error}`);
+       |           ^
+    816|   }
+    817| }
+ ❯ tests/unit/utils/formulaEngine.test.ts:42:22
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/42]⎯
+
+ FAIL  tests/unit/utils/formulaEngine.test.ts > FormulaEngine > parseFormula > should handle parentheses correctly
+Error: Invalid syntax: RangeError: Maximum call stack size exceeded
+ ❯ parseFormula src/utils/formulaEngine.ts:815:11
+    813|     return parseExpression(tokens);
+    814|   } catch (error) {
+    815|     throw new Error(`Invalid syntax: ${error}`);
+       |           ^
+    816|   }
+    817| }
+ ❯ tests/unit/utils/formulaEngine.test.ts:64:22
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/42]⎯
+
+ FAIL  tests/unit/utils/formulaEngine.test.ts > FormulaEngine > parseFormula > should throw error for invalid syntax
+AssertionError: expected [Function] to throw an error
+
+- Expected: 
+null
+
++ Received: 
+undefined
+
+ ❯ tests/unit/utils/formulaEngine.test.ts:79:45
+     77| 
+     78|     it('should throw error for invalid syntax', () => {
+     79|       expect(() => parseFormula('2 + + 3')).toThrow('Invalid syntax');
+       |                                             ^
+     80|       expect(() => parseFormula('SUM(')).toThrow('Invalid syntax');
+     81|       expect(() => parseFormula('2 + )')).toThrow('Invalid syntax');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[28/42]⎯
+
+ FAIL  tests/unit/utils/formulaEngine.test.ts > FormulaEngine > evaluateFormula > should evaluate simple mathematical expressions
+AssertionError: expected 2 to be 8 // Object.is equality
+
+- Expected
++ Received
+
+- 8
++ 2
+
+ ❯ tests/unit/utils/formulaEngine.test.ts:99:50
+     97|       expect(evaluateFormula('3 * 4', testData)).toBe(12);
+     98|       expect(evaluateFormula('15 / 3', testData)).toBe(5);
+     99|       expect(evaluateFormula('2 ^ 3', testData)).toBe(8);
+       |                                                  ^
+    100|     });
+    101| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[29/42]⎯
+
+ FAIL  tests/unit/utils/formulaEngine.test.ts > FormulaEngine > evaluateFormula > should evaluate mathematical functions
+Error: Error evaluating formula: Error: Unknown function: ABS
+ ❯ evaluateFormula src/utils/formulaEngine.ts:1026:11
+    1024|     return evaluate(tokens, context);
+    1025|   } catch (error) {
+    1026|     throw new Error(`Error evaluating formula: ${error}`);
+       |           ^
+    1027|   }
+    1028| }
+ ❯ tests/unit/utils/formulaEngine.test.ts:108:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[30/42]⎯
+
+ FAIL  tests/unit/utils/formulaEngine.test.ts > FormulaEngine > evaluateFormula > should evaluate string functions
+Error: Error evaluating formula: Error: Unknown function: UPPER
+ ❯ evaluateFormula src/utils/formulaEngine.ts:1026:11
+    1024|     return evaluate(tokens, context);
+    1025|   } catch (error) {
+    1026|     throw new Error(`Error evaluating formula: ${error}`);
+       |           ^
+    1027|   }
+    1028| }
+ ❯ tests/unit/utils/formulaEngine.test.ts:117:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[31/42]⎯
+
+ FAIL  tests/unit/utils/formulaEngine.test.ts > FormulaEngine > evaluateFormula > should evaluate date functions
+Error: Error evaluating formula: Error: Unknown function: YEAR
+ ❯ evaluateFormula src/utils/formulaEngine.ts:1026:11
+    1024|     return evaluate(tokens, context);
+    1025|   } catch (error) {
+    1026|     throw new Error(`Error evaluating formula: ${error}`);
+       |           ^
+    1027|   }
+    1028| }
+ ❯ tests/unit/utils/formulaEngine.test.ts:125:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[32/42]⎯
+
+ FAIL  tests/unit/utils/formulaEngine.test.ts > FormulaEngine > evaluateFormula > should evaluate logical functions
+Error: Error evaluating formula: Error: Unknown function: IF
+ ❯ evaluateFormula src/utils/formulaEngine.ts:1026:11
+    1024|     return evaluate(tokens, context);
+    1025|   } catch (error) {
+    1026|     throw new Error(`Error evaluating formula: ${error}`);
+       |           ^
+    1027|   }
+    1028| }
+ ❯ tests/unit/utils/formulaEngine.test.ts:133:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[33/42]⎯
+
+ FAIL  tests/unit/utils/formulaEngine.test.ts > FormulaEngine > evaluateFormula > should evaluate aggregation functions
+Error: Error evaluating formula: Error: Unknown function: SUM
+ ❯ evaluateFormula src/utils/formulaEngine.ts:1026:11
+    1024|     return evaluate(tokens, context);
+    1025|   } catch (error) {
+    1026|     throw new Error(`Error evaluating formula: ${error}`);
+       |           ^
+    1027|   }
+    1028| }
+ ❯ tests/unit/utils/formulaEngine.test.ts:143:14
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[34/42]⎯
+
+ FAIL  tests/unit/utils/formulaEngine.test.ts > FormulaEngine > evaluateFormula > should handle complex nested expressions
+Error: Error evaluating formula: Error: Unknown function: SUM
+ ❯ evaluateFormula src/utils/formulaEngine.ts:1026:11
+    1024|     return evaluate(tokens, context);
+    1025|   } catch (error) {
+    1026|     throw new Error(`Error evaluating formula: ${error}`);
+       |           ^
+    1027|   }
+    1028| }
+ ❯ tests/unit/utils/formulaEngine.test.ts:151:22
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[35/42]⎯
+
+ FAIL  tests/unit/utils/formulaEngine.test.ts > FormulaEngine > evaluateFormula > should throw error for invalid expressions
+AssertionError: expected [Function] to throw an error
+
+- Expected: 
+null
+
++ Received: 
+undefined
+
+ ❯ tests/unit/utils/formulaEngine.test.ts:160:64
+    158|     it('should throw error for invalid expressions', () => {
+    159|       expect(() => evaluateFormula('INVALID_FUNCTION()', testData)).to…
+    160|       expect(() => evaluateFormula('{nonexistent}', testData)).toThrow…
+       |                                                                ^
+    161|       expect(() => evaluateFormula('1 / 0', testData)).toThrow('Divisi…
+    162|     });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[36/42]⎯
+
+ FAIL  tests/unit/utils/formulaEngine.test.ts > FormulaEngine > validateFormula > should validate correct formulas
+AssertionError: expected { valid: true } to be true // Object.is equality
+
+- Expected: 
+true
+
++ Received: 
+{
+  "valid": true,
+}
+
+ ❯ tests/unit/utils/formulaEngine.test.ts:167:40
+    165|   describe('validateFormula', () => {
+    166|     it('should validate correct formulas', () => {
+    167|       expect(validateFormula('2 + 3')).toBe(true);
+       |                                        ^
+    168|       expect(validateFormula('SUM({amount})')).toBe(true);
+    169|       expect(validateFormula('IF({status} == "active", 1, 0)')).toBe(t…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[37/42]⎯
+
+ FAIL  tests/unit/utils/formulaEngine.test.ts > FormulaEngine > validateFormula > should reject invalid formulas
+AssertionError: expected { valid: false, …(1) } to be false // Object.is equality
+
+- Expected: 
+false
+
++ Received: 
+{
+  "error": "Некорректная последовательность операторов: ++",
+  "valid": false,
+}
+
+ ❯ tests/unit/utils/formulaEngine.test.ts:173:42
+    171| 
+    172|     it('should reject invalid formulas', () => {
+    173|       expect(validateFormula('2 + + 3')).toBe(false);
+       |                                          ^
+    174|       expect(validateFormula('SUM(')).toBe(false);
+    175|       expect(validateFormula('INVALID_FUNCTION()')).toBe(false);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[38/42]⎯
+
+ FAIL  tests/unit/utils/formulaEngine.test.ts > FormulaEngine > getAvailableFunctions > should return all available functions
+AssertionError: expected [] to include 'SUM'
+ ❯ tests/unit/utils/formulaEngine.test.ts:183:25
+    181|       const functions = getAvailableFunctions();
+    182|       
+    183|       expect(functions).toContain('SUM');
+       |                         ^
+    184|       expect(functions).toContain('AVG');
+    185|       expect(functions).toContain('IF');
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[39/42]⎯
+
+ FAIL  tests/unit/utils/formulaEngine.test.ts > FormulaEngine > FormulaEngine class > should evaluate formula with context
+AssertionError: expected 110.00000000000001 to be 110 // Object.is equality
+
+- Expected
++ Received
+
+- 110
++ 110.00000000000001
+
+ ❯ tests/unit/utils/formulaEngine.test.ts:221:22
+    219|       const formula = engine.createFormula('{amount} * 1.1', ['amount'…
+    220|       const result = engine.evaluate(formula, { amount: 100 });
+    221|       expect(result).toBe(110);
+       |                      ^
+    222|     });
+    223| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[40/42]⎯
+
+ FAIL  tests/unit/utils/formulaEngine.test.ts > FormulaEngine > FormulaEngine class > should recalculate dependent formulas
+AssertionError: expected NaN to be 210 // Object.is equality
+
+- Expected
++ Received
+
+- 210
++ NaN
+
+ ❯ tests/unit/utils/formulaEngine.test.ts:244:30
+    242|       const results = engine.evaluateAll({ amount: 100 });
+    243|       expect(results.total1).toBe(200);
+    244|       expect(results.total2).toBe(210);
+       |                              ^
+    245|     });
+    246| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[41/42]⎯
+
+ FAIL  tests/unit/utils/formulaEngine.test.ts > FormulaEngine > FormulaEngine class > should handle circular dependencies
+AssertionError: expected [Function] to throw an error
+
+- Expected: 
+null
+
++ Received: 
+undefined
+
+ ❯ tests/unit/utils/formulaEngine.test.ts:254:44
+    252|       engine.addFormula('total2', formula2);
+    253|       
+    254|       expect(() => engine.evaluateAll({})).toThrow('Circular dependenc…
+       |                                            ^
+    255|     });
+    256|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[42/42]⎯
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: [vitest-worker]: Timeout calling "onTaskUpdate"
+ ❯ Object.onTimeoutError node_modules/vitest/dist/chunks/rpc.-pEldfrD.js:53:10
+ ❯ Timeout._onTimeout node_modules/vitest/dist/chunks/index.B521nVV-.js:59:62
+ ❯ listOnTimeout node:internal/timers:588:17
+ ❯ processTimers node:internal/timers:523:7
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+
+ Test Files  5 failed | 12 passed (17)
+      Tests  42 failed | 297 passed (339)
+     Errors  1 error
+   Start at  17:29:53
+   Duration  454.22s (transform 545ms, setup 1.65s, collect 1.36s, tests 470.22s, environment 6.61s, prepare 1.10s)
+
