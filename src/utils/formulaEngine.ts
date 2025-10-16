@@ -110,7 +110,9 @@ const logicalFunctions: Record<string, (...args: FormulaValue[]) => FormulaValue
   and: (...args) => args.every(Boolean),
   or: (...args) => args.some(Boolean),
   not: (value) => !value,
+  isnull: (value) => value == null,
   isNull: (value) => value == null,
+  isempty: (value) => value == null || value === '' || (Array.isArray(value) && value.length === 0),
   isEmpty: (value) => value == null || value === '' || (Array.isArray(value) && value.length === 0),
 };
 
