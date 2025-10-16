@@ -35,6 +35,45 @@ export type Database = {
         }
         Relationships: []
       }
+      databases: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          table_count: number
+          tags: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          table_count?: number
+          tags?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          table_count?: number
+          tags?: string[] | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           address: string | null
@@ -160,7 +199,57 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_database: {
+        Args: {
+          color?: string
+          description?: string
+          icon?: string
+          name: string
+          user_id: string
+        }
+        Returns: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          table_count: number
+          tags: string[] | null
+          updated_at: string
+          user_id: string
+        }
+      }
+      get_database: {
+        Args: { p_id: string }
+        Returns: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          table_count: number
+          tags: string[] | null
+          updated_at: string
+          user_id: string
+        }
+      }
+      get_user_databases: {
+        Args: { p_user_id: string }
+        Returns: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          table_count: number
+          tags: string[] | null
+          updated_at: string
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
