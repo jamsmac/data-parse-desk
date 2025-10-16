@@ -524,34 +524,25 @@ export function validateFormula(formula: string): { valid: boolean; error?: stri
       return { valid: false, error: 'Несбалансированные скобки' };
     }
     
-    // Проверяем неизвестные функции
+    // Проверяем неизвестные функции (case-insensitive)
     for (const token of tokens) {
-      if (token.type === 'function' && !allFunctions[String(token.value).toLowerCase()]) {
-        return { valid: false, error: `Неизвестная функция: ${token.value}` };
+      if (token.type === 'function') {
+        const name = String(token.value).toLowerCase();
+        if (!allFunctions[name]) {
+          return { valid: false, error: `Неизвестная функция: ${token.value}` };
+        }
       }
     }
     
-    // Проверяем последовательности операторов
+    // Базовая проверка операторов: избегаем явных повторов ++, --, **, //
     for (let i = 0; i < tokens.length - 1; i++) {
-      const current = tokens[i];
-      const next = tokens[i + 1];
-      
-      // Два бинарных оператора подряд (кроме унарных - и !)
-      if (current.type === 'operator' && next.type === 'operator') {
-        const currentOp = String(current.value);
-        const nextOp = String(next.value);
-        
-        // Разрешаем унарные операторы после бинарных
-        if (nextOp === '-' || nextOp === '!') {
-          continue;
-        }
-        
-        // Запрещаем двойные операторы типа ++, --, **, //
-        if ((currentOp === '+' && nextOp === '+') ||
-            (currentOp === '-' && nextOp === '-') ||
-            (currentOp === '*' && nextOp === '*') ||
-            (currentOp === '/' && nextOp === '/')) {
-          return { valid: false, error: `Некорректная последовательность операторов: ${currentOp}${nextOp}` };
+      const a = tokens[i];
+      const b = tokens[i + 1];
+      if (a.type === 'operator' && b.type === 'operator') {
+        const av = String(a.value);
+        const bv = String(b.value);
+        if ((av === '+' && bv === '+') || (av === '-' && bv === '-') || (av === '*' && bv === '*') || (av === '/' && bv === '/')) {
+          return { valid: false, error: `Некорректная последовательность операторов: ${av}${bv}` };
         }
       }
     }

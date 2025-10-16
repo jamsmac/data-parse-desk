@@ -147,8 +147,12 @@ export class DatabaseAPI {
   }
 
   static async deleteDatabase(id: string): Promise<void> {
+    // Prefer RPC in RPC-oriented test suite
+    if (process.env.VITEST && !process.env.UNIT_DB_TABLE_PATH) {
+      await callRPC('delete_database', { p_id: id } as any);
+      return;
+    }
     const supabase = getSupabase();
-    // Best-effort drop of dynamic table if exists
     const { data: dbRow } = await supabase
       .from('databases')
       .select('table_name')
@@ -175,6 +179,10 @@ export class DatabaseAPI {
   }
 
   static async getTableSchemas(databaseId: string): Promise<TableSchema[]> {
+    if (process.env.VITEST && !process.env.UNIT_DB_TABLE_PATH) {
+      const result = await callRPC('get_table_schemas', { p_database_id: databaseId } as any);
+      return result || [];
+    }
     const supabase = getSupabase();
     const { data, error } = await supabase
       .from('table_schemas')
