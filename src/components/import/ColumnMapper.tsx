@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Card,
   CardContent,
@@ -27,9 +27,11 @@ import {
   Trash2,
   Wand2,
   Info,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ColumnSchema } from '@/types/database';
+import { MLMapper } from '@/utils/mlMapper';
 
 interface ColumnMapping {
   sourceColumn: string;
@@ -107,15 +109,37 @@ export const ColumnMapper: React.FC<ColumnMapperProps> = ({
     return 1 - distance / maxLength;
   };
 
-  const performAutoMapping = () => {
+  const performAutoMapping = useCallback(() => {
     const newMappings: ColumnMapping[] = [];
     const usedTargets = new Set<string>();
     const usedSources = new Set<string>();
 
-    // Сортируем источники по приоритету (обычно первые колонки важнее)
-    const sortedSources = [...sourceColumns];
+    // Используем ML-mapper для интеллектуального маппинга
+    const mlMapper = new MLMapper();
+    const mlSuggestions = mlMapper.suggestMappings(
+      sourceColumns,
+      targetColumns,
+      [] // Можно передать sample data если есть
+    );
 
-    sortedSources.forEach((sourceCol) => {
+    // Применяем ML suggestions с высокой уверенностью (>0.7)
+    mlSuggestions.forEach((suggestion) => {
+      if (suggestion.confidence > 0.7) {
+        newMappings.push({
+          sourceColumn: suggestion.sourceColumn,
+          targetColumn: suggestion.targetColumn,
+          isNew: false,
+          confidence: suggestion.confidence,
+        });
+        usedTargets.add(suggestion.targetColumn);
+        usedSources.add(suggestion.sourceColumn);
+      }
+    });
+
+    // Для оставшихся колонок используем базовый Levenshtein алгоритм
+    const remainingSources = sourceColumns.filter((col) => !usedSources.has(col));
+
+    remainingSources.forEach((sourceCol) => {
       let bestMatch: { column: string; score: number } | null = null;
 
       targetColumns.forEach((targetCol) => {
@@ -144,13 +168,13 @@ export const ColumnMapper: React.FC<ColumnMapperProps> = ({
     setUnmappedTarget(
       targetColumns.map((col) => col.name).filter((col) => !usedTargets.has(col))
     );
-  };
+  }, [sourceColumns, targetColumns]);
 
   useEffect(() => {
     if (autoMap && sourceColumns.length > 0 && targetColumns.length > 0) {
       performAutoMapping();
     }
-  }, [sourceColumns, targetColumns, autoMap]);
+  }, [sourceColumns, targetColumns, autoMap, performAutoMapping]);
 
   useEffect(() => {
     onMappingChange(mappings);
@@ -308,7 +332,7 @@ export const ColumnMapper: React.FC<ColumnMapperProps> = ({
                     <Badge
                       variant="outline"
                       className={cn(
-                        'flex-shrink-0',
+                        'flex-shrink-0 flex items-center gap-1',
                         getConfidenceColor(mapping.confidence) === 'green' &&
                           'border-green-500 text-green-700',
                         getConfidenceColor(mapping.confidence) === 'yellow' &&
@@ -317,6 +341,9 @@ export const ColumnMapper: React.FC<ColumnMapperProps> = ({
                           'border-orange-500 text-orange-700'
                       )}
                     >
+                      {mapping.confidence >= 0.85 && (
+                        <Sparkles className="w-3 h-3" />
+                      )}
                       {getConfidenceText(mapping.confidence)}
                     </Badge>
                   )}

@@ -66,9 +66,10 @@ export const FluidButton = memo(forwardRef<HTMLButtonElement, FluidButtonProps>(
 
     // ✅ Cleanup всех таймаутов при размонтировании
     useEffect(() => {
+      const timeouts = timeoutsRef.current;
       return () => {
-        timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
-        timeoutsRef.current.clear();
+        timeouts.forEach(timeout => clearTimeout(timeout));
+        timeouts.clear();
       };
     }, []);
 

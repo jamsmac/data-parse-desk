@@ -44,7 +44,7 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
     }
   }, []);
 
-  const validateFile = (file: File): string | null => {
+  const validateFile = useCallback((file: File): string | null => {
     // Проверка размера
     const fileSizeMB = file.size / (1024 * 1024);
     if (fileSizeMB > maxSize) {
@@ -58,7 +58,7 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
     }
 
     return null;
-  };
+  }, [acceptedFormats, maxSize]);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -69,7 +69,7 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const droppedFile = e.dataTransfer.files[0];
       const validationError = validateFile(droppedFile);
-      
+
       if (validationError) {
         setError(validationError);
         return;
@@ -77,7 +77,7 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
 
       setFile(droppedFile);
     }
-  }, [acceptedFormats, maxSize]);
+  }, [validateFile]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);

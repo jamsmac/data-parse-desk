@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, Plus, Upload, Download, Settings, Trash2, 
-  Table as TableIcon, Filter, SortAsc, MoreVertical, Columns, Link, Calculator
+import {
+  ArrowLeft, Plus, Upload, Download, Settings, Trash2,
+  Table as TableIcon, Filter, SortAsc, MoreVertical, Columns, Link, Calculator,
+  FileDown, FileSpreadsheet, MessageSquare
 } from 'lucide-react';
 import { useDatabase, useTableSchema } from '../hooks/useDatabases';
 import { useTableData, useInsertRow, useUpdateRow, useDeleteRow } from '../hooks/useTableData';
@@ -12,20 +13,34 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../co
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Badge } from '../components/ui/badge';
 import { Skeleton } from '../components/ui/skeleton';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
 } from '../components/ui/dropdown-menu';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from '../components/ui/sheet';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { toast } from 'sonner';
+import { AuroraActivityFeed } from '../components/collaboration/AuroraActivityFeed';
+import { AuroraCommentsPanel } from '../components/collaboration/AuroraCommentsPanel';
+import { useActivity } from '../hooks/useActivity';
+import { useComments } from '../hooks/useComments';
+import type { User } from '@/types/auth';
 import ColumnManager from '../components/database/ColumnManager';
 import CellEditor from '../components/database/CellEditor';
 import FilterBar from '../components/database/FilterBar';
 import RelationManager from '../components/relations/RelationManager';
 import { FileImportDialog } from '../components/import/FileImportDialog';
 import { FormulaEditor } from '../components/formula/FormulaEditor';
+import { exportToCSV, exportToExcel } from '../utils/exportData';
 import type { TableFilters, TableSorting, TablePagination } from '../types/database';
 
 /**
@@ -49,6 +64,8 @@ export default function DatabaseView() {
   const [showFormulaEditor, setShowFormulaEditor] = useState(false);
   const [editingCell, setEditingCell] = useState<{ rowId: string; column: string } | null>(null);
   const [currentFormula, setCurrentFormula] = useState('');
+  const [selectedRowId, setSelectedRowId] = useState<string | null>(null);
+  const [showCommentsSheet, setShowCommentsSheet] = useState(false);
 
   const { 
     data: tableData, 
@@ -62,7 +79,20 @@ export default function DatabaseView() {
   const updateRow = useUpdateRow(id!);
   const deleteRow = useDeleteRow(id!);
 
+  // Activity tracking
+  const { activities, logActivity } = useActivity(id!);
+
+  // Comments for selected row
+  const {
+    comments,
+    addComment,
+    updateComment,
+    deleteComment,
+  } = useComments(id!, selectedRowId || '');
+
   // Получение текущего пользователя
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
   useEffect(() => {
     let isMounted = true;
 
@@ -71,6 +101,16 @@ export default function DatabaseView() {
       if (isMounted) {
         if (user) {
           setUserId(user.id);
+          // Создаем объект User для CommentsPanel
+          setCurrentUser({
+            id: user.id,
+            email: user.email!,
+            full_name: user.user_metadata?.full_name,
+            avatar_url: user.user_metadata?.avatar_url,
+            role: 'editor',
+            created_at: user.created_at,
+            updated_at: user.created_at,
+          });
         } else {
           setUserId('00000000-0000-0000-0000-000000000000');
         }
@@ -145,6 +185,37 @@ export default function DatabaseView() {
 
   const handlePageChange = (page: number) => {
     setPagination(prev => ({ ...prev, page }));
+  };
+
+  // Экспорт данных
+  const handleExport = async (format: 'csv' | 'excel') => {
+    try {
+      const exportData = tableData?.data || [];
+      const visibleColumns = columns.map(col => col.column_name);
+      const fileName = `${database.name}_export_${new Date().toISOString().split('T')[0]}`;
+
+      if (format === 'csv') {
+        // Преобразуем данные в нужный формат
+        const formattedData = exportData.map(row => ({
+          ...row,
+          _rawData: row,
+          _fileName: fileName
+        }));
+        exportToCSV(formattedData as any, visibleColumns, `${fileName}.csv`);
+        toast.success('Данные экспортированы в CSV');
+      } else {
+        const formattedData = exportData.map(row => ({
+          ...row,
+          _rawData: row,
+          _fileName: fileName
+        }));
+        await exportToExcel(formattedData as any, visibleColumns, `${fileName}.xlsx`);
+        toast.success('Данные экспортированы в Excel');
+      }
+    } catch (error) {
+      toast.error('Ошибка экспорта данных');
+      console.error(error);
+    }
   };
 
   const totalPages = tableData?.total 
@@ -232,10 +303,24 @@ export default function DatabaseView() {
                 Импорт
               </Button>
               
-              <Button variant="outline" size="sm" className="gap-2">
-                <Download className="h-4 w-4" />
-                Экспорт
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Экспорт
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => handleExport('csv')}>
+                    <FileDown className="h-4 w-4 mr-2" />
+                    Экспорт в CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleExport('excel')}>
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    Экспорт в Excel
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -285,8 +370,26 @@ export default function DatabaseView() {
           />
         </div>
 
-        {/* Table */}
-        <Card>
+        {/* Tabs: Data & Activity */}
+        <Tabs defaultValue="data" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="data" className="gap-2">
+              <TableIcon className="h-4 w-4" />
+              Данные
+            </TabsTrigger>
+            <TabsTrigger value="activity" className="gap-2">
+              <TableIcon className="h-4 w-4" />
+              Активность
+              {activities.length > 0 && (
+                <Badge variant="secondary" className="ml-1">
+                  {activities.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="data">
+            <Card>
           <CardContent className="p-0">
             {isDataLoading ? (
               <div className="p-8 space-y-4">
@@ -377,7 +480,17 @@ export default function DatabaseView() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem>Редактировать</DropdownMenuItem>
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    if (row.id) {
+                                      setSelectedRowId(String(row.id));
+                                      setShowCommentsSheet(true);
+                                    }
+                                  }}
+                                >
+                                  <MessageSquare className="h-4 w-4 mr-2" />
+                                  Комментарии
+                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem 
                                   className="text-destructive"
@@ -397,9 +510,9 @@ export default function DatabaseView() {
               </div>
             )}
           </CardContent>
-        </Card>
+            </Card>
 
-        {/* Pagination */}
+            {/* Pagination */}
         {tableData?.data && tableData.data.length > 0 && (
           <div className="flex items-center justify-between mt-4">
             <p className="text-sm text-muted-foreground">
@@ -425,6 +538,12 @@ export default function DatabaseView() {
             </div>
           </div>
         )}
+          </TabsContent>
+
+          <TabsContent value="activity">
+            <AuroraActivityFeed activities={activities} limit={100} />
+          </TabsContent>
+        </Tabs>
       </div>
       
       {/* Dialogs */}
@@ -462,6 +581,40 @@ export default function DatabaseView() {
         }}
         columns={columns}
       />
+
+      {/* Comments Sheet */}
+      <Sheet open={showCommentsSheet} onOpenChange={setShowCommentsSheet}>
+        <SheetContent className="w-full sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle className="flex items-center gap-2">
+              <MessageSquare className="h-5 w-5" />
+              Комментарии к записи
+            </SheetTitle>
+            <SheetDescription>
+              Обсудите данные и оставьте заметки для команды
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6">
+            {currentUser && selectedRowId && (
+              <AuroraCommentsPanel
+                comments={comments}
+                currentUser={currentUser}
+                rowId={selectedRowId}
+                databaseId={id!}
+                onAddComment={async (content: string, parentId?: string) => {
+                  await addComment({ content, parentId });
+                }}
+                onUpdateComment={async (commentId: string, content: string) => {
+                  await updateComment({ commentId, content });
+                }}
+                onDeleteComment={async (commentId: string) => {
+                  await deleteComment(commentId);
+                }}
+              />
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -66,31 +66,7 @@ export default function RelationshipGraph({
     })),
   };
 
-  // Расчёт позиций узлов (круговая раскладка)
-  useEffect(() => {
-    if (!canvasRef.current) return;
-
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const width = canvas.width;
-    const height = canvas.height;
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const radius = Math.min(width, height) * 0.35;
-
-    // Позиционируем узлы по кругу
-    graphData.nodes.forEach((node, index) => {
-      const angle = (2 * Math.PI * index) / graphData.nodes.length - Math.PI / 2;
-      node.x = centerX + radius * Math.cos(angle);
-      node.y = centerY + radius * Math.sin(angle);
-    });
-
-    drawGraph();
-  }, [databases, relations, zoom, offset, hoveredNode, selectedNode]);
-
-  const drawGraph = () => {
+  const drawGraph = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -146,8 +122,8 @@ export default function RelationshipGraph({
       ctx.font = '12px sans-serif';
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      
-      const typeLabel = edge.type === 'one_to_many' ? '1:N' : 
+
+      const typeLabel = edge.type === 'one_to_many' ? '1:N' :
                        edge.type === 'many_to_one' ? 'N:1' : 'N:N';
       ctx.fillText(typeLabel, midX, midY - 10);
     });
@@ -195,7 +171,31 @@ export default function RelationshipGraph({
     });
 
     ctx.restore();
-  };
+  }, [graphData.nodes, graphData.edges, offset.x, offset.y, zoom, hoveredNode, selectedNode]);
+
+  // Расчёт позиций узлов (круговая раскладка)
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const width = canvas.width;
+    const height = canvas.height;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const radius = Math.min(width, height) * 0.35;
+
+    // Позиционируем узлы по кругу
+    graphData.nodes.forEach((node, index) => {
+      const angle = (2 * Math.PI * index) / graphData.nodes.length - Math.PI / 2;
+      node.x = centerX + radius * Math.cos(angle);
+      node.y = centerY + radius * Math.sin(angle);
+    });
+
+    drawGraph();
+  }, [databases, relations, zoom, offset, hoveredNode, selectedNode, drawGraph, graphData.nodes]);
 
   const handleCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
