@@ -130,6 +130,7 @@ const allFunctionsRaw: Record<string, FormulaFunction> = {
 const allFunctions: Record<string, FormulaFunction> = new Proxy(allFunctionsRaw, {
   get(target, prop: string) {
     const key = String(prop).toLowerCase();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (target as any)[key];
   },
 }) as unknown as Record<string, FormulaFunction>;

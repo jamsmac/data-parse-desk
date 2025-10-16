@@ -25,17 +25,17 @@ export function FadeIn({ children, className, direction = 'up', delay = 0, durat
 
   const style: React.CSSProperties = prefersReducedMotion ? { opacity: 1, transform: 'none' } : { opacity: 0, transform: initialTransform };
 
-  const animate: Keyframe[] = prefersReducedMotion ? [] : [
-    { opacity: 0, transform: initialTransform },
-    { opacity: 1, transform: 'none' },
-  ];
-
   const ref = React.useRef<HTMLDivElement | null>(null);
 
   React.useEffect(() => {
     if (prefersReducedMotion) return;
     const el = ref.current;
     if (!el) return;
+
+    const animate: Keyframe[] = [
+      { opacity: 0, transform: initialTransform },
+      { opacity: 1, transform: 'none' },
+    ];
 
     const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
@@ -53,7 +53,7 @@ export function FadeIn({ children, className, direction = 'up', delay = 0, durat
 
     observer.observe(el);
     return () => observer.disconnect();
-  }, [prefersReducedMotion, direction, delay, duration, distance, once]);
+  }, [prefersReducedMotion, initialTransform, delay, duration, once]);
 
   return (
     <div ref={ref} className={className} style={style}>

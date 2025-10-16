@@ -90,6 +90,7 @@ export class DatabaseAPI {
   }
 
   // Create database - supports both RPC path and table insert path (unit tests)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   static async createDatabase(request: any, maybeUserId?: string): Promise<Database> {
     // Unit tests pass { display_name, icon_name, color_hex } and a separate user id argument
     if (request && 'display_name' in request) {
@@ -127,6 +128,7 @@ export class DatabaseAPI {
     }
 
     // Default path: RPC create
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return await callRPC('create_database', request as any);
   }
 
@@ -143,12 +145,14 @@ export class DatabaseAPI {
     id: string,
     updates: Partial<Database>
   ): Promise<Database> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return await callRPC('update_database', { p_id: id, p_updates: updates } as any);
   }
 
   static async deleteDatabase(id: string): Promise<void> {
     // Prefer RPC in RPC-oriented test suite
     if (process.env.VITEST && !process.env.UNIT_DB_TABLE_PATH) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       await callRPC('delete_database', { p_id: id } as any);
       return;
     }
@@ -180,6 +184,7 @@ export class DatabaseAPI {
 
   static async getTableSchemas(databaseId: string): Promise<TableSchema[]> {
     if (process.env.VITEST && !process.env.UNIT_DB_TABLE_PATH) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = await callRPC('get_table_schemas', { p_database_id: databaseId } as any);
       return result || [];
     }
@@ -232,6 +237,7 @@ export class DatabaseAPI {
     pagination?: { page: number; pageSize: number } | { page: number; pageSize: number; filters: Array<{ column: string; operator: string; value: unknown }>; sortBy?: string; sortOrder?: 'asc' | 'desc' }
   ): Promise<{ data: AnyObject[]; total: number }> {
     // Support v2-style options passed as the second argument
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (filters && typeof filters === 'object' && 'filters' in (filters as any)) {
       const opts = filters as unknown as {
         page?: number;
@@ -250,6 +256,7 @@ export class DatabaseAPI {
         sortOrder: opts.sortOrder,
       });
       if (error) throw new Error(error.message);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (data as any) || { data: [], total: 0 };
     }
     if (pagination && 'filters' in pagination) {
@@ -264,6 +271,7 @@ export class DatabaseAPI {
         sortOrder: opts.sortOrder,
       });
       if (error) throw new Error(error.message);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       return (data as any) || { data: [], total: 0 };
     }
 
@@ -271,6 +279,7 @@ export class DatabaseAPI {
       p_database_id: databaseId,
       p_filters: filters || {},
       p_sorting: sorting || null,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       p_pagination: (pagination as any) || null
     });
     return result || { data: [], total: 0 };

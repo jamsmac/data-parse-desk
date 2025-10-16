@@ -99,15 +99,15 @@ class PerformanceTester {
    */
   async testFileParsing(
     file: File,
-    parser: (file: File) => Promise<any>
+    parser: (file: File) => Promise<unknown>
   ): Promise<{ metrics: FileParsingMetrics }> {
     const startTime = performance.now();
     const startMemory = process.memoryUsage();
 
-    let rows: any[] = [];
+    let rows: unknown[] = [];
     try {
       const parsed = await parser(file);
-      rows = Array.isArray(parsed) ? parsed : (parsed?.data ?? []);
+      rows = Array.isArray(parsed) ? parsed : ((parsed as { data?: unknown[] })?.data ?? []);
     } catch (e) {
       // In test mode, if parser rejects due to size, simulate minimal metrics
       if (String(e).includes('File too large')) {
@@ -324,6 +324,3 @@ class PerformanceTester {
 
 // Экспорт синглтона
 export const performanceTester = new PerformanceTester();
-
-// Экспорт типов
-export type { PerformanceMetrics, FileParsingMetrics, DashboardLoadMetrics, RollupMetrics };
