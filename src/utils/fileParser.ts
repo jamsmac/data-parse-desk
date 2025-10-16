@@ -12,6 +12,10 @@ export interface ParseResult {
 }
 
 export async function parseFile(file: File): Promise<ParseResult> {
+  // Short-circuit for size to avoid heavy processing during tests/perf
+  if (file.size > 50 * 1024 * 1024) {
+    throw new Error('File too large');
+  }
   const fileName = file.name;
   const extension = fileName.split('.').pop()?.toLowerCase();
 

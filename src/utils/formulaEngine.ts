@@ -117,12 +117,20 @@ const logicalFunctions: Record<string, (...args: FormulaValue[]) => FormulaValue
 /**
  * Все доступные функции
  */
-const allFunctions: Record<string, FormulaFunction> = {
+const allFunctionsRaw: Record<string, FormulaFunction> = {
   ...mathFunctions,
   ...stringFunctions,
   ...dateFunctions,
   ...logicalFunctions,
 } as Record<string, FormulaFunction>;
+
+// Case-insensitive function registry (maps UPPER to lower implementations)
+const allFunctions: Record<string, FormulaFunction> = new Proxy(allFunctionsRaw, {
+  get(target, prop: string) {
+    const key = String(prop).toLowerCase();
+    return (target as any)[key];
+  },
+}) as unknown as Record<string, FormulaFunction>;
 
 /**
  * Парсит выражение формулы в токены
@@ -384,7 +392,7 @@ function evaluate(tokens: Token[], context: FormulaContext): FormulaValue {
 
     // Функции
     if (token.type === 'function') {
-      const funcName = String(token.value);
+      const funcName = String(token.value).toLowerCase();
       index++;
       
       if (index >= tokens.length || tokens[index].value !== '(') {
@@ -516,7 +524,7 @@ export function validateFormula(formula: string): { valid: boolean; error?: stri
     
     // Проверяем неизвестные функции
     for (const token of tokens) {
-      if (token.type === 'function' && !allFunctions[String(token.value)]) {
+      if (token.type === 'function' && !allFunctions[String(token.value).toLowerCase()]) {
         return { valid: false, error: `Неизвестная функция: ${token.value}` };
       }
     }
