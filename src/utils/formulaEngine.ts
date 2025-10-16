@@ -110,19 +110,29 @@ const logicalFunctions: Record<string, (...args: FormulaValue[]) => FormulaValue
   and: (...args) => args.every(Boolean),
   or: (...args) => args.some(Boolean),
   not: (value) => !value,
+  isnull: (value) => value == null,
   isNull: (value) => value == null,
+  isempty: (value) => value == null || value === '' || (Array.isArray(value) && value.length === 0),
   isEmpty: (value) => value == null || value === '' || (Array.isArray(value) && value.length === 0),
 };
 
 /**
  * Все доступные функции
  */
-const allFunctions: Record<string, FormulaFunction> = {
+const allFunctionsRaw: Record<string, FormulaFunction> = {
   ...mathFunctions,
   ...stringFunctions,
   ...dateFunctions,
   ...logicalFunctions,
 } as Record<string, FormulaFunction>;
+
+// Case-insensitive function registry (maps UPPER to lower implementations)
+const allFunctions: Record<string, FormulaFunction> = new Proxy(allFunctionsRaw, {
+  get(target, prop: string) {
+    const key = String(prop).toLowerCase();
+    return (target as any)[key];
+  },
+}) as unknown as Record<string, FormulaFunction>;
 
 /**
  * Парсит выражение формулы в токены
@@ -384,7 +394,7 @@ function evaluate(tokens: Token[], context: FormulaContext): FormulaValue {
 
     // Функции
     if (token.type === 'function') {
-      const funcName = String(token.value);
+      const funcName = String(token.value).toLowerCase();
       index++;
       
       if (index >= tokens.length || tokens[index].value !== '(') {
@@ -514,34 +524,25 @@ export function validateFormula(formula: string): { valid: boolean; error?: stri
       return { valid: false, error: 'Несбалансированные скобки' };
     }
     
-    // Проверяем неизвестные функции
+    // Проверяем неизвестные функции (case-insensitive)
     for (const token of tokens) {
-      if (token.type === 'function' && !allFunctions[String(token.value)]) {
-        return { valid: false, error: `Неизвестная функция: ${token.value}` };
+      if (token.type === 'function') {
+        const name = String(token.value).toLowerCase();
+        if (!allFunctions[name]) {
+          return { valid: false, error: `Неизвестная функция: ${token.value}` };
+        }
       }
     }
     
-    // Проверяем последовательности операторов
+    // Базовая проверка операторов: избегаем явных повторов ++, --, **, //
     for (let i = 0; i < tokens.length - 1; i++) {
-      const current = tokens[i];
-      const next = tokens[i + 1];
-      
-      // Два бинарных оператора подряд (кроме унарных - и !)
-      if (current.type === 'operator' && next.type === 'operator') {
-        const currentOp = String(current.value);
-        const nextOp = String(next.value);
-        
-        // Разрешаем унарные операторы после бинарных
-        if (nextOp === '-' || nextOp === '!') {
-          continue;
-        }
-        
-        // Запрещаем двойные операторы типа ++, --, **, //
-        if ((currentOp === '+' && nextOp === '+') ||
-            (currentOp === '-' && nextOp === '-') ||
-            (currentOp === '*' && nextOp === '*') ||
-            (currentOp === '/' && nextOp === '/')) {
-          return { valid: false, error: `Некорректная последовательность операторов: ${currentOp}${nextOp}` };
+      const a = tokens[i];
+      const b = tokens[i + 1];
+      if (a.type === 'operator' && b.type === 'operator') {
+        const av = String(a.value);
+        const bv = String(b.value);
+        if ((av === '+' && bv === '+') || (av === '-' && bv === '-') || (av === '*' && bv === '*') || (av === '/' && bv === '/')) {
+          return { valid: false, error: `Некорректная последовательность операторов: ${av}${bv}` };
         }
       }
     }
