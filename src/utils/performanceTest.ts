@@ -48,7 +48,7 @@ class PerformanceTester {
   async measure<T>(
     operation: string,
     fn: () => Promise<T> | T,
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): Promise<{ result: T; metrics: PerformanceMetrics }> {
     if (!this.isEnabled) {
       const result = await fn();
@@ -99,7 +99,7 @@ class PerformanceTester {
    */
   async testFileParsing(
     file: File,
-    parser: (file: File) => Promise<any[]>
+    parser: (file: File) => Promise<unknown[]>
   ): Promise<FileParsingMetrics> {
     const startTime = performance.now();
     const startMemory = process.memoryUsage();
@@ -175,7 +175,7 @@ class PerformanceTester {
   async testRollupCalculation(
     recordCount: number,
     rollupType: string,
-    calculationFunction: () => Promise<any>
+    calculationFunction: () => Promise<unknown>
   ): Promise<RollupMetrics> {
     const startTime = performance.now();
     const startMemory = process.memoryUsage();

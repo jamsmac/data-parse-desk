@@ -33,13 +33,13 @@ export const LazyMLMapper = lazy(() => import('../utils/mlMapper'));
 export const LazyAdvancedValidation = lazy(() => import('../utils/advancedValidation'));
 
 // Функция для создания lazy компонента с fallback
-export function createLazyComponent<T extends ComponentType<any>>(
+export function createLazyComponent<T extends ComponentType<unknown>>(
   importFn: () => Promise<{ default: T }>,
-  fallback?: ComponentType
+  fallback?: ComponentType<unknown>
 ) {
   const LazyComponent = lazy(importFn);
   
-  return function LazyWrapper(props: any) {
+  return function LazyWrapper(props: Record<string, unknown>) {
     return (
       <LazyComponent
         {...props}
