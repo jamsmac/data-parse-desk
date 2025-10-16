@@ -277,7 +277,8 @@ describe('Performance Tests', () => {
       
       // Запускаем тест 5 раз
       for (let i = 0; i < 5; i++) {
-        const { metrics } = await performanceTester.testFileParsing(file, parseFile);
+        const metrics = await performanceTester.testFileParsing(file, parseFile);
+        expect(metrics).toBeDefined();
         durations.push(metrics.duration);
         
         // Небольшая пауза между запусками
