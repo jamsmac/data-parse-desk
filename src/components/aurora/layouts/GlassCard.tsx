@@ -91,8 +91,8 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
       ? 'relative before:absolute before:inset-0 before:rounded-[inherit] before:p-[1px] before:bg-gradient-to-br before:from-fluid-cyan before:to-fluid-purple before:-z-10'
       : '';
 
-    // Анимация появления - убираем типизацию для упрощения
-    const animationVariants: any = {
+    // Анимация появления
+    const animationVariants = {
       hidden: { opacity: 0, y: 20, scale: 0.95 },
       visible: {
         opacity: 1,
@@ -101,7 +101,7 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
         transition: {
           duration: 0.5,
           delay: animationDelay / 1000,
-          ease: [0.4, 0, 0.2, 1],
+          ease: [0.4, 0, 0.2, 1] as [number, number, number, number],
         },
       },
     };
@@ -276,5 +276,3 @@ export const GlassCardFooter = forwardRef<HTMLDivElement, GlassCardFooterProps>(
 );
 
 GlassCardFooter.displayName = 'GlassCardFooter';
-
-

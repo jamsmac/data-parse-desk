@@ -187,7 +187,7 @@ export default function DatabaseView() {
           _rawData: row,
           _fileName: fileName
         }));
-        exportToCSV(formattedData as any, visibleColumns, `${fileName}.csv`);
+        exportToCSV(formattedData, visibleColumns, `${fileName}.csv`);
         toast.success('Данные экспортированы в CSV');
       } else {
         const formattedData = exportData.map(row => ({
@@ -195,7 +195,7 @@ export default function DatabaseView() {
           _rawData: row,
           _fileName: fileName
         }));
-        await exportToExcel(formattedData as any, visibleColumns, `${fileName}.xlsx`);
+        await exportToExcel(formattedData, visibleColumns, `${fileName}.xlsx`);
         toast.success('Данные экспортированы в Excel');
       }
     } catch (error) {
