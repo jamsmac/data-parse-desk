@@ -15,6 +15,12 @@ export async function parseFile(file: File): Promise<ParseResult> {
   const fileName = file.name;
   const extension = fileName.split('.').pop()?.toLowerCase();
 
+  // Enforce 50MB max file size to prevent memory issues
+  const MAX_BYTES = 50 * 1024 * 1024; // 50 MB
+  if (typeof file.size === 'number' && file.size > MAX_BYTES) {
+    throw new Error('File is too large. Maximum supported size is 50MB');
+  }
+
   if (extension === 'csv') {
     return parseCSV(file, fileName);
   } else if (extension === 'xlsx' || extension === 'xls') {
