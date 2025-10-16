@@ -28,7 +28,6 @@ export * from './animations/StaggerChildren';
 
 // Animated Components
 export * from './animated/AnimatedList';
-export * from './animated/Skeleton';
 
 // Hooks (re-export for convenience)
 export { useReducedMotion } from '../../hooks/aurora/useReducedMotion';

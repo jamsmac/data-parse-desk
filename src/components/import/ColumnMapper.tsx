@@ -116,10 +116,14 @@ export const ColumnMapper: React.FC<ColumnMapperProps> = ({
 
     // Используем ML-mapper для интеллектуального маппинга
     const mlMapper = new MLMapper();
+    const sourceColumnsWithValues = sourceColumns.map(col => ({ name: col, values: [] }));
+    const targetColumnsInfo = targetColumns.map(col => ({ 
+      name: col.name, 
+      type: 'text' as const
+    }));
     const mlSuggestions = mlMapper.suggestMappings(
-      sourceColumns,
-      targetColumns,
-      [] // Можно передать sample data если есть
+      sourceColumnsWithValues,
+      targetColumnsInfo
     );
 
     // Применяем ML suggestions с высокой уверенностью (>0.7)

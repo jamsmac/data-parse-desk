@@ -35,7 +35,7 @@ import CellEditor from '../components/database/CellEditor';
 import FilterBar from '../components/database/FilterBar';
 import RelationManager from '../components/relations/RelationManager';
 import { FileImportDialog } from '../components/import/FileImportDialog';
-import { FormulaEditor } from '../components/formula/FormulaEditor';
+
 import { exportToCSV, exportToExcel } from '../utils/exportData';
 import type { TableFilters, TableSorting, TablePagination } from '../types/database';
 
@@ -544,16 +544,6 @@ export default function DatabaseView() {
         }}
       />
       
-      <FormulaEditor
-        open={showFormulaEditor}
-        onOpenChange={setShowFormulaEditor}
-        formula={currentFormula}
-        onSave={(formula) => {
-          setCurrentFormula(formula);
-          toast.success('Формула сохранена');
-        }}
-        columns={columns}
-      />
 
       {/* Comments Sheet */}
       <Sheet open={showCommentsSheet} onOpenChange={setShowCommentsSheet}>

@@ -49,11 +49,10 @@ export const DatabaseCard: React.FC<DatabaseCardProps> = ({
   return (
     <GlassCard
       intensity="medium"
-      hover="float"
-      variant="aurora"
+      variant="default"
       animated={true}
       className="group cursor-pointer"
-      onClick={handleCardClick}
+      onClick={() => handleCardClick({} as React.MouseEvent)}
     >
       <GlassCardContent className="pt-6">
         <div className="flex items-start justify-between">

@@ -91,8 +91,8 @@ export const GlassCard = forwardRef<HTMLDivElement, GlassCardProps>(
       ? 'relative before:absolute before:inset-0 before:rounded-[inherit] before:p-[1px] before:bg-gradient-to-br before:from-fluid-cyan before:to-fluid-purple before:-z-10'
       : '';
 
-    // Анимация появления
-    const animationVariants = {
+    // Анимация появления - убираем типизацию для упрощения
+    const animationVariants: any = {
       hidden: { opacity: 0, y: 20, scale: 0.95 },
       visible: {
         opacity: 1,
