@@ -195,7 +195,7 @@ export function WebGLConditionalRenderer({
     setCanRender(info.active < info.max);
   }, [manager]);
 
-  return canRender ? <>{children}</> : <>{fallback}</>;
+  return canRender ? children : fallback;
 }
 
 /**

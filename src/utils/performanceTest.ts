@@ -10,7 +10,7 @@ export interface PerformanceMetrics {
   duration: number;
   memoryUsage: NodeJS.MemoryUsage;
   timestamp: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface FileParsingMetrics extends PerformanceMetrics {

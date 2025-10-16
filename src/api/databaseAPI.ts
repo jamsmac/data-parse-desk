@@ -227,8 +227,7 @@ export class DatabaseAPI {
   }
 }
 
-// Экспортируем класс и отдельные функции для удобства
-export { DatabaseAPI };
+// Класс DatabaseAPI уже экспортирован выше
 
 // Экспортируем отдельные функции
 export const getAllDatabases = DatabaseAPI.getAllDatabases;

@@ -320,7 +320,7 @@ export class PerformanceMonitor {
     TTFB: number;
   }> {
     return new Promise((resolve) => {
-      const vitals: any = {};
+      const vitals: Record<string, number> = {};
       let completed = 0;
 
       const checkComplete = () => {
@@ -407,7 +407,7 @@ export class ErrorMonitor {
 
     // React Error Boundary (если используется)
     if (typeof window !== 'undefined') {
-      (window as any).__REACT_ERROR_BOUNDARY__ = (error: Error, errorInfo: any) => {
+      (window as Record<string, unknown>).__REACT_ERROR_BOUNDARY__ = (error: Error, errorInfo: Record<string, unknown>) => {
         this.recordError(
           error.message,
           'react-boundary',

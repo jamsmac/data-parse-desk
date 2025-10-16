@@ -18,6 +18,17 @@ type FormulaValue = string | number | boolean | Date | null | undefined | unknow
 type FormulaContext = Record<string, unknown>;
 type FormulaFunction = (...args: FormulaValue[]) => FormulaValue;
 
+type FormulaAST = {
+  type: 'number' | 'string' | 'boolean' | 'column' | 'binary' | 'unary' | 'function';
+  value?: string | number | boolean;
+  operator?: string;
+  left?: FormulaAST;
+  right?: FormulaAST;
+  operand?: FormulaAST;
+  name?: string;
+  args?: FormulaAST[];
+};
+
 /**
  * Математические функции
  */
@@ -796,7 +807,7 @@ export const formulaExamples = [
 /**
  * Парсит формулу в AST
  */
-export function parseFormula(formula: string): any {
+export function parseFormula(formula: string): FormulaAST {
   try {
     const tokens = tokenize(formula);
     return parseExpression(tokens);
@@ -808,10 +819,10 @@ export function parseFormula(formula: string): any {
 /**
  * Парсит выражение из токенов
  */
-function parseExpression(tokens: Token[]): any {
+function parseExpression(tokens: Token[]): FormulaAST {
   let index = 0;
 
-  function parseOr(): any {
+  function parseOr(): FormulaAST {
     let left = parseAnd();
 
     while (index < tokens.length && tokens[index]?.type === 'operator' && tokens[index].value === '||') {
@@ -828,7 +839,7 @@ function parseExpression(tokens: Token[]): any {
     return left;
   }
 
-  function parseAnd(): any {
+  function parseAnd(): FormulaAST {
     let left = parseEquality();
 
     while (index < tokens.length && tokens[index]?.type === 'operator' && tokens[index].value === '&&') {
@@ -845,7 +856,7 @@ function parseExpression(tokens: Token[]): any {
     return left;
   }
 
-  function parseEquality(): any {
+  function parseEquality(): FormulaAST {
     let left = parseComparison();
 
     while (index < tokens.length && tokens[index]?.type === 'operator' && 
@@ -864,7 +875,7 @@ function parseExpression(tokens: Token[]): any {
     return left;
   }
 
-  function parseComparison(): any {
+  function parseComparison(): FormulaAST {
     let left = parseAddSub();
 
     while (index < tokens.length && tokens[index]?.type === 'operator' && 
@@ -883,7 +894,7 @@ function parseExpression(tokens: Token[]): any {
     return left;
   }
 
-  function parseAddSub(): any {
+  function parseAddSub(): FormulaAST {
     let left = parseMulDiv();
 
     while (index < tokens.length && tokens[index]?.type === 'operator' && 
@@ -902,7 +913,7 @@ function parseExpression(tokens: Token[]): any {
     return left;
   }
 
-  function parseMulDiv(): any {
+  function parseMulDiv(): FormulaAST {
     let left = parseUnary();
 
     while (index < tokens.length && tokens[index]?.type === 'operator' && 
@@ -921,7 +932,7 @@ function parseExpression(tokens: Token[]): any {
     return left;
   }
 
-  function parseUnary(): any {
+  function parseUnary(): FormulaAST {
     if (index < tokens.length && tokens[index]?.type === 'operator' && 
         (tokens[index].value === '+' || tokens[index].value === '-')) {
       const op = String(tokens[index].value);
@@ -936,7 +947,7 @@ function parseExpression(tokens: Token[]): any {
     return parsePrimary();
   }
 
-  function parsePrimary(): any {
+  function parsePrimary(): FormulaAST {
     if (index >= tokens.length) {
       throw new Error('Unexpected end of expression');
     }
@@ -959,7 +970,7 @@ function parseExpression(tokens: Token[]): any {
       if (index < tokens.length && tokens[index]?.type === 'paren' && tokens[index].value === '(') {
         // Function call
         index++; // skip '('
-        const args: any[] = [];
+        const args: FormulaAST[] = [];
         
         if (index < tokens.length && tokens[index]?.type !== 'paren' || tokens[index]?.value !== ')') {
           args.push(parseExpression(tokens));
@@ -1032,7 +1043,7 @@ export function getAvailableFunctions() {
  * Класс FormulaEngine для управления формулами
  */
 export class FormulaEngine {
-  private formulas: Map<string, any> = new Map();
+  private formulas: Map<string, { expression: string; dependencies: string[] }> = new Map();
   private dependencies: Map<string, string[]> = new Map();
 
   createFormula(expression: string, deps: string[]) {
@@ -1042,12 +1053,12 @@ export class FormulaEngine {
     };
   }
 
-  addFormula(name: string, formula: any) {
+  addFormula(name: string, formula: { expression: string; dependencies: string[] }) {
     this.formulas.set(name, formula);
     this.dependencies.set(name, formula.dependencies || []);
   }
 
-  evaluate(formula: any, context: FormulaContext): FormulaValue {
+  evaluate(formula: { expression: string; dependencies: string[] }, context: FormulaContext): FormulaValue {
     return evaluateFormula(formula.expression, context);
   }
 

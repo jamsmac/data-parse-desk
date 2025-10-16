@@ -29,7 +29,7 @@ const createMockFile = (sizeInMB: number, rows: number): File => {
   const file = new File([blob], `test_${sizeInMB}MB.csv`, { type: 'text/csv' });
   
   // Добавляем метод text() для совместимости с тестами
-  (file as any).text = () => Promise.resolve(csvContent);
+  (file as File & { text: () => Promise<string> }).text = () => Promise.resolve(csvContent);
   
   return file;
 };
