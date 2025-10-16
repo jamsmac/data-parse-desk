@@ -19,8 +19,9 @@ export const calculateRollup = async (
 
     // Резолвим связанные записи
     const relatedRecords = await resolveRelation(
-      rollupConfig.relation_column_id,
-      recordIds
+      rollupConfig.target_database_id,
+      recordIds,
+      rollupConfig.target_column
     );
 
     if (relatedRecords.length === 0) {

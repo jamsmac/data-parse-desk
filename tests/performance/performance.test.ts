@@ -26,7 +26,12 @@ const createMockFile = (sizeInMB: number, rows: number): File => {
     data.map(row => Object.values(row).join(',')).join('\n');
   
   const blob = new Blob([csvContent], { type: 'text/csv' });
-  return new File([blob], `test_${sizeInMB}MB.csv`, { type: 'text/csv' });
+  const file = new File([blob], `test_${sizeInMB}MB.csv`, { type: 'text/csv' });
+  
+  // Добавляем метод text() для совместимости с тестами
+  (file as File & { text: () => Promise<string> }).text = () => Promise.resolve(csvContent);
+  
+  return file;
 };
 
 // Мок для Dashboard загрузки
@@ -47,7 +52,15 @@ const mockRollupCalculation = async (recordCount: number) => {
     category: `Category ${i % 10}`,
   }));
   
-  return calculateRollup(data, 'value', 'SUM', 'category');
+  // Мокаем calculateRollup для тестов
+  const mockRollupConfig = {
+    relation_column_id: 'test_relation',
+    target_database_id: 'test_db',
+    target_column: 'value',
+    aggregation: 'SUM' as const
+  };
+  
+  return calculateRollup(mockRollupConfig, data.map(d => d.id.toString()));
 };
 
 describe('Performance Tests', () => {
@@ -113,8 +126,9 @@ describe('Performance Tests', () => {
 
   describe('Dashboard Load Performance', () => {
     it('should load dashboard within 3 seconds', async () => {
-      const { metrics } = await performanceTester.testDashboardLoad(mockDashboardLoad);
+      const metrics = await performanceTester.testDashboardLoad(mockDashboardLoad);
       
+      expect(metrics).toBeDefined();
       expect(metrics.duration).toBeLessThan(3000);
       expect(metrics.componentsLoaded).toBeGreaterThan(10);
       
@@ -131,8 +145,9 @@ describe('Performance Tests', () => {
         };
       };
       
-      const { metrics } = await performanceTester.testDashboardLoad(largeDatasetLoad);
+      const metrics = await performanceTester.testDashboardLoad(largeDatasetLoad);
       
+      expect(metrics).toBeDefined();
       expect(metrics.duration).toBeLessThan(5000);
       expect(metrics.dataSize).toBeGreaterThan(5 * 1024 * 1024);
       
@@ -143,12 +158,13 @@ describe('Performance Tests', () => {
 
   describe('Rollup Calculation Performance', () => {
     it('should calculate rollup for 1K records within 100ms', async () => {
-      const { metrics } = await performanceTester.testRollupCalculation(
+      const metrics = await performanceTester.testRollupCalculation(
         1000,
         'SUM',
         () => mockRollupCalculation(1000)
       );
       
+      expect(metrics).toBeDefined();
       expect(metrics.duration).toBeLessThan(100);
       expect(metrics.recordCount).toBe(1000);
       
@@ -157,12 +173,13 @@ describe('Performance Tests', () => {
     });
 
     it('should calculate rollup for 10K records within 500ms', async () => {
-      const { metrics } = await performanceTester.testRollupCalculation(
+      const metrics = await performanceTester.testRollupCalculation(
         10000,
         'SUM',
         () => mockRollupCalculation(10000)
       );
       
+      expect(metrics).toBeDefined();
       expect(metrics.duration).toBeLessThan(500);
       expect(metrics.recordCount).toBe(10000);
       
@@ -171,12 +188,13 @@ describe('Performance Tests', () => {
     });
 
     it('should calculate rollup for 100K records within 2 seconds', async () => {
-      const { metrics } = await performanceTester.testRollupCalculation(
+      const metrics = await performanceTester.testRollupCalculation(
         100000,
         'SUM',
         () => mockRollupCalculation(100000)
       );
       
+      expect(metrics).toBeDefined();
       expect(metrics.duration).toBeLessThan(2000);
       expect(metrics.recordCount).toBe(100000);
       
@@ -188,12 +206,13 @@ describe('Performance Tests', () => {
       const rollupTypes = ['SUM', 'AVG', 'COUNT', 'MIN', 'MAX', 'MEDIAN'];
       
       for (const rollupType of rollupTypes) {
-        const { metrics } = await performanceTester.testRollupCalculation(
+        const metrics = await performanceTester.testRollupCalculation(
           5000,
           rollupType,
           () => mockRollupCalculation(5000)
         );
         
+        expect(metrics).toBeDefined();
         expect(metrics.duration).toBeLessThan(300);
         expect(metrics.rollupType).toBe(rollupType);
         
@@ -210,7 +229,8 @@ describe('Performance Tests', () => {
       // Парсим несколько файлов подряд
       for (let i = 0; i < 5; i++) {
         const file = createMockFile(5, 50000);
-        await performanceTester.testFileParsing(file, parseFile);
+        const metrics = await performanceTester.testFileParsing(file, parseFile);
+        expect(metrics).toBeDefined();
         
         // Принудительная сборка мусора
         if (global.gc) {
@@ -242,7 +262,8 @@ describe('Performance Tests', () => {
       expect(endTime - startTime).toBeLessThan(5000);
       
       // Проверяем, что все операции прошли успешно
-      results.forEach(({ metrics }) => {
+      results.forEach((metrics) => {
+        expect(metrics).toBeDefined();
         const validation = performanceTester.validatePerformance(metrics);
         expect(validation.passed).toBe(true);
       });
@@ -256,7 +277,8 @@ describe('Performance Tests', () => {
       
       // Запускаем тест 5 раз
       for (let i = 0; i < 5; i++) {
-        const { metrics } = await performanceTester.testFileParsing(file, parseFile);
+        const metrics = await performanceTester.testFileParsing(file, parseFile);
+        expect(metrics).toBeDefined();
         durations.push(metrics.duration);
         
         // Небольшая пауза между запусками

@@ -3,7 +3,7 @@
  * Утилиты для оптимизации bundle size через code-splitting
  */
 
-import { lazy, ComponentType } from 'react';
+import { lazy, ComponentType, Suspense } from 'react';
 
 // Lazy loading для страниц
 export const LazyDashboard = lazy(() => import('../pages/Dashboard'));
@@ -41,10 +41,9 @@ export function createLazyComponent<T extends ComponentType<unknown>>(
   
   return function LazyWrapper(props: Record<string, unknown>) {
     return (
-      <LazyComponent
-        {...props}
-        fallback={fallback}
-      />
+      <Suspense fallback={fallback}>
+        <LazyComponent {...props} />
+      </Suspense>
     );
   };
 }
@@ -56,7 +55,7 @@ export class PreloadManager {
   /**
    * Предзагрузка компонента
    */
-  static async preloadComponent(componentName: string, importFn: () => Promise<any>) {
+  static async preloadComponent(componentName: string, importFn: () => Promise<ComponentType<unknown>>) {
     if (this.preloadedComponents.has(componentName)) {
       return;
     }
@@ -89,7 +88,7 @@ export class PreloadManager {
   /**
    * Предзагрузка на основе пользовательских действий
    */
-  static async preloadOnHover(componentName: string, importFn: () => Promise<any>) {
+  static async preloadOnHover(componentName: string, importFn: () => Promise<ComponentType<unknown>>) {
     // Предзагружаем при наведении мыши
     const preloadHandler = () => {
       this.preloadComponent(componentName, importFn);
@@ -104,7 +103,7 @@ export class PreloadManager {
    * Предзагрузка на основе роута
    */
   static async preloadForRoute(route: string) {
-    const routeComponents: Record<string, () => Promise<any>> = {
+    const routeComponents: Record<string, () => Promise<ComponentType<unknown>>> = {
       '/dashboard': () => import('../pages/Dashboard'),
       '/database': () => import('../pages/DatabaseView'),
       '/analytics': () => import('../pages/Analytics'),

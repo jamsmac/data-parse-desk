@@ -49,7 +49,7 @@ class WebGLContextManager {
     }
 
     // Fallback на основе памяти
-    const memory = (navigator as any).deviceMemory || 4;
+    const memory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory || 4;
     if (memory >= 8) return 3;
     if (memory >= 4) return 2;
     return 1;
@@ -94,7 +94,7 @@ class WebGLContextManager {
         }
         resolve(gl);
       });
-    }) as any;
+    }) as Promise<WebGLRenderingContext | null>;
   }
 
   /**
@@ -195,7 +195,7 @@ export function WebGLConditionalRenderer({
     setCanRender(info.active < info.max);
   }, [manager]);
 
-  return canRender ? <>{children}</> : <>{fallback}</>;
+  return canRender ? children : fallback;
 }
 
 /**
