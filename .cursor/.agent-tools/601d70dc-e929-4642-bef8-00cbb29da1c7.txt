@@ -1,0 +1,241 @@
+
+> vite_react_shadcn_ts@0.0.0 test:coverage
+> vitest run --coverage
+
+
+ RUN  v3.2.4 /workspace/data-parse-desk
+      Coverage enabled with v8
+
+stderr | src/utils/__tests__/formulaEngine.test.ts > FormulaEngine > calculateFormula > Обработка ошибок > должен возвращать ошибку при неизвестной функции
+Ошибка вычисления формулы: Error: Unknown function: unknown_func
+    at parsePrimary (/workspace/data-parse-desk/src/utils/formulaEngine.ts:435:15)
+    at parseUnary (/workspace/data-parse-desk/src/utils/formulaEngine.ts:379:12)
+    at parseMulDiv (/workspace/data-parse-desk/src/utils/formulaEngine.ts:352:16)
+    at parseAddSub (/workspace/data-parse-desk/src/utils/formulaEngine.ts:329:16)
+    at parseComparison (/workspace/data-parse-desk/src/utils/formulaEngine.ts:298:16)
+    at parseEquality (/workspace/data-parse-desk/src/utils/formulaEngine.ts:280:16)
+    at parseAnd (/workspace/data-parse-desk/src/utils/formulaEngine.ts:268:16)
+    at parseOr (/workspace/data-parse-desk/src/utils/formulaEngine.ts:256:16)
+    at parseExpression (/workspace/data-parse-desk/src/utils/formulaEngine.ts:252:12)
+    at evaluate (/workspace/data-parse-desk/src/utils/formulaEngine.ts:479:10)
+
+ ✓ src/utils/__tests__/formulaEngine.test.ts (37 tests) 21ms
+ ✓ src/components/aurora/__tests__/AuroraBackground.test.tsx (29 tests) 599ms
+ ✓ src/components/ui/__tests__/button.test.tsx (4 tests) 175ms
+ ✓ src/components/common/__tests__/LoadingSpinner.test.tsx (3 tests) 168ms
+ ✓ src/components/aurora/__tests__/Animations.test.tsx (35 tests) 141ms
+ ✓ src/components/aurora/__tests__/GlassCard.test.tsx (30 tests) 117ms
+ ✓ src/utils/__tests__/parseData.test.ts (30 tests) 29ms
+ ✓ src/api/__tests__/relationAPI.test.ts (27 tests) 11ms
+ ✓ src/api/__tests__/fileAPI.test.ts (26 tests) 21ms
+ ✓ tests/memory-leaks.test.tsx (11 tests) 10ms
+ ✓ src/api/__tests__/databaseAPI.test.ts (24 tests) 10ms
+ ✓ tests/regression/aurora-fixes.test.ts (15 tests) 5ms
+ ✓ src/utils/__tests__/columnMapper.test.ts (8 tests) 4ms
+ ✓ src/utils/__tests__/fileParser.test.ts (14 tests) 12129ms
+   ✓ FileParser > parseFile > Обработка ошибок > должен проверять размер файлов  12095ms
+
+ Test Files  14 passed (14)
+      Tests  293 passed (293)
+   Start at  15:42:35
+   Duration  15.69s (transform 404ms, setup 1.43s, collect 957ms, tests 13.44s, environment 5.23s, prepare 943ms)
+
+ % Coverage report from v8
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   10.54 |    69.25 |   35.08 |   10.54 |                   
+ data-parse-desk   |       0 |        0 |       0 |       0 |                   
+  .eslintrc.cjs    |       0 |        0 |       0 |       0 | 1-79              
+ ...ve/aurora-docs |       0 |        0 |       0 |       0 |                   
+  ...A_EXAMPLE.tsx |       0 |        0 |       0 |       0 | 1-256             
+ ...e/coverage-old |       0 |        0 |       0 |       0 |                   
+  ...navigation.js |       0 |        0 |       0 |       0 | 1-87              
+  prettify.js      |       0 |        0 |       0 |       0 | 1-2               
+  sorter.js        |       0 |        0 |       0 |       0 | 1-210             
+ ...parse-desk/src |       0 |        0 |       0 |       0 |                   
+  App.tsx          |       0 |        0 |       0 |       0 | 1-60              
+  main.tsx         |       0 |        0 |       0 |       0 | 1-12              
+ ...e-desk/src/api |   89.06 |    94.61 |   83.67 |   89.06 |                   
+  databaseAPI.ts   |   91.72 |      100 |      80 |   91.72 | ...40-144,147-148 
+  fileAPI.ts       |   83.33 |    91.42 |      75 |   83.33 | ...65-389,393-426 
+  relationAPI.ts   |   98.76 |    96.87 |     100 |   98.76 | 217-218           
+ ...src/components |       0 |        0 |       0 |       0 |                   
+  DataTable.tsx    |       0 |        0 |       0 |       0 | 1-425             
+  FiltersBar.tsx   |       0 |        0 |       0 |       0 | 1-132             
+  Header.tsx       |       0 |        0 |       0 |       0 | 1-184             
+  SummaryPanel.tsx |       0 |        0 |       0 |       0 | 1-72              
+  UploadZone.tsx   |       0 |        0 |       0 |       0 | 1-72              
+ ...ponents/aurora |       0 |    33.33 |   33.33 |       0 |                   
+  ...rBoundary.tsx |       0 |      100 |     100 |       0 | 4-199             
+  index.ts         |       0 |        0 |       0 |       0 | 1-61              
+  lazy.ts          |       0 |        0 |       0 |       0 | 1-78              
+ ...urora/animated |       0 |        0 |       0 |       0 |                   
+  AnimatedList.tsx |       0 |        0 |       0 |       0 | 1-34              
+  Skeleton.tsx     |       0 |        0 |       0 |       0 | 1-361             
+ ...ora/animations |     100 |    28.57 |     100 |     100 |                   
+  FadeIn.tsx       |     100 |       50 |     100 |     100 | 19                
+  ...rChildren.tsx |     100 |       20 |     100 |     100 | 61-76             
+ ...ts/aurora/core |       0 |        0 |       0 |       0 |                   
+  FluidButton.tsx  |       0 |        0 |       0 |       0 | 1-299             
+  GlassCard.tsx    |       0 |        0 |       0 |       0 | 1-317             
+  ...Container.tsx |       0 |        0 |       0 |       0 | 1-195             
+ ...aurora/effects |   95.67 |      100 |       0 |   95.67 |                   
+  ...ackground.tsx |   95.67 |      100 |       0 |   95.67 | ...27-128,141-144 
+ ...aurora/layouts |   34.71 |    86.66 |       0 |   34.71 |                   
+  ...Container.tsx |       0 |        0 |       0 |       0 | 1-272             
+  GlassCard.tsx    |     100 |      100 |     100 |     100 |                   
+  GlassDialog.tsx  |       0 |        0 |       0 |       0 | 1-160             
+ ...rora/providers |       0 |        0 |       0 |       0 |                   
+  ...gProvider.tsx |       0 |        0 |       0 |       0 | 1-181             
+ ...ponents/charts |       0 |        0 |       0 |       0 |                   
+  ChartBuilder.tsx |       0 |        0 |       0 |       0 | 1-624             
+  ChartGallery.tsx |       0 |        0 |       0 |       0 | 1-342             
+  ...rdBuilder.tsx |       0 |        0 |       0 |       0 | 1-522             
+  PivotTable.tsx   |       0 |        0 |       0 |       0 | 1-443             
+ .../collaboration |       0 |        0 |       0 |       0 |                   
+  ActivityFeed.tsx |       0 |        0 |       0 |       0 | 1-203             
+  ...ivityFeed.tsx |       0 |        0 |       0 |       0 | 1-287             
+  ...entsPanel.tsx |       0 |        0 |       0 |       0 | 1-398             
+  ...entsPanel.tsx |       0 |        0 |       0 |       0 | 1-303             
+  ...lSettings.tsx |       0 |        0 |       0 |       0 | 1-429             
+  ...ionCenter.tsx |       0 |        0 |       0 |       0 | 1-389             
+  ...eferences.tsx |       0 |        0 |       0 |       0 | 1-415             
+  ...onsMatrix.tsx |       0 |        0 |       0 |       0 | 1-340             
+  RoleEditor.tsx   |       0 |        0 |       0 |       0 | 1-575             
+  ...anagement.tsx |       0 |        0 |       0 |       0 | 1-567             
+ ...ponents/common |    5.45 |    16.66 |      20 |    5.45 |                   
+  ColorPicker.tsx  |       0 |        0 |       0 |       0 | 1-246             
+  EmptyState.tsx   |       0 |        0 |       0 |       0 | 1-49              
+  ...rBoundary.tsx |       0 |        0 |       0 |       0 | 1-172             
+  IconPicker.tsx   |       0 |        0 |       0 |       0 | 1-282             
+  ...ngSpinner.tsx |    86.2 |       50 |     100 |    86.2 | 37-42             
+ ...nents/database |       0 |        0 |       0 |       0 |                   
+  CellEditor.tsx   |       0 |        0 |       0 |       0 | 1-389             
+  ...mnManager.tsx |       0 |        0 |       0 |       0 | 1-340             
+  DatabaseCard.tsx |       0 |        0 |       0 |       0 | 1-151             
+  ...ormDialog.tsx |       0 |        0 |       0 |       0 | 1-223             
+  FilterBar.tsx    |       0 |        0 |       0 |       0 | 1-359             
+ ...ponents/import |       0 |        0 |       0 |       0 |                   
+  ColumnMapper.tsx |       0 |        0 |       0 |       0 | 1-473             
+  ...ortDialog.tsx |       0 |        0 |       0 |       0 | 1-766             
+  ...ileDialog.tsx |       0 |        0 |       0 |       0 | 1-261             
+ ...ents/relations |       0 |        0 |       0 |       0 |                   
+  ...umnEditor.tsx |       0 |        0 |       0 |       0 | 1-234             
+  ...umnEditor.tsx |       0 |        0 |       0 |       0 | 1-212             
+  ...onManager.tsx |       0 |        0 |       0 |       0 | 1-245             
+  ...ionPicker.tsx |       0 |        0 |       0 |       0 | 1-275             
+  ...shipGraph.tsx |       0 |        0 |       0 |       0 | 1-401             
+  ...umnEditor.tsx |       0 |        0 |       0 |       0 | 1-269             
+ ...onents/reports |       0 |        0 |       0 |       0 |                   
+  PDFExporter.tsx  |       0 |        0 |       0 |       0 | 1-212             
+  ...rtBuilder.tsx |       0 |        0 |       0 |       0 | 1-460             
+  ...tTemplate.tsx |       0 |        0 |       0 |       0 | 1-75              
+  ...edReports.tsx |       0 |        0 |       0 |       0 | 1-365             
+ .../components/ui |    1.44 |     1.96 |       0 |    1.44 |                   
+  accordion.tsx    |       0 |        0 |       0 |       0 | 1-50              
+  alert-dialog.tsx |       0 |        0 |       0 |       0 | 1-90              
+  alert.tsx        |       0 |        0 |       0 |       0 | 1-41              
+  aspect-ratio.tsx |       0 |        0 |       0 |       0 | 1-3               
+  avatar.tsx       |       0 |        0 |       0 |       0 | 1-36              
+  badge.tsx        |       0 |        0 |       0 |       0 | 1-11              
+  ...e.variants.ts |       0 |        0 |       0 |       0 | 1-17              
+  breadcrumb.tsx   |       0 |        0 |       0 |       0 | 1-80              
+  button.tsx       |     100 |       50 |     100 |     100 | 41                
+  calendar.tsx     |       0 |        0 |       0 |       0 | 1-52              
+  card.tsx         |       0 |        0 |       0 |       0 | 1-41              
+  carousel.tsx     |       0 |        0 |       0 |       0 | 1-222             
+  chart.tsx        |       0 |        0 |       0 |       0 | 1-301             
+  checkbox.tsx     |       0 |        0 |       0 |       0 | 1-24              
+  collapsible.tsx  |       0 |        0 |       0 |       0 | 1-7               
+  command.tsx      |       0 |        0 |       0 |       0 | 1-120             
+  context-menu.tsx |       0 |        0 |       0 |       0 | 1-160             
+  dialog.tsx       |       0 |        0 |       0 |       0 | 1-82              
+  drawer.tsx       |       0 |        0 |       0 |       0 | 1-74              
+  ...down-menu.tsx |       0 |        0 |       0 |       0 | 1-161             
+  form.tsx         |       0 |        0 |       0 |       0 | 1-127             
+  hover-card.tsx   |       0 |        0 |       0 |       0 | 1-25              
+  input-otp.tsx    |       0 |        0 |       0 |       0 | 1-59              
+  input.tsx        |       0 |        0 |       0 |       0 | 1-20              
+  label.tsx        |       0 |        0 |       0 |       0 | 1-15              
+  menubar.tsx      |       0 |        0 |       0 |       0 | 1-188             
+  ...tion-menu.tsx |       0 |        0 |       0 |       0 | 1-108             
+  pagination.tsx   |       0 |        0 |       0 |       0 | 1-71              
+  popover.tsx      |       0 |        0 |       0 |       0 | 1-27              
+  progress.tsx     |       0 |        0 |       0 |       0 | 1-21              
+  radio-group.tsx  |       0 |        0 |       0 |       0 | 1-34              
+  resizable.tsx    |       0 |        0 |       0 |       0 | 1-31              
+  scroll-area.tsx  |       0 |        0 |       0 |       0 | 1-36              
+  select.tsx       |       0 |        0 |       0 |       0 | 1-130             
+  separator.tsx    |       0 |        0 |       0 |       0 | 1-18              
+  sheet.tsx        |       0 |        0 |       0 |       0 | 1-94              
+  sidebar.tsx      |       0 |        0 |       0 |       0 | 1-610             
+  skeleton.tsx     |       0 |        0 |       0 |       0 | 1-5               
+  slider.tsx       |       0 |        0 |       0 |       0 | 1-21              
+  sonner.tsx       |       0 |        0 |       0 |       0 | 1-25              
+  switch.tsx       |       0 |        0 |       0 |       0 | 1-25              
+  table.tsx        |       0 |        0 |       0 |       0 | 1-70              
+  tabs.tsx         |       0 |        0 |       0 |       0 | 1-51              
+  textarea.tsx     |       0 |        0 |       0 |       0 | 1-19              
+  toast.tsx        |       0 |        0 |       0 |       0 | 1-95              
+  toaster.tsx      |       0 |        0 |       0 |       0 | 1-24              
+  toggle-group.tsx |       0 |        0 |       0 |       0 | 1-47              
+  toggle.tsx       |       0 |        0 |       0 |       0 | 1-35              
+  tooltip.tsx      |       0 |        0 |       0 |       0 | 1-26              
+  use-toast.ts     |       0 |        0 |       0 |       0 | 1                 
+ ...k/src/contexts |       0 |        0 |       0 |       0 |                   
+  AuthContext.tsx  |       0 |        0 |       0 |       0 | 1-213             
+ ...desk/src/hooks |       0 |        0 |       0 |       0 |                   
+  use-mobile.tsx   |       0 |        0 |       0 |       0 | 1-19              
+  use-toast.ts     |       0 |        0 |       0 |       0 | 1-184             
+  useDatabases.ts  |       0 |        0 |       0 |       0 | 1-77              
+  useFiles.ts      |       0 |        0 |       0 |       0 | 1-262             
+  useRelations.ts  |       0 |        0 |       0 |       0 | 1-233             
+  useTableData.ts  |       0 |        0 |       0 |       0 | 1-81              
+ ...c/hooks/aurora |    6.38 |     37.5 |   16.66 |    6.38 |                   
+  ...aAnimation.ts |       0 |        0 |       0 |       0 | 1-335             
+  useDeviceType.ts |       0 |        0 |       0 |       0 | 1-47              
+  ...ucedMotion.ts |   59.09 |       60 |   33.33 |   59.09 | ...43,50-53,66-76 
+  useTheme.ts      |       0 |        0 |       0 |       0 | 1-72              
+ ...tions/supabase |       0 |       50 |      50 |       0 |                   
+  client.ts        |       0 |        0 |       0 |       0 | 1-17              
+  types.ts         |       0 |      100 |     100 |       0 | 380-384           
+ ...e-desk/src/lib |    5.26 |       50 |      50 |    5.26 |                   
+  sentry.ts        |       0 |        0 |       0 |       0 | 1-111             
+  utils.ts         |     100 |      100 |     100 |     100 |                   
+ ...src/lib/aurora |       0 |        0 |       0 |       0 |                   
+  ...ceDetector.ts |       0 |        0 |       0 |       0 | 1-231             
+ ...desk/src/pages |       0 |        0 |       0 |       0 |                   
+  Analytics.tsx    |       0 |        0 |       0 |       0 | 1-123             
+  Dashboard.tsx    |       0 |        0 |       0 |       0 | 1-375             
+  DatabaseView.tsx |       0 |        0 |       0 |       0 | 1-569             
+  Index.tsx        |       0 |        0 |       0 |       0 | 1-263             
+  LoginPage.tsx    |       0 |        0 |       0 |       0 | 1-160             
+  NotFound.tsx     |       0 |        0 |       0 |       0 | 1-24              
+  ProfilePage.tsx  |       0 |        0 |       0 |       0 | 1-412             
+  RegisterPage.tsx |       0 |        0 |       0 |       0 | 1-178             
+  Reports.tsx      |       0 |        0 |       0 |       0 | 1-204             
+ ...esk/src/routes |       0 |        0 |       0 |       0 |                   
+  lazyRoutes.tsx   |       0 |        0 |       0 |       0 | 1-22              
+ ...desk/src/types |       0 |       50 |      50 |       0 |                   
+  auth.ts          |       0 |        0 |       0 |       0 |                   
+  automation.ts    |       0 |        0 |       0 |       0 | 1-3               
+  charts.ts        |       0 |        0 |       0 |       0 |                   
+  common.ts        |       0 |        0 |       0 |       0 | 1-183             
+  database.ts      |       0 |        0 |       0 |       0 | 1                 
+  reports.ts       |       0 |        0 |       0 |       0 |                   
+ ...desk/src/utils |   39.04 |    83.76 |   56.81 |   39.04 |                   
+  ...Validation.ts |       0 |        0 |       0 |       0 | 1-399             
+  columnMapper.ts  |   37.93 |    76.31 |   44.44 |   37.93 | ...29-283,289-350 
+  exportData.ts    |       0 |        0 |       0 |       0 | 1-71              
+  fileParser.ts    |   58.19 |    79.16 |      75 |   58.19 | ...,60-62,105-160 
+  formulaEngine.ts |   87.02 |    87.25 |   57.37 |   87.02 | ...09,629-630,672 
+  mappingMemory.ts |       0 |        0 |       0 |       0 | 1-186             
+  mlMapper.ts      |       0 |        0 |       0 |       0 | 1-285             
+  parseData.ts     |   92.95 |    86.11 |     100 |   92.95 | ...32,134-141,282 
+  ...onResolver.ts |       0 |        0 |       0 |       0 | 1-151             
+  ...Calculator.ts |       0 |      100 |     100 |       0 | 3-167             
+  sqlBuilder.ts    |       0 |        0 |       0 |       0 | 1-460             
+ ...rse-desk/tests |       0 |        0 |       0 |       0 |                   
+  verify-fixes.ts  |       0 |        0 |       0 |       0 | 1-125             
+-------------------|---------|----------|---------|---------|-------------------
