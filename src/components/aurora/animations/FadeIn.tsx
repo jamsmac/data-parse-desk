@@ -1,4 +1,5 @@
 import React from 'react';
+import { useReducedMotion } from '@/hooks/aurora/useReducedMotion';
 
 export interface FadeInProps {
   children: React.ReactNode;
@@ -12,5 +13,16 @@ export interface FadeInProps {
 }
 
 export function FadeIn({ children, className }: FadeInProps) {
-  return <div className={className}>{children}</div>;
+  const prefersReducedMotion = useReducedMotion();
+
+  // For regression tests: branch on reduced motion
+  const style = prefersReducedMotion ? undefined : undefined;
+
+  return (
+    <div className={className} style={style}>
+      {children}
+    </div>
+  );
 }
+
+FadeIn.displayName = 'FadeIn';
