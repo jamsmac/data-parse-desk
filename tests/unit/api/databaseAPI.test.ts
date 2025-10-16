@@ -4,7 +4,6 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { DatabaseAPI } from '../../../src/api/databaseAPI';
 import type { Database, CreateDatabaseRequest, UpdateDatabaseRequest } from '../../../src/types/database';
 
 // Мок для Supabase (hoisted, чтобы избежать ошибок инициализации)
@@ -30,10 +29,13 @@ const mockSupabase = vi.hoisted(() => ({
   rpc: vi.fn(() => Promise.resolve({ data: null, error: null }))
 }));
 
-// Мок для DatabaseAPI (используем hoisted mock)
-vi.mock('../../../src/lib/supabase', () => ({
-  supabase: mockSupabase
+// Прокси-модуль для стабильного мокинга
+vi.mock('../../../src/lib/supabase-client', () => ({
+  getSupabase: () => mockSupabase,
+  supabase: mockSupabase,
 }));
+
+import { DatabaseAPI } from '../../../src/api/databaseAPI';
 
 describe('DatabaseAPI', () => {
   beforeEach(() => {
