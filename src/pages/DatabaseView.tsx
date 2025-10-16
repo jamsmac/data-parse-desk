@@ -29,10 +29,6 @@ import {
 } from '../components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { toast } from 'sonner';
-import { AuroraActivityFeed } from '../components/collaboration/AuroraActivityFeed';
-import { AuroraCommentsPanel } from '../components/collaboration/AuroraCommentsPanel';
-import { useActivity } from '../hooks/useActivity';
-import { useComments } from '../hooks/useComments';
 import type { User } from '@/types/auth';
 import ColumnManager from '../components/database/ColumnManager';
 import CellEditor from '../components/database/CellEditor';
@@ -79,16 +75,6 @@ export default function DatabaseView() {
   const updateRow = useUpdateRow(id!);
   const deleteRow = useDeleteRow(id!);
 
-  // Activity tracking
-  const { activities, logActivity } = useActivity(id!);
-
-  // Comments for selected row
-  const {
-    comments,
-    addComment,
-    updateComment,
-    deleteComment,
-  } = useComments(id!, selectedRowId || '');
 
   // Получение текущего пользователя
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -377,15 +363,6 @@ export default function DatabaseView() {
               <TableIcon className="h-4 w-4" />
               Данные
             </TabsTrigger>
-            <TabsTrigger value="activity" className="gap-2">
-              <TableIcon className="h-4 w-4" />
-              Активность
-              {activities.length > 0 && (
-                <Badge variant="secondary" className="ml-1">
-                  {activities.length}
-                </Badge>
-              )}
-            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="data">
@@ -539,10 +516,6 @@ export default function DatabaseView() {
           </div>
         )}
           </TabsContent>
-
-          <TabsContent value="activity">
-            <AuroraActivityFeed activities={activities} limit={100} />
-          </TabsContent>
         </Tabs>
       </div>
       
@@ -594,24 +567,10 @@ export default function DatabaseView() {
               Обсудите данные и оставьте заметки для команды
             </SheetDescription>
           </SheetHeader>
-          <div className="mt-6">
-            {currentUser && selectedRowId && (
-              <AuroraCommentsPanel
-                comments={comments}
-                currentUser={currentUser}
-                rowId={selectedRowId}
-                databaseId={id!}
-                onAddComment={async (content: string, parentId?: string) => {
-                  await addComment({ content, parentId });
-                }}
-                onUpdateComment={async (commentId: string, content: string) => {
-                  await updateComment({ commentId, content });
-                }}
-                onDeleteComment={async (commentId: string) => {
-                  await deleteComment(commentId);
-                }}
-              />
-            )}
+          <div className="mt-6 p-4">
+            <p className="text-sm text-muted-foreground">
+              Функция комментариев временно недоступна
+            </p>
           </div>
         </SheetContent>
       </Sheet>

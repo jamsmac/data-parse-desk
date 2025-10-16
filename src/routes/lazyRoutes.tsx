@@ -19,6 +19,6 @@ export const NotFound = lazy(() => import('@/pages/NotFound'));
 // Fallback компонент для lazy loading
 export const LazyLoadFallback = () => (
   <div className="flex items-center justify-center min-h-screen">
-    <LoadingSpinner size="large" text="Загрузка страницы..." />
+    <LoadingSpinner size="lg" text="Загрузка страницы..." />
   </div>
 );

@@ -43,13 +43,13 @@ const Index = () => {
       
       // Check for duplicates using order_number
       const orderNumbers = result.data
-        .map(row => row["Order number"])
+        .map(row => String(row["Order number"] || ''))
         .filter(Boolean);
       
       const { data: existingOrders } = await supabase
         .from('orders')
         .select('order_number')
-        .in('order_number', orderNumbers);
+        .in('order_number', orderNumbers as string[]);
       
       const existingOrderSet = new Set(
         existingOrders?.map(row => row.order_number) || []
@@ -59,7 +59,8 @@ const Index = () => {
       let duplicateCount = 0;
 
       for (const row of result.data) {
-        if (row["Order number"] && existingOrderSet.has(row["Order number"])) {
+        const orderNumber = String(row["Order number"] || '');
+        if (orderNumber && existingOrderSet.has(orderNumber)) {
           duplicateCount++;
         } else {
           newRows.push(row);
@@ -71,26 +72,26 @@ const Index = () => {
       // Save new rows to database
       if (newRows.length > 0) {
         const ordersToInsert = newRows.map(row => ({
-          order_number: row["Order number"] || '',
-          operator_code: row["Operator Code"] || null,
-          goods_name: row["Goods name"] || null,
-          flavour_name: row["Flavour name"] || null,
-          order_resource: row["Order resource"] || null,
-          order_type: row["Order type"] || null,
-          order_status: row["Order status"] || null,
-          cup_type: row["Cup type"] ? parseInt(row["Cup type"]) : null,
-          machine_code: row["Machine Code"] || null,
-          address: row["Address"] || null,
-          order_price: row["Order price"] ? parseFloat(row["Order price"]) : null,
-          brew_status: row["Brew status"] || null,
-          creation_time: row["Creation time"] || null,
-          paying_time: row["Paying time"] || null,
-          brewing_time: row["Brewing time"] || null,
-          delivery_time: row["Delivery time"] || null,
-          refund_time: row["Refund time"] || null,
-          pay_card: row["Pay Card"] || null,
-          reason: row["Reason"] || null,
-          remark: row["Remark"] || null,
+          order_number: String(row["Order number"] || ''),
+          operator_code: String(row["Operator Code"] || ''),
+          goods_name: String(row["Goods name"] || ''),
+          flavour_name: String(row["Flavour name"] || ''),
+          order_resource: String(row["Order resource"] || ''),
+          order_type: String(row["Order type"] || ''),
+          order_status: String(row["Order status"] || ''),
+          cup_type: row["Cup type"] ? parseInt(String(row["Cup type"])) : null,
+          machine_code: String(row["Machine Code"] || ''),
+          address: String(row["Address"] || ''),
+          order_price: row["Order price"] ? parseFloat(String(row["Order price"])) : null,
+          brew_status: String(row["Brew status"] || ''),
+          creation_time: String(row["Creation time"] || ''),
+          paying_time: String(row["Paying time"] || ''),
+          brewing_time: String(row["Brewing time"] || ''),
+          delivery_time: String(row["Delivery time"] || ''),
+          refund_time: String(row["Refund time"] || ''),
+          pay_card: String(row["Pay Card"] || ''),
+          reason: String(row["Reason"] || ''),
+          remark: String(row["Remark"] || ''),
         }));
 
         const { error } = await supabase
@@ -218,7 +219,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen w-full bg-background">
-      <Header isDark={isDark} onToggleTheme={() => setIsDark(!isDark)} />
+      <Header />
 
       {!parseResult ? (
         <UploadZone onFileSelect={handleFileSelect} isLoading={isLoading} />
