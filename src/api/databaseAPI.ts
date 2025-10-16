@@ -226,3 +226,15 @@ export class DatabaseAPI {
     return result || { rowCount: 0, lastUpdated: new Date().toISOString() };
   }
 }
+
+// Экспортируем класс и отдельные функции для удобства
+export { DatabaseAPI };
+
+// Экспортируем отдельные функции
+export const getAllDatabases = DatabaseAPI.getAllDatabases;
+export const createDatabase = DatabaseAPI.createDatabase;
+export const updateDatabase = DatabaseAPI.updateDatabase;
+export const deleteDatabase = DatabaseAPI.deleteDatabase;
+export const getTableData = DatabaseAPI.getTableData;
+export const getTableSchema = DatabaseAPI.getTableSchema;
+export const updateTableSchema = DatabaseAPI.updateTableSchema;
