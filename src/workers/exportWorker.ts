@@ -63,7 +63,7 @@ self.addEventListener('message', async (event: MessageEvent<ExportWorkerMessage>
 /**
  * Обработка изображения с прогрессом
  */
-async function processImage(data: any) {
+async function processImage(data: { imageData: ImageData; format: string; quality: number }) {
   const { imageData, format, quality } = data;
 
   // Отправляем прогресс
@@ -112,7 +112,7 @@ async function processImage(data: any) {
 /**
  * Добавление водяного знака на изображение
  */
-async function addWatermarkToImage(data: any) {
+async function addWatermarkToImage(data: { imageData: ImageData; watermark?: string }) {
   const { imageData, watermark } = data;
 
   if (!watermark) return;
@@ -167,7 +167,7 @@ async function addWatermarkToImage(data: any) {
 
   const response: ExportWorkerResponse = {
     type: 'SUCCESS',
-    data: newImageData as any
+    data: newImageData as ImageData
   };
 
   self.postMessage(response);
@@ -176,7 +176,7 @@ async function addWatermarkToImage(data: any) {
 /**
  * Конвертация формата изображения
  */
-async function convertImageFormat(data: any) {
+async function convertImageFormat(data: { imageData: ImageData; format: string; quality: number }) {
   const { imageData, format, quality } = data;
 
   const canvas = new OffscreenCanvas(imageData.width, imageData.height);

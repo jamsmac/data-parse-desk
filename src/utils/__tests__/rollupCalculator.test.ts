@@ -345,7 +345,7 @@ describe('RollupCalculator', () => {
 
     it('должен возвращать дефис для null значений', () => {
       expect(formatRollupValue(null, 'sum')).toBe('-');
-      expect(formatRollupValue(undefined as any, 'count')).toBe('-');
+      expect(formatRollupValue(undefined as never, 'count')).toBe('-');
     });
 
     it('должен обрабатывать строковые значения', () => {

@@ -208,8 +208,8 @@ export class TreeShakingOptimizer {
    */
   static checkUnusedImports() {
     // В production это будет выполняться на этапе сборки
-    if (process.env.NODE_ENV === 'development') {
-    }
+    // Placeholder для будущей реализации
+    return;
   }
   
   /**
