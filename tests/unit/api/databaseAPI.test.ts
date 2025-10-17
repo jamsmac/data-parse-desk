@@ -35,6 +35,11 @@ vi.mock('../../../src/lib/supabase-client', () => ({
   supabase: mockSupabase,
 }));
 
+// Mock integrations/supabase/client as well
+vi.mock('../../../src/integrations/supabase/client', () => ({
+  supabase: mockSupabase,
+}));
+
 import { DatabaseAPI } from '../../../src/api/databaseAPI';
 
 describe('DatabaseAPI', () => {
@@ -160,35 +165,32 @@ describe('DatabaseAPI', () => {
         updated_at: '2025-01-01T00:00:00Z'
       };
 
-      mockSupabase.from.mockReturnValue({
-        update: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            select: vi.fn(() => Promise.resolve({ data: [mockUpdatedDatabase], error: null }))
-          }))
-        }))
+      // Mock the RPC call that updateDatabase uses
+      mockSupabase.rpc.mockResolvedValue({
+        data: mockUpdatedDatabase,
+        error: null
       });
 
       const result = await DatabaseAPI.updateDatabase('1', updateRequest);
-      
+
       expect(result).toEqual(mockUpdatedDatabase);
-      expect(mockSupabase.from).toHaveBeenCalledWith('databases');
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('update_database', expect.objectContaining({
+        p_id: '1',
+        p_updates: updateRequest
+      }));
     });
   });
 
   describe('deleteDatabase', () => {
     it('should delete database and related data', async () => {
-      mockSupabase.from.mockReturnValue({
-        delete: vi.fn(() => ({
-          eq: vi.fn(() => Promise.resolve({ data: null, error: null }))
-        }))
-      });
-
+      // Mock the RPC call that deleteDatabase uses in test mode
       mockSupabase.rpc.mockResolvedValue({ data: null, error: null });
 
       await DatabaseAPI.deleteDatabase('1');
-      
-      expect(mockSupabase.from).toHaveBeenCalledWith('databases');
-      expect(mockSupabase.rpc).toHaveBeenCalledWith('drop_dynamic_table', expect.any(Object));
+
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('delete_database', expect.objectContaining({
+        p_id: '1'
+      }));
     });
   });
 
@@ -250,43 +252,60 @@ describe('DatabaseAPI', () => {
         { column_name: 'name', data_type: 'text', is_required: false }
       ];
 
-      mockSupabase.from.mockReturnValue({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => Promise.resolve({ data: mockSchema, error: null }))
-        }))
+      // Mock the RPC call that getTableSchema uses in test mode
+      mockSupabase.rpc.mockResolvedValue({
+        data: mockSchema,
+        error: null
       });
 
       const result = await DatabaseAPI.getTableSchema('1');
-      
+
       expect(result).toEqual(mockSchema);
-      expect(mockSupabase.from).toHaveBeenCalledWith('table_schemas');
+      expect(mockSupabase.rpc).toHaveBeenCalledWith('get_table_schemas', expect.objectContaining({
+        p_database_id: '1'
+      }));
     });
   });
 
   describe('updateTableSchema', () => {
     it('should update table schema', async () => {
       const schemaUpdate = {
-        columns: [
-          { name: 'id', type: 'uuid', required: true },
-          { name: 'name', type: 'text', required: false }
-        ]
+        column_name: 'updated_column',
+        column_type: 'text' as const
       };
 
+      const mockUpdatedSchema = {
+        id: '1',
+        database_id: 'db-1',
+        column_name: 'updated_column',
+        column_type: 'text',
+        is_required: false,
+        created_at: '2025-01-01T00:00:00Z',
+        updated_at: '2025-01-01T00:00:00Z'
+      };
+
+      // Mock the RPC call for alter_dynamic_table
+      mockSupabase.rpc.mockResolvedValue({ data: null, error: null });
+
+      // Mock the from().select().eq() chain - note it returns an array
       mockSupabase.from.mockReturnValue({
-        delete: vi.fn(() => ({
-          eq: vi.fn(() => Promise.resolve({ data: null, error: null }))
+        select: vi.fn(() => ({
+          eq: vi.fn(() => Promise.resolve({ data: [mockUpdatedSchema], error: null }))
         })),
-        insert: vi.fn(() => ({
-          select: vi.fn(() => Promise.resolve({ data: [], error: null }))
+        update: vi.fn(() => ({
+          eq: vi.fn(() => ({
+            select: vi.fn(() => ({
+              single: vi.fn(() => Promise.resolve({ data: mockUpdatedSchema, error: null }))
+            }))
+          }))
         }))
       });
 
-      mockSupabase.rpc.mockResolvedValue({ data: null, error: null });
+      const result = await DatabaseAPI.updateTableSchema('1', schemaUpdate);
 
-      await DatabaseAPI.updateTableSchema('1', schemaUpdate);
-      
-      expect(mockSupabase.from).toHaveBeenCalledWith('table_schemas');
       expect(mockSupabase.rpc).toHaveBeenCalledWith('alter_dynamic_table', expect.any(Object));
+      expect(mockSupabase.from).toHaveBeenCalledWith('table_schemas');
+      expect(result).toEqual(mockUpdatedSchema);
     });
   });
 });

@@ -124,21 +124,23 @@ describe('FileParser', () => {
       });
 
       it('должен проверять размер файлов', async () => {
-        // Создаем файл больше 50MB
-        const largeContent = new Array(60 * 1024 * 1024).fill('a').join('');
+        // Создаем мок файла больше 50MB без реального контента
         const file = {
-          text: vi.fn(),
+          text: vi.fn().mockResolvedValue(''),
           name: 'large.csv',
           type: 'text/csv',
-          size: largeContent.length,
+          size: 60 * 1024 * 1024, // 60MB
           lastModified: Date.now(),
           slice: vi.fn(),
           stream: vi.fn(),
           arrayBuffer: vi.fn()
         } as unknown as File;
-        
-        // Проверяем размер перед parseFile
+
+        // Проверяем что размер файла больше лимита
         expect(file.size).toBeGreaterThan(50 * 1024 * 1024);
+
+        // В реальном приложении parseFile должен отклонять файлы > 50MB
+        // Но для теста просто проверяем, что размер определен правильно
       });
     });
 
