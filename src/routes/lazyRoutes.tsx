@@ -6,14 +6,35 @@
 import { lazy } from 'react';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
-// Lazy load всех страниц для уменьшения initial bundle
+// Core pages - load quickly
 export const Dashboard = lazy(() => import('@/pages/Dashboard'));
 export const DatabaseView = lazy(() => import('@/pages/DatabaseView'));
-export const Analytics = lazy(() => import('@/pages/Analytics'));
-export const Reports = lazy(() => import('@/pages/Reports'));
-export const LoginPage = lazy(() => import('@/pages/LoginPage'));
-export const RegisterPage = lazy(() => import('@/pages/RegisterPage'));
-export const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
+
+// Heavy pages with charts - separate chunks with prefetch
+export const Analytics = lazy(() =>
+  import(/* webpackChunkName: "analytics", webpackPrefetch: true */ '@/pages/Analytics')
+);
+export const Reports = lazy(() =>
+  import(/* webpackChunkName: "reports", webpackPrefetch: true */ '@/pages/Reports')
+);
+
+// Auth pages - bundle together
+export const LoginPage = lazy(() =>
+  import(/* webpackChunkName: "auth" */ '@/pages/LoginPage')
+);
+export const RegisterPage = lazy(() =>
+  import(/* webpackChunkName: "auth" */ '@/pages/RegisterPage')
+);
+export const ProfilePage = lazy(() =>
+  import(/* webpackChunkName: "auth" */ '@/pages/ProfilePage')
+);
+
+// Settings - separate chunk
+export const Settings = lazy(() =>
+  import(/* webpackChunkName: "settings" */ '@/pages/Settings')
+);
+
+// Error page - small, load quickly
 export const NotFound = lazy(() => import('@/pages/NotFound'));
 
 // Fallback компонент для lazy loading

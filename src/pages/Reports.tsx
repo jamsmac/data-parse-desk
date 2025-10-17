@@ -61,7 +61,6 @@ export default function Reports() {
   };
 
   const handleUseTemplate = (template: ReportTemplateType) => {
-    console.log('Using template:', template);
     // Здесь будет логика генерации отчета
   };
 
@@ -95,7 +94,6 @@ export default function Reports() {
   };
 
   const handleExport = async (config: ExportConfig) => {
-    console.log('Exporting with config:', config);
     // Здесь будет логика экспорта в PDF
     await new Promise((resolve) => setTimeout(resolve, 2000));
   };
@@ -122,7 +120,6 @@ export default function Reports() {
           initialTemplate={editingTemplate || undefined}
           availableCharts={mockCharts}
           onSave={handleSaveTemplate}
-          onPreview={(template) => console.log('Preview template:', template)}
         />
       ) : (
         <Tabs value={activeTab} onValueChange={setActiveTab}>

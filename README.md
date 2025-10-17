@@ -2,7 +2,7 @@
 
 **Полноценная платформа для работы с табличными данными**
 
-![Status](https://img.shields.io/badge/status-88%25%20Ready-success)
+![Status](https://img.shields.io/badge/status-95%25%20Ready-success)
 ![Version](https://img.shields.io/badge/version-1.0.0--beta-blue)
 ![Tests](https://img.shields.io/badge/tests-107%2F107%20passing-brightgreen)
 ![Security](https://img.shields.io/badge/security-100%25-brightgreen)
@@ -64,8 +64,7 @@ src/
 ├── api/              # API слой (Supabase)
 │   ├── databaseAPI.ts
 │   ├── fileAPI.ts
-│   ├── relationAPI.ts
-│   └── analyticsAPI.ts
+│   └── relationAPI.ts
 ├── components/       # React компоненты
 │   ├── ui/          # shadcn/ui базовые
 │   ├── DatabaseCard.tsx
@@ -412,5 +411,20 @@ MIT License - см. LICENSE файл
 ---
 
 **Создано с ❤️ для работы с данными**
+
+---
+
+## 📊 Статистика проекта
+
+- **Компонентов**: 108
+- **Строк кода**: 35,778
+- **Тестовых файлов**: 22
+- **Функций**: 183
+- **API файлов**: 3 (databaseAPI, fileAPI, relationAPI)
+- **React hooks**: 10 (4 основных)
+- **Formula Engine**: 1,106 строк кода, 46 функций
+- **Готовность**: 95%
+
+**Обновлено**: 17 октября 2025
 
 [Документация](FULL_IMPLEMENTATION_PLAN.md) | [Issues](../../issues) | [Roadmap](../../projects)

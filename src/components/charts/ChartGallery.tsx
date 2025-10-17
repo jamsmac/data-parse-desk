@@ -5,6 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
   BarChart3,
   LineChart,
   PieChart,
@@ -15,9 +21,15 @@ import {
   Package,
   Search,
   LayoutDashboard,
+  Download,
+  FileImage,
+  FileCode,
 } from 'lucide-react';
+import { exportChartToPNG, exportChartToSVG } from '@/utils/chartExport';
+import { toast } from 'sonner';
 import { ChartType } from '@/types/charts';
 import type { ComponentType } from 'react';
+import { ExportDialog } from './ExportDialog';
 
 export interface ChartTemplate {
   id: string;
@@ -204,6 +216,8 @@ const CATEGORIES = [
 export function ChartGallery({ onSelectTemplate }: ChartGalleryProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [selectedChart, setSelectedChart] = useState<{ element: HTMLElement | null; name: string }>({ element: null, name: '' });
 
   const filteredTemplates = CHART_TEMPLATES.filter((template) => {
     const matchesCategory =
@@ -261,11 +275,10 @@ export function ChartGallery({ onSelectTemplate }: ChartGalleryProps) {
               <Card
                 key={template.id}
                 className="cursor-pointer hover:border-primary transition-colors"
-                onClick={() => onSelectTemplate(template)}
               >
                 <CardHeader>
                   <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3" onClick={() => onSelectTemplate(template)}>
                       <div className="p-2 bg-primary/10 rounded-lg">
                         <template.icon className="h-6 w-6 text-primary" />
                       </div>
@@ -276,12 +289,31 @@ export function ChartGallery({ onSelectTemplate }: ChartGalleryProps) {
                         </CardDescription>
                       </div>
                     </div>
+                    {/* Export button */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const chartId = `chart-${template.id}`;
+                        const element = document.getElementById(chartId);
+                        if (element) {
+                          setSelectedChart({ element, name: template.name });
+                          setExportDialogOpen(true);
+                        }
+                      }}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
                     {/* Preview */}
-                    <div className="h-32 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg flex items-center justify-center">
+                    <div
+                      id={`chart-${template.id}`}
+                      className="h-32 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg flex items-center justify-center"
+                    >
                       <span className="text-6xl">{template.preview}</span>
                     </div>
 
@@ -337,6 +369,13 @@ export function ChartGallery({ onSelectTemplate }: ChartGalleryProps) {
           </div>
         )}
       </ScrollArea>
+
+      <ExportDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        element={selectedChart.element}
+        defaultFileName={selectedChart.name}
+      />
     </div>
   );
 }

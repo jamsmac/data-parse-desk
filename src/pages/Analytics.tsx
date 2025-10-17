@@ -34,21 +34,17 @@ export default function Analytics() {
 
   const handleSaveChart = (chart: ChartConfig) => {
     setSavedCharts((prev) => [...prev, chart]);
-    console.log('Chart saved:', chart);
   };
 
   const handleSaveDashboard = (dashboard: DashboardConfig) => {
     setSavedDashboards((prev) => [...prev, dashboard]);
-    console.log('Dashboard saved:', dashboard);
   };
 
   const handleSelectTemplate = (template: ChartTemplate) => {
-    console.log('Template selected:', template);
     setActiveTab('builder');
   };
 
   const handleExportPivot = (data: unknown[][]) => {
-    console.log('Exporting pivot data:', data);
     // Здесь будет логика экспорта
   };
 
@@ -97,7 +93,6 @@ export default function Analytics() {
           <DashboardBuilder
             availableCharts={savedCharts}
             onSave={handleSaveDashboard}
-            onPreview={(config) => console.log('Preview dashboard:', config)}
           />
         </TabsContent>
       </Tabs>

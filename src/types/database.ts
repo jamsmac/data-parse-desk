@@ -19,12 +19,19 @@ export type ColumnType =
 export interface Database {
   id: string;
   user_id: string;
-  name: string;
+  system_name: string;
+  display_name: string;
+  name: string; // Алиас для display_name (обратная совместимость)
   description?: string;
   icon?: string;
+  icon_name?: string;
   color?: string;
+  color_hex?: string;
+  table_name: string;
   tags?: string[];
   table_count?: number;
+  row_count?: number;
+  created_by?: string;
   created_at: string;
   updated_at: string;
 }
