@@ -64,7 +64,7 @@ describe('Security Tests', () => {
     ];
 
     // Check .env.example has all required vars
-    const fs = require('fs');
+    const fs = await import('fs');
     const envExample = fs.readFileSync('.env.example', 'utf-8');
 
     requiredEnvVars.forEach(envVar => {

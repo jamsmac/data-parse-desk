@@ -134,7 +134,6 @@ const saveTokenToDatabase = async (token: string): Promise<void> => {
 
     if (error) {
       console.error('Error saving FCM token:', error);
-    } else {
     }
   } catch (error) {
     console.error('Error in saveTokenToDatabase:', error);
@@ -225,7 +224,7 @@ export interface PushNotificationPayload {
   title: string;
   body: string;
   type: NotificationType;
-  data?: Record<string, any>;
+  data?: Record<string, string | number | boolean>;
   icon?: string;
   badge?: string;
   tag?: string;
