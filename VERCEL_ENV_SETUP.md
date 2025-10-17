@@ -2,7 +2,9 @@
 
 ## ⚠️ Vercel Deployment Error Fix
 
-The deployment is failing because environment variables are not configured in Vercel.
+**Error:** `Environment Variable "VITE_SUPABASE_URL" references Secret "supabase_url", which does not exist.`
+
+**Solution:** Environment variables must be added through Vercel Dashboard, not in `vercel.json`.
 
 ## Quick Fix Steps:
 
