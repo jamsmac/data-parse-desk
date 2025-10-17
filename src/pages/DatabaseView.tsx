@@ -63,14 +63,14 @@ export default function DatabaseView() {
   const deleteRow = useDeleteRow(id!);
 
   // Получение текущего пользователя
+  // Теперь защищено ProtectedRoute - пользователь гарантированно авторизован
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserId(user.id);
-      } else {
-        setUserId('00000000-0000-0000-0000-000000000000');
       }
+      // Больше не нужен fallback UUID - ProtectedRoute обеспечивает авторизацию
     };
     getUser();
   }, []);

@@ -1,0 +1,23 @@
+=== BUILD ARTIFACTS ===
+./dist
+
+=== LOG FILES ===
+
+=== REPORTS ===
+./phase1-critical-audit-report.md
+./authentication-fix-report.md
+./phase0-quick-audit-report.md
+./phase2-functional-test-report.md
+
+=== TEMP FILES ===
+
+=== PERFORMANCE/BENCHMARK FILES ===
+./performance-benchmarks.ts
+
+=== OLD/TEMPORARY DOCS ===
+./folders-size-before.txt
+./size-before.txt
+./ARCHIVE_LOCATION.txt
+./full-file-list.txt
+./cleanup-summary.txt
+

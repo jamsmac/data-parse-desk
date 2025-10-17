@@ -1,0 +1,8 @@
+1.1G	node_modules/
+1.6M	dist/
+1.1M	src/
+ 56K	supabase/
+ 16K	tests/
+ 16K	public/
+ 16K	docs/
+8.0K	nginx/

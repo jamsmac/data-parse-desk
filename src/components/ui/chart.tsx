@@ -2,6 +2,7 @@ import * as React from "react";
 import * as RechartsPrimitive from "recharts";
 
 import { cn } from "@/lib/utils";
+import { validateColor, createSafeCSSVariable } from "@/utils/colorValidator";
 
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const;
@@ -75,8 +76,16 @@ ${prefix} [data-chart=${id}] {
 ${colorConfig
   .map(([key, itemConfig]) => {
     const color = itemConfig.theme?.[theme as keyof typeof itemConfig.theme] || itemConfig.color;
-    return color ? `  --color-${key}: ${color};` : null;
+    // Validate color to prevent CSS injection
+    try {
+      const validatedColor = validateColor(color);
+      return validatedColor ? `  --color-${key}: ${validatedColor};` : null;
+    } catch (error) {
+      console.warn(`Invalid color for chart key "${key}":`, error);
+      return null;
+    }
   })
+  .filter(Boolean)
   .join("\n")}
 }
 `,

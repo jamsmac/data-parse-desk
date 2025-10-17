@@ -6,11 +6,13 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, Database, Eye, EyeOff } from 'lucide-react';
 import { LoginCredentials } from '@/types/auth';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [credentials, setCredentials] = useState<LoginCredentials>({
     email: '',
     password: '',
@@ -19,6 +21,9 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Get the page user tried to access before being redirected
+  const from = (location.state as any)?.from || '/dashboard';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -26,6 +31,8 @@ export default function LoginPage() {
 
     try {
       await login(credentials);
+      // Redirect to the page they tried to access, or dashboard
+      navigate(from, { replace: true });
     } catch (err: any) {
       setError(err.message || 'Ошибка входа. Проверьте данные.');
     } finally {

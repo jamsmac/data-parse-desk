@@ -4,6 +4,7 @@
  */
 
 import type { FormulaConfig, ColumnType } from '../types/database';
+import safeRegex from 'safe-regex';
 
 /**
  * Токены для парсинга формулы
@@ -39,8 +40,13 @@ const stringFunctions: Record<string, ((...args: any[]) => string)> = {
   concat: (...args: any[]) => args.map(String).join(''),
   substring: (str: string, start: number, end?: number) => 
     String(str).substring(start, end),
-  replace: (str: string, search: string, replace: string) => 
-    String(str).replace(new RegExp(search, 'g'), replace),
+  replace: (str: string, search: string, replace: string) => {
+    // Validate regex pattern to prevent ReDoS attacks
+    if (!safeRegex(search)) {
+      throw new Error(`Unsafe regex pattern: "${search}". Pattern could cause performance issues.`);
+    }
+    return String(str).replace(new RegExp(search, 'g'), replace);
+  },
   length: (str: string) => String(String(str).length),
 };
 
