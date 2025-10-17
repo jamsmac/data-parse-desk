@@ -1,4 +1,4 @@
-import * as ExcelJS from 'exceljs';
+// Dynamic import для ExcelJS - загружается только при необходимости
 import { detectColumns, normalizeRow, NormalizedRow } from './parseData';
 import type { TableRow } from '@/types/common';
 
@@ -101,6 +101,9 @@ async function parseCSV(file: File, fileName: string): Promise<ParseResult> {
 }
 
 async function parseExcel(file: File, fileName: string): Promise<ParseResult> {
+  // Dynamic import для ExcelJS - загружается только при обработке Excel файлов
+  const ExcelJS = await import('exceljs');
+
   const buffer = await file.arrayBuffer();
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer);

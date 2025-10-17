@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 VHData is a universal data management platform (like Notion for databases) built with React + TypeScript + Vite + Supabase. It allows users to create multiple databases, upload Excel/CSV files with intelligent column mapping, filter and analyze data, and build relationships between databases.
 
-**Current Status**: Phase 1 complete (88% ready), working on Relations & Rollups (Phase 1.5).
+**Current Status**: 95% ready, all core features implemented.
 
 ## Essential Commands
 
@@ -106,8 +106,7 @@ All API calls use **Supabase RPC functions** (stored procedures), not direct tab
 **Key APIs**:
 - `databaseAPI.ts`: CRUD for databases, table schemas, dynamic table data
 - `fileAPI.ts`: File upload, import, column mapping
-- `relationAPI.ts`: Database relationships (Phase 1.5)
-- `activityAPI.ts`: Activity logs and audit trail
+- `relationAPI.ts`: Database relationships
 
 **Pattern**: All functions are static methods on API classes (e.g., `DatabaseAPI.createDatabase()`)
 
@@ -121,7 +120,6 @@ Data fetching uses TanStack Query (React Query) for caching, optimistic updates,
 - `useTableData.ts`: Dynamic table data queries
 - `useFiles.ts`: File uploads and processing
 - `useRelations.ts`: Relationship management
-- `useActivity.ts`: Activity feed
 
 ### Frontend Structure
 

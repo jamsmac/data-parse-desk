@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   DndContext,
   DragEndEvent,
@@ -35,11 +35,20 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon, X } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon, X, Download, FileImage, Code } from 'lucide-react';
 import { ChartConfig, ChartType, AggregationType, ChartAxis, ChartData } from '@/types/charts';
 import { TableSchema } from '@/types/database';
 import { TableRow } from '@/types/common';
 import type { ComponentType } from 'react';
+import { exportChart } from '@/utils/chartExport';
+import { toast } from 'sonner';
+import { ExportDialog } from './ExportDialog';
 
 export interface ChartBuilderProps {
   databaseId: string;
@@ -93,6 +102,8 @@ export function ChartBuilder({
 
   const [activeColumn, setActiveColumn] = useState<TableSchema | null>(null);
   const [chartData, setChartData] = useState<ChartData[]>([]);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const chartRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -246,6 +257,34 @@ export function ChartBuilder({
         i === index ? { ...axis, aggregation } : axis
       ),
     }));
+  };
+
+  const handleExport = async (format: 'png' | 'svg') => {
+    if (!chartRef.current) {
+      toast.error('График не найден');
+      return;
+    }
+
+    if (!config.xAxis || config.yAxis.length === 0) {
+      toast.error('Настройте график перед экспортом');
+      return;
+    }
+
+    try {
+      toast.loading(`Экспортируем график в ${format.toUpperCase()}...`);
+
+      await exportChart(chartRef.current, {
+        fileName: config.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase(),
+        format,
+        scale: 2,
+        backgroundColor: '#ffffff',
+      });
+
+      toast.success(`График успешно экспортирован в ${format.toUpperCase()}`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error(`Ошибка экспорта: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+    }
   };
 
   const renderChart = () => {
@@ -604,10 +643,22 @@ export function ChartBuilder({
         {/* Right Panel - Chart Preview */}
         <Card className="col-span-1">
           <CardHeader>
-            <CardTitle>Предпросмотр</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Предпросмотр</CardTitle>
+              {config.xAxis && config.yAxis.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setExportDialogOpen(true)}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Экспорт
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
-            <div className="h-[calc(100vh-300px)]">{renderChart()}</div>
+            <div ref={chartRef} className="h-[calc(100vh-300px)]">{renderChart()}</div>
           </CardContent>
         </Card>
       </div>
@@ -619,6 +670,13 @@ export function ChartBuilder({
           </div>
         )}
       </DragOverlay>
+
+      <ExportDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        element={chartRef.current}
+        defaultFileName={config.name}
+      />
     </DndContext>
   );
 }

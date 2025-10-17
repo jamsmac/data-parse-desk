@@ -14,6 +14,7 @@ export const Reports = lazy(() => import('@/pages/Reports'));
 export const LoginPage = lazy(() => import('@/pages/LoginPage'));
 export const RegisterPage = lazy(() => import('@/pages/RegisterPage'));
 export const ProfilePage = lazy(() => import('@/pages/ProfilePage'));
+export const Settings = lazy(() => import('@/pages/Settings'));
 export const NotFound = lazy(() => import('@/pages/NotFound'));
 
 // Fallback компонент для lazy loading

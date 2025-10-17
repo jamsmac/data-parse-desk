@@ -22,3 +22,31 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Environment and secrets
+.env
+.env.local
+.env.production
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Firebase service account keys - NEVER commit these!
+**/serviceAccount*.json
+**/firebase-service-account*.json
+**/firebase-admin*.json
+**/*-firebase-adminsdk-*.json
+firebase-credentials.json
+service-account-key.json
+
+# Private keys and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+private-key.json
+
+# Supabase
+supabase/.env
+supabase/config.toml

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Select,
   SelectContent,
@@ -24,9 +30,15 @@ import {
   GripVertical,
   Save,
   Eye,
+  Download,
+  FileImage,
+  Code,
 } from 'lucide-react';
 import { ChartConfig } from '@/types/charts';
 import { AnyObject } from '@/types/common';
+import { exportChart } from '@/utils/chartExport';
+import { toast } from 'sonner';
+import { BatchExportDialog } from './BatchExportDialog';
 
 export interface DashboardWidget {
   id: string;
@@ -85,6 +97,8 @@ export function DashboardBuilder({
 
   const [selectedWidget, setSelectedWidget] = useState<string | null>(null);
   const [isPreview, setIsPreview] = useState(false);
+  const [batchExportDialogOpen, setBatchExportDialogOpen] = useState(false);
+  const dashboardRef = useRef<HTMLDivElement>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -157,6 +171,34 @@ export function DashboardBuilder({
     }
   };
 
+  const handleExport = async (format: 'png' | 'svg') => {
+    if (!dashboardRef.current) {
+      toast.error('Дашборд не найден');
+      return;
+    }
+
+    if (config.widgets.length === 0) {
+      toast.error('Добавьте виджеты перед экспортом');
+      return;
+    }
+
+    try {
+      toast.loading(`Экспортируем дашборд в ${format.toUpperCase()}...`);
+
+      await exportChart(dashboardRef.current, {
+        fileName: config.name.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase(),
+        format,
+        scale: 2,
+        backgroundColor: '#ffffff',
+      });
+
+      toast.success(`Дашборд успешно экспортирован в ${format.toUpperCase()}`);
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error(`Ошибка экспорта: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`);
+    }
+  };
+
   if (isPreview) {
     return (
       <div className="space-y-4">
@@ -167,14 +209,34 @@ export function DashboardBuilder({
               <p className="text-muted-foreground">{config.description}</p>
             )}
           </div>
-          <Button onClick={handlePreview} variant="outline">
-            <X className="mr-2 h-4 w-4" />
-            Закрыть превью
-          </Button>
+          <div className="flex gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <Download className="mr-2 h-4 w-4" />
+                  Экспорт
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => handleExport('png')}>
+                  <FileImage className="mr-2 h-4 w-4" />
+                  Экспорт в PNG
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleExport('svg')}>
+                  <Code className="mr-2 h-4 w-4" />
+                  Экспорт в SVG
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button onClick={handlePreview} variant="outline">
+              <X className="mr-2 h-4 w-4" />
+              Закрыть превью
+            </Button>
+          </div>
         </div>
 
         {/* Preview Grid */}
-        <div className="grid grid-cols-12 gap-4">
+        <div ref={dashboardRef} className="grid grid-cols-12 gap-4">
           {config.widgets.map((widget) => (
             <div
               key={widget.id}
@@ -350,10 +412,44 @@ export function DashboardBuilder({
       {/* Middle Panel - Canvas */}
       <Card className="col-span-2">
         <CardHeader>
-          <CardTitle>Холст</CardTitle>
-          <CardDescription>
-            Перетаскивайте виджеты для изменения расположения
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Холст</CardTitle>
+              <CardDescription>
+                Перетаскивайте виджеты для изменения расположения
+              </CardDescription>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setIsPreview(!isPreview)}
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                {isPreview ? 'Редактор' : 'Превью'}
+              </Button>
+              {config.widgets.filter(w => w.type === 'chart').length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setBatchExportDialogOpen(true)}
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Экспорт всех
+                </Button>
+              )}
+              {onSave && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onSave(config)}
+                >
+                  <Save className="mr-2 h-4 w-4" />
+                  Сохранить
+                </Button>
+              )}
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
@@ -517,6 +613,19 @@ export function DashboardBuilder({
           )}
         </CardContent>
       </Card>
+
+      <BatchExportDialog
+        open={batchExportDialogOpen}
+        onOpenChange={setBatchExportDialogOpen}
+        charts={config.widgets
+          .filter(w => w.type === 'chart')
+          .map((w, idx) => ({
+            id: `chart-${w.id}`,
+            name: w.title || `График ${idx + 1}`,
+            element: document.getElementById(`chart-${w.id}`) as HTMLElement
+          }))
+          .filter(c => c.element)}
+      />
     </div>
   );
 }
