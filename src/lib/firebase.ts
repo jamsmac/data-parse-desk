@@ -50,7 +50,6 @@ export const initMessaging = async (): Promise<Messaging | null> => {
       messaging = getMessaging(app);
       return messaging;
     }
-    console.log('Firebase Messaging is not supported in this browser');
     return null;
   } catch (error) {
     console.error('Error initializing Firebase Messaging:', error);
@@ -65,7 +64,6 @@ export const requestNotificationPermission = async (): Promise<string | null> =>
   try {
     // Проверяем поддержку уведомлений
     if (!('Notification' in window)) {
-      console.log('This browser does not support notifications');
       return null;
     }
 
@@ -73,7 +71,6 @@ export const requestNotificationPermission = async (): Promise<string | null> =>
     const permission = await Notification.requestPermission();
 
     if (permission !== 'granted') {
-      console.log('Notification permission denied');
       return null;
     }
 
@@ -83,13 +80,11 @@ export const requestNotificationPermission = async (): Promise<string | null> =>
     }
 
     if (!messaging) {
-      console.log('Messaging not available');
       return null;
     }
 
     // Регистрируем Service Worker
     const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-    console.log('Service Worker registered:', registration);
 
     // Получаем FCM токен
     const token = await getToken(messaging, {
@@ -98,12 +93,10 @@ export const requestNotificationPermission = async (): Promise<string | null> =>
     });
 
     if (token) {
-      console.log('FCM Token:', token);
       // Сохраняем токен в базе данных
       await saveTokenToDatabase(token);
       return token;
     } else {
-      console.log('No registration token available');
       return null;
     }
   } catch (error) {
@@ -142,7 +135,6 @@ const saveTokenToDatabase = async (token: string): Promise<void> => {
     if (error) {
       console.error('Error saving FCM token:', error);
     } else {
-      console.log('FCM token saved successfully');
     }
   } catch (error) {
     console.error('Error in saveTokenToDatabase:', error);
@@ -174,14 +166,15 @@ export const removeTokenFromDatabase = async (token: string): Promise<void> => {
 /**
  * Подписка на получение сообщений (foreground)
  */
-export const subscribeToMessages = (callback: (payload: any) => void): (() => void) => {
+export const subscribeToMessages = (callback: (payload: {
+  notification?: { title?: string; body?: string; image?: string };
+  data?: { [key: string]: string };
+}) => void): (() => void) => {
   if (!messaging) {
-    console.log('Messaging not initialized');
     return () => {};
   }
 
   const unsubscribe = onMessage(messaging, (payload) => {
-    console.log('Message received in foreground:', payload);
     callback(payload);
   });
 
@@ -193,7 +186,6 @@ export const subscribeToMessages = (callback: (payload: any) => void): (() => vo
  */
 export const showNotification = (title: string, options?: NotificationOptions): void => {
   if (!('Notification' in window)) {
-    console.log('Notifications not supported');
     return;
   }
 

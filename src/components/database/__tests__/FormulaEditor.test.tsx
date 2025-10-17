@@ -16,7 +16,7 @@ vi.mock('@/utils/formulaEngine', () => ({
     }
     return null;
   }),
-  evaluateFormula: vi.fn((formula: string, data: Record<string, any>) => {
+  evaluateFormula: vi.fn((formula: string, data: Record<string, string | number | boolean | Date | null>) => {
     if (formula === '{price} * {quantity}') {
       return (data.price || 0) * (data.quantity || 0);
     }

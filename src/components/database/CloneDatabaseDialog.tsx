@@ -59,8 +59,20 @@ export function CloneDatabaseDialog({
   const [progressMessage, setProgressMessage] = useState('');
   const [estimatedTime, setEstimatedTime] = useState<number | null>(null);
   const [forceAsync, setForceAsync] = useState(false);
-  const [quotaStatus, setQuotaStatus] = useState<any>(null);
-  const [versions, setVersions] = useState<any[]>([]);
+  const [quotaStatus, setQuotaStatus] = useState<{
+    used_databases: number;
+    max_databases: number;
+    used_clones: number;
+    max_clones_per_database: number;
+    can_clone: boolean;
+    is_async_required: boolean;
+  } | null>(null);
+  const [versions, setVersions] = useState<{
+    id: string;
+    database_id: string;
+    name: string;
+    created_at: string;
+  }[]>([]);
   const [isAsyncOperation, setIsAsyncOperation] = useState(false);
   const [operationId, setOperationId] = useState<string | null>(null);
 

@@ -292,7 +292,10 @@ export function usePushNotifications(): UsePushNotificationsReturn {
   };
 
   // Показ toast уведомления
-  const showToastNotification = (payload: any) => {
+  const showToastNotification = (payload: {
+    notification?: { title?: string; body?: string };
+    data?: { type?: string; [key: string]: string | undefined };
+  }) => {
     const type = payload.data?.type as NotificationType;
     const title = payload.notification?.title || 'Уведомление';
     const body = payload.notification?.body || '';

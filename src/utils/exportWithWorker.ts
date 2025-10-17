@@ -208,7 +208,6 @@ export async function smartExport(
 
   // Автоматически выбираем метод экспорта
   if (shouldUseWorker(width, height)) {
-    console.log('Using Web Worker for large chart export');
 
     const blob = await exportWithWorker({
       element,
@@ -226,7 +225,6 @@ export async function smartExport(
     a.click();
     URL.revokeObjectURL(url);
   } else {
-    console.log('Using regular export for small chart');
 
     const { exportChartAdvanced } = await import('./chartExportAdvanced');
     await exportChartAdvanced(element, options);

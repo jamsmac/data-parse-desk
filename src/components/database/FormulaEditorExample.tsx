@@ -28,7 +28,6 @@ export function FormulaEditorExample() {
   ];
 
   const handleSave = (savedFormula: string) => {
-    console.log('Формула сохранена:', savedFormula);
     toast.success('Формула успешно сохранена!', {
       description: savedFormula
     });

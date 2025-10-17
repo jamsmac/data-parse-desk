@@ -11,7 +11,7 @@ export interface NotificationPayload {
   type: NotificationType;
   title: string;
   body: string;
-  data?: Record<string, any>;
+  data?: Record<string, string | number | boolean>;
 }
 
 export interface NotificationPreferences {
@@ -32,7 +32,7 @@ export interface NotificationHistory {
   type: string;
   title: string;
   body: string | null;
-  data: Record<string, any> | null;
+  data: Record<string, string | number | boolean> | null;
   status: string;
   sentAt: string;
   readAt: string | null;

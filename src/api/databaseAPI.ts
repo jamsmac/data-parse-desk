@@ -90,8 +90,14 @@ export class DatabaseAPI {
   }
 
   // Create database - supports both RPC path and table insert path (unit tests)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  static async createDatabase(request: any, maybeUserId?: string): Promise<Database> {
+  static async createDatabase(request: {
+    display_name?: string;
+    name?: string;
+    icon_name?: string;
+    color_hex?: string;
+    description?: string;
+    columns?: Array<{ name: string; type: string; order?: number }>;
+  }, maybeUserId?: string): Promise<Database> {
     // Unit tests pass { display_name, icon_name, color_hex } and a separate user id argument
     if (request && 'display_name' in request) {
       const displayName: string = request.display_name;

@@ -166,7 +166,7 @@ export function FormulaEditor({
 
       // Превью с примерными данными
       try {
-        const sampleData: Record<string, any> = {};
+        const sampleData: Record<string, string | number | boolean | Date | null> = {};
         columns.forEach(col => {
           switch (col.type) {
             case 'number':
