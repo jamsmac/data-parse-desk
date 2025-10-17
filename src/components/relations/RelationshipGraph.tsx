@@ -2,14 +2,18 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  Database as DatabaseIcon, 
-  ZoomIn, 
-  ZoomOut, 
+import {
+  Database as DatabaseIcon,
+  ZoomIn,
+  ZoomOut,
   Maximize2,
   ArrowRight,
-  GitBranch
+  GitBranch,
+  Download,
+  FileImage,
+  FileCode
 } from 'lucide-react';
+import html2canvas from 'html2canvas';
 import { Database, DatabaseRelation } from '@/types/database';
 
 interface RelationshipGraphProps {
@@ -271,6 +275,163 @@ export default function RelationshipGraph({
     setSelectedNode(null);
   };
 
+  // Экспорт графа в PNG
+  const exportGraphAsPNG = async () => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    try {
+      // Добавляем водяной знак и дату
+      const watermarkDiv = document.createElement('div');
+      watermarkDiv.style.position = 'absolute';
+      watermarkDiv.style.bottom = '10px';
+      watermarkDiv.style.right = '10px';
+      watermarkDiv.style.fontSize = '12px';
+      watermarkDiv.style.color = '#666';
+      watermarkDiv.style.backgroundColor = 'rgba(255,255,255,0.8)';
+      watermarkDiv.style.padding = '4px 8px';
+      watermarkDiv.style.borderRadius = '4px';
+      watermarkDiv.innerHTML = `VHData Platform • ${new Date().toLocaleDateString('ru-RU')}`;
+      container.appendChild(watermarkDiv);
+
+      const canvas = await html2canvas(container, {
+        backgroundColor: '#1a1a2e',
+        scale: 2,
+        logging: false,
+      });
+
+      // Удаляем водяной знак после создания скриншота
+      container.removeChild(watermarkDiv);
+
+      // Конвертируем в blob и скачиваем
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = `relationship-graph-${Date.now()}.png`;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+      });
+    } catch (error) {
+      console.error('Error exporting graph as PNG:', error);
+    }
+  };
+
+  // Экспорт графа в SVG (конвертация Canvas в SVG)
+  const exportGraphAsSVG = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    // Создаем SVG элемент
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', String(canvas.width));
+    svg.setAttribute('height', String(canvas.height));
+    svg.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+
+    // Добавляем фон
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('width', '100%');
+    rect.setAttribute('height', '100%');
+    rect.setAttribute('fill', '#1a1a2e');
+    svg.appendChild(rect);
+
+    // Группа для трансформаций
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('transform', `translate(${offset.x},${offset.y}) scale(${zoom})`);
+
+    // Добавляем рёбра
+    graphData.edges.forEach((edge) => {
+      const sourceNode = graphData.nodes.find((n) => n.id === edge.source);
+      const targetNode = graphData.nodes.find((n) => n.id === edge.target);
+
+      if (!sourceNode || !targetNode) return;
+
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', String(sourceNode.x));
+      line.setAttribute('y1', String(sourceNode.y));
+      line.setAttribute('x2', String(targetNode.x));
+      line.setAttribute('y2', String(targetNode.y));
+      line.setAttribute('stroke', '#94a3b8');
+      line.setAttribute('stroke-width', '2');
+      g.appendChild(line);
+
+      // Добавляем стрелку
+      const angle = Math.atan2(targetNode.y - sourceNode.y, targetNode.x - sourceNode.x);
+      const arrowSize = 10;
+      const endX = targetNode.x - Math.cos(angle) * 35;
+      const endY = targetNode.y - Math.sin(angle) * 35;
+
+      const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+      const points = [
+        [endX, endY],
+        [endX - Math.cos(angle - Math.PI / 6) * arrowSize, endY - Math.sin(angle - Math.PI / 6) * arrowSize],
+        [endX - Math.cos(angle + Math.PI / 6) * arrowSize, endY - Math.sin(angle + Math.PI / 6) * arrowSize],
+      ];
+      arrow.setAttribute('points', points.map(p => p.join(',')).join(' '));
+      arrow.setAttribute('fill', '#94a3b8');
+      g.appendChild(arrow);
+    });
+
+    // Добавляем узлы
+    graphData.nodes.forEach((node) => {
+      // Круг узла
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      circle.setAttribute('cx', String(node.x));
+      circle.setAttribute('cy', String(node.y));
+      circle.setAttribute('r', '30');
+      circle.setAttribute('fill', node.color);
+      circle.setAttribute('stroke', selectedNode === node.id ? '#fff' : 'transparent');
+      circle.setAttribute('stroke-width', '3');
+      g.appendChild(circle);
+
+      // Иконка базы данных
+      const icon = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      icon.setAttribute('x', String(node.x));
+      icon.setAttribute('y', String(node.y + 5));
+      icon.setAttribute('text-anchor', 'middle');
+      icon.setAttribute('fill', '#fff');
+      icon.setAttribute('font-size', '20');
+      icon.innerHTML = '⛁';
+      g.appendChild(icon);
+
+      // Название узла
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('x', String(node.x));
+      text.setAttribute('y', String(node.y + 50));
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('fill', '#e2e8f0');
+      text.setAttribute('font-size', '12');
+      text.textContent = node.name;
+      g.appendChild(text);
+    });
+
+    svg.appendChild(g);
+
+    // Добавляем водяной знак
+    const watermark = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    watermark.setAttribute('x', String(canvas.width - 10));
+    watermark.setAttribute('y', String(canvas.height - 10));
+    watermark.setAttribute('text-anchor', 'end');
+    watermark.setAttribute('fill', '#666');
+    watermark.setAttribute('font-size', '12');
+    watermark.textContent = `VHData Platform • ${new Date().toLocaleDateString('ru-RU')}`;
+    svg.appendChild(watermark);
+
+    // Сериализуем и скачиваем
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svg);
+    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.download = `relationship-graph-${Date.now()}.svg`;
+    link.href = url;
+    link.click();
+
+    URL.revokeObjectURL(url);
+  };
+
   const selectedDatabase = selectedNode
     ? databases.find((db) => db.id === selectedNode)
     : null;
@@ -308,24 +469,47 @@ export default function RelationshipGraph({
           <Button variant="outline" size="icon" onClick={handleReset}>
             <Maximize2 className="h-4 w-4" />
           </Button>
+
+          <div className="h-6 w-px bg-border mx-1" />
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportGraphAsPNG}
+            className="gap-2"
+          >
+            <FileImage className="h-4 w-4" />
+            <span className="hidden sm:inline">PNG</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportGraphAsSVG}
+            className="gap-2"
+          >
+            <FileCode className="h-4 w-4" />
+            <span className="hidden sm:inline">SVG</span>
+          </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Граф */}
         <Card className="lg:col-span-2">
-          <CardContent className="p-0" ref={containerRef}>
-            <canvas
-              ref={canvasRef}
-              width={800}
-              height={600}
-              className="w-full border rounded-lg cursor-grab active:cursor-grabbing"
-              onClick={handleCanvasClick}
-              onMouseMove={handleCanvasMouseMove}
-              onMouseDown={handleMouseDown}
-              onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp}
-            />
+          <CardContent className="p-0">
+            <div id="relationship-graph" ref={containerRef} className="relative">
+              <canvas
+                ref={canvasRef}
+                width={800}
+                height={600}
+                className="w-full border rounded-lg cursor-grab active:cursor-grabbing"
+                onClick={handleCanvasClick}
+                onMouseMove={handleCanvasMouseMove}
+                onMouseDown={handleMouseDown}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+              />
+            </div>
           </CardContent>
         </Card>
 

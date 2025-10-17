@@ -42,7 +42,6 @@ interface RippleEffect {
  *
  * @example
  * ```tsx
- * <FluidButton variant="primary" size="md" onClick={() => console.log('Clicked')}>
  *   Нажми меня
  * </FluidButton>
  * ```

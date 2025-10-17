@@ -26,41 +26,102 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    // Увеличиваем лимит для warning о размере chunk
-    chunkSizeWarningLimit: 1000,
+    // Оптимизированный лимит для warning о размере chunk
+    chunkSizeWarningLimit: 500,
     rollupOptions: {
       output: {
-        manualChunks: {
-          // Разделяем vendor библиотеки
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'ui-vendor': [
-            '@radix-ui/react-dialog',
-            '@radix-ui/react-dropdown-menu',
-            '@radix-ui/react-select',
-            '@radix-ui/react-tabs',
-            '@radix-ui/react-toast',
-            '@radix-ui/react-popover',
-          ],
-          'form-vendor': ['react-hook-form', '@hookform/resolvers', 'zod'],
-          'chart-vendor': ['recharts'],
-          'data-vendor': ['papaparse', 'exceljs'],
-          'supabase': ['@supabase/supabase-js'],
-          'query': ['@tanstack/react-query'],
-          'icons': ['lucide-react'],
-          'utils': ['date-fns', 'dayjs', 'clsx', 'tailwind-merge'],
+        manualChunks(id) {
+          // Firebase chunks
+          if (id.includes('firebase')) {
+            return 'firebase';
+          }
+
+          // React ecosystem
+          if (id.includes('react-dom') || id.includes('react/')) {
+            return 'react-vendor';
+          }
+
+          // UI components
+          if (id.includes('@radix-ui') || id.includes('cmdk')) {
+            return 'ui-vendor';
+          }
+
+          // Charts - самый тяжелый
+          if (id.includes('recharts') || id.includes('d3')) {
+            return 'charts';
+          }
+
+          // Data processing
+          if (id.includes('xlsx') || id.includes('exceljs') || id.includes('papaparse')) {
+            return 'data-processing';
+          }
+
+          // Supabase
+          if (id.includes('@supabase')) {
+            return 'supabase';
+          }
+
+          // Forms and validation
+          if (id.includes('react-hook-form') || id.includes('zod') || id.includes('@hookform')) {
+            return 'forms';
+          }
+
+          // State management and routing
+          if (id.includes('@tanstack') || id.includes('react-router')) {
+            return 'app-core';
+          }
+
+          // Utilities
+          if (id.includes('date-fns') || id.includes('dayjs') || id.includes('clsx') || id.includes('tailwind-merge')) {
+            return 'utils';
+          }
+
+          // Icons
+          if (id.includes('lucide-react')) {
+            return 'icons';
+          }
         },
+        // Оптимизация имен файлов
+        entryFileNames: 'assets/[name]-[hash].js',
+        chunkFileNames: (chunkInfo) => {
+          const facadeModuleId = chunkInfo.facadeModuleId ? chunkInfo.facadeModuleId.split('/').pop() : '';
+          return `assets/${chunkInfo.name}-[hash].js`;
+        },
+        assetFileNames: 'assets/[name]-[hash].[ext]',
+      },
+      // Tree shaking
+      treeshake: {
+        moduleSideEffects: false,
+        propertyReadSideEffects: false,
+        tryCatchDeoptimization: false,
       },
     },
-    // Минификация
+    // Минификация с агрессивными настройками
     minify: 'terser',
     terserOptions: {
       compress: {
         drop_console: mode === 'production',
         drop_debugger: mode === 'production',
+        pure_funcs: mode === 'production' ? ['console.log', 'console.info', 'console.debug', 'console.warn'] : [],
+        passes: 2,
+      },
+      mangle: {
+        safari10: true,
+      },
+      format: {
+        comments: false,
+        ascii_only: true,
       },
     },
     // Source maps только для development
     sourcemap: mode === 'development',
+    // Оптимизация CSS
+    cssCodeSplit: true,
+    cssMinify: true,
+    // Оптимизация ассетов
+    assetsInlineLimit: 4096,
+    // Report compressed size
+    reportCompressedSize: true,
   },
   // Оптимизация зависимостей
   optimizeDeps: {

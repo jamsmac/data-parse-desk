@@ -21,6 +21,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
+import { EmailAPI } from '@/api/emailAPI';
 
 export interface EmailSettingsData {
   enabled: boolean;
@@ -105,15 +106,30 @@ export const EmailSettings: React.FC<EmailSettingsProps> = ({
 
     setTestingEmail(true);
     try {
-      await onTestEmail?.(settings.email);
+      // Use onTestEmail callback if provided, otherwise use EmailAPI
+      if (onTestEmail) {
+        await onTestEmail(settings.email);
+      } else {
+        // Use EmailAPI to send test email
+        const testType = settings.frequency === 'daily' || settings.frequency === 'weekly'
+          ? 'digest'
+          : 'simple';
+
+        await EmailAPI.sendTestEmail({
+          to: settings.email,
+          testType,
+        });
+      }
+
       toast({
         title: 'Тестовое письмо отправлено',
         description: `Проверьте почту ${settings.email}`,
       });
     } catch (error) {
+      console.error('Test email error:', error);
       toast({
         title: 'Ошибка',
-        description: 'Не удалось отправить тестовое письмо',
+        description: error instanceof Error ? error.message : 'Не удалось отправить тестовое письмо',
         variant: 'destructive',
       });
     } finally {

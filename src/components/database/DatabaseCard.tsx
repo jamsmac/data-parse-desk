@@ -1,5 +1,5 @@
-import React from 'react';
-import { Database, MoreVertical, Edit, Trash2, Users, Calendar } from 'lucide-react';
+import React, { useState } from 'react';
+import { Database, MoreVertical, Edit, Trash2, Users, Calendar, Copy, GitBranch } from 'lucide-react';
 import {
   GlassCard,
   GlassCardContent,
@@ -15,12 +15,15 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
 import type { Database as DatabaseType } from '@/types/database';
+import { CloneDatabaseDialog } from './CloneDatabaseDialog';
+import { DatabaseVersionsDialog } from './DatabaseVersionsDialog';
 
 interface DatabaseCardProps {
   database: DatabaseType;
   onClick?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  onClone?: (newDatabase: DatabaseType) => void;
 }
 
 export const DatabaseCard: React.FC<DatabaseCardProps> = ({
@@ -28,7 +31,11 @@ export const DatabaseCard: React.FC<DatabaseCardProps> = ({
   onClick,
   onEdit,
   onDelete,
+  onClone,
 }) => {
+  const [showCloneDialog, setShowCloneDialog] = useState(false);
+  const [showVersionsDialog, setShowVersionsDialog] = useState(false);
+
   const handleCardClick = (e: React.MouseEvent) => {
     // Не вызываем onClick если клик был по меню действий
     if ((e.target as HTMLElement).closest('[data-dropdown-trigger]')) {
@@ -47,13 +54,14 @@ export const DatabaseCard: React.FC<DatabaseCardProps> = ({
   };
 
   return (
-    <GlassCard
-      intensity="medium"
-      variant="default"
-      animated={true}
-      className="group cursor-pointer"
-      onClick={() => handleCardClick({} as React.MouseEvent)}
-    >
+    <>
+        <GlassCard
+        intensity="medium"
+        variant="default"
+        animated={true}
+        className="group cursor-pointer"
+        onClick={() => handleCardClick({} as React.MouseEvent)}
+      >
       <GlassCardContent className="pt-6">
         <div className="flex items-start justify-between">
           {/* Иконка и название */}
@@ -102,6 +110,24 @@ export const DatabaseCard: React.FC<DatabaseCardProps> = ({
                 <Edit className="mr-2 h-4 w-4" />
                 Редактировать
               </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowCloneDialog(true);
+                }}
+              >
+                <Copy className="mr-2 h-4 w-4" />
+                Клонировать
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowVersionsDialog(true);
+                }}
+              >
+                <GitBranch className="mr-2 h-4 w-4" />
+                История версий
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={(e) => {
@@ -147,5 +173,24 @@ export const DatabaseCard: React.FC<DatabaseCardProps> = ({
         )}
       </GlassCardFooter>
     </GlassCard>
+
+    {/* Диалог клонирования */}
+    <CloneDatabaseDialog
+      database={database}
+      isOpen={showCloneDialog}
+      onClose={() => setShowCloneDialog(false)}
+      onSuccess={(newDatabase) => {
+        setShowCloneDialog(false);
+        onClone?.(newDatabase);
+      }}
+    />
+
+    {/* Диалог истории версий */}
+    <DatabaseVersionsDialog
+      database={database}
+      isOpen={showVersionsDialog}
+      onClose={() => setShowVersionsDialog(false)}
+    />
+    </>
   );
 };

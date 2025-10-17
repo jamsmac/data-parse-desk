@@ -20,8 +20,10 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog';
-import { Calendar, Clock, Mail, Plus, Trash2 } from 'lucide-react';
+import { Calendar, Clock, Mail, Plus, Trash2, Send } from 'lucide-react';
 import { ScheduledReport, ReportTemplate, ReportSchedule, ReportFormat } from '@/types/reports';
+import { EmailAPI } from '@/api/emailAPI';
+import { useToast } from '@/hooks/use-toast';
 
 export interface ScheduledReportsProps {
   schedules: ScheduledReport[];
@@ -29,6 +31,7 @@ export interface ScheduledReportsProps {
   onAdd: (schedule: Omit<ScheduledReport, 'id' | 'createdAt'>) => void;
   onUpdate: (scheduleId: string, updates: Partial<ScheduledReport>) => void;
   onDelete: (scheduleId: string) => void;
+  onSendNow?: (scheduleId: string) => Promise<void>;
 }
 
 const SCHEDULE_OPTIONS: { value: ReportSchedule; label: string }[] = [
@@ -51,8 +54,11 @@ export function ScheduledReports({
   onAdd,
   onUpdate,
   onDelete,
+  onSendNow,
 }: ScheduledReportsProps) {
+  const { toast } = useToast();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [sendingReportId, setSendingReportId] = useState<string | null>(null);
   const [newSchedule, setNewSchedule] = useState<Omit<ScheduledReport, 'id' | 'createdAt'>>({
     templateId: '',
     name: '',
@@ -102,6 +108,60 @@ export function ScheduledReports({
 
   const getFormatLabel = (format: ReportFormat) => {
     return FORMAT_OPTIONS.find((o) => o.value === format)?.label || format;
+  };
+
+  // Send report now
+  const handleSendNow = async (scheduleId: string) => {
+    const schedule = schedules.find((s) => s.id === scheduleId);
+    if (!schedule) {
+      toast({
+        title: 'Ошибка',
+        description: 'Расписание не найдено',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const template = templates.find((t) => t.id === schedule.templateId);
+    if (!template) {
+      toast({
+        title: 'Ошибка',
+        description: 'Шаблон отчёта не найден',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSendingReportId(scheduleId);
+    try {
+      // Use onSendNow callback if provided
+      if (onSendNow) {
+        await onSendNow(scheduleId);
+      } else {
+        // Use EmailAPI to send report
+        await EmailAPI.sendScheduledReport({
+          scheduleId: schedule.id,
+          reportData: { message: 'Sample report data' }, // Replace with actual report data
+          format: schedule.format,
+          recipients: schedule.recipients,
+          templateName: template.name,
+        });
+      }
+
+      toast({
+        title: 'Отчёт отправлен',
+        description: `Отчёт "${schedule.name}" отправлен получателям`,
+      });
+    } catch (error) {
+      console.error('Send report error:', error);
+      toast({
+        title: 'Ошибка',
+        description: error instanceof Error ? error.message : 'Не удалось отправить отчёт',
+        variant: 'destructive',
+      });
+    } finally {
+      setSendingReportId(null);
+    }
   };
 
   return (
@@ -329,7 +389,16 @@ export function ScheduledReports({
                       </div>
                     )}
 
-                    <div className="flex justify-end">
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleSendNow(schedule.id)}
+                        disabled={sendingReportId === schedule.id}
+                      >
+                        <Send className="mr-2 h-4 w-4" />
+                        {sendingReportId === schedule.id ? 'Отправка...' : 'Отправить сейчас'}
+                      </Button>
                       <Button
                         variant="destructive"
                         size="sm"

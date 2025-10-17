@@ -4,11 +4,10 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { DatabaseAPI } from '../../../src/api/databaseAPI';
 import type { Database, CreateDatabaseRequest, UpdateDatabaseRequest } from '../../../src/types/database';
 
-// Мок для Supabase
-const mockSupabase = {
+// Мок для Supabase (hoisted, чтобы избежать ошибок инициализации)
+const mockSupabase = vi.hoisted(() => ({
   from: vi.fn(() => ({
     select: vi.fn(() => ({
       eq: vi.fn(() => ({
@@ -28,12 +27,15 @@ const mockSupabase = {
     }))
   })),
   rpc: vi.fn(() => Promise.resolve({ data: null, error: null }))
-};
-
-// Мок для DatabaseAPI
-vi.mock('../../../src/lib/supabase', () => ({
-  supabase: mockSupabase
 }));
+
+// Прокси-модуль для стабильного мокинга
+vi.mock('../../../src/lib/supabase-client', () => ({
+  getSupabase: () => mockSupabase,
+  supabase: mockSupabase,
+}));
+
+import { DatabaseAPI } from '../../../src/api/databaseAPI';
 
 describe('DatabaseAPI', () => {
   beforeEach(() => {

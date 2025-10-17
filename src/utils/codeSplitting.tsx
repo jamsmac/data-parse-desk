@@ -208,9 +208,8 @@ export class TreeShakingOptimizer {
    */
   static checkUnusedImports() {
     // В production это будет выполняться на этапе сборки
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Tree shaking analysis available in production build');
-    }
+    // Placeholder для будущей реализации
+    return;
   }
   
   /**

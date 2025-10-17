@@ -91,9 +91,9 @@ describe('FormulaEngine', () => {
       });
 
       it('должен вычислять длину строки', () => {
-        expect(calculateFormula('length("hello")', {})).toBe('5');
+        expect(calculateFormula('length("hello")', {})).toBe(5);  // length возвращает число
         const context = { text: 'testing' };
-        expect(calculateFormula('length(text)', context)).toBe('7');
+        expect(calculateFormula('length(text)', context)).toBe(7);  // length возвращает число
       });
     });
 
@@ -134,12 +134,13 @@ describe('FormulaEngine', () => {
     describe('Обработка ошибок', () => {
       it('должен возвращать ошибку при делении на ноль', () => {
         const result = calculateFormula('10 / 0', {});
-        expect(result).toBe(Infinity);
+        expect(String(result)).toContain('#ERROR');
+        expect(String(result)).toContain('Division by zero');
       });
 
       it('должен возвращать ошибку при неизвестной переменной', () => {
         const result = calculateFormula('unknown_var * 2', {});
-        expect(result).toBe(NaN);
+        expect(String(result)).toContain('#ERROR');
       });
 
       it('должен возвращать ошибку при неизвестной функции', () => {
@@ -147,10 +148,12 @@ describe('FormulaEngine', () => {
         expect(String(result)).toContain('#ERROR');
       });
 
-      it('должен обрабатывать null и undefined', () => {
-        const context = { a: null, b: undefined };
-        expect(calculateFormula('isNull(a)', context)).toBe(true);
-        expect(calculateFormula('isEmpty(b)', context)).toBe(true);
+      it('должен обрабатывать null и пустые значения', () => {
+        const context = { a: null, b: '', c: [] };
+        expect(calculateFormula('isnull(a)', context)).toBe(true);
+        expect(calculateFormula('isempty(b)', context)).toBe(true);
+        expect(calculateFormula('isempty(c)', context)).toBe(true);
+        expect(calculateFormula('isnull(b)', context)).toBe(false);
       });
     });
 
@@ -173,23 +176,23 @@ describe('FormulaEngine', () => {
 
   describe('validateFormula', () => {
     it('должен валидировать корректные формулы', () => {
-      expect(validateFormula('2 + 2').valid).toBe(true);
-      expect(validateFormula('sum(1, 2, 3)').valid).toBe(true);
-      expect(validateFormula('if(a > b, "yes", "no")').valid).toBe(true);
+      expect(validateFormula('2 + 2')).toBe(true);
+      expect(validateFormula('sum(1, 2, 3)')).toBe(true);
+      expect(validateFormula('if(a > b, "yes", "no")')).toBe(true);
     });
 
     it('должен определять некорректные формулы', () => {
       // Пропускаем тест с двойным плюсом, так как парсер может интерпретировать это как унарный плюс
-      // expect(validateFormula('2 + + 2').valid).toBe(false);
-      expect(validateFormula('(2 + 3').valid).toBe(false);
-      expect(validateFormula('unknown_func()').valid).toBe(false);
-      expect(validateFormula('2 ++ 3').valid).toBe(false);
+      // expect(validateFormula('2 + + 2')).toBe(false);
+      expect(validateFormula('(2 + 3')).toBe(false);
+      expect(validateFormula('unknown_func()')).toBe(false);
+      expect(validateFormula('2 ++ 3')).toBe(false);
     });
 
     it('должен проверять баланс скобок', () => {
-      expect(validateFormula('((2 + 3) * 4)').valid).toBe(true);
-      expect(validateFormula('((2 + 3) * 4').valid).toBe(false);
-      expect(validateFormula('(2 + 3) * 4)').valid).toBe(false);
+      expect(validateFormula('((2 + 3) * 4)')).toBe(true);
+      expect(validateFormula('((2 + 3) * 4')).toBe(false);
+      expect(validateFormula('(2 + 3) * 4)')).toBe(false);
     });
   });
 

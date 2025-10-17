@@ -10,7 +10,7 @@ import type { AnyObject } from '@/types/common';
  * Токены для парсинга формулы
  */
 type Token = {
-  type: 'number' | 'string' | 'boolean' | 'identifier' | 'operator' | 'function' | 'paren';
+  type: 'number' | 'string' | 'boolean' | 'identifier' | 'operator' | 'function' | 'paren' | 'column';
   value: string | number | boolean;
 };
 
@@ -18,7 +18,7 @@ type FormulaValue = string | number | boolean | Date | null | undefined | unknow
 type FormulaContext = Record<string, unknown>;
 type FormulaFunction = (...args: FormulaValue[]) => FormulaValue;
 
-type FormulaAST = {
+export type FormulaAST = {
   type: 'number' | 'string' | 'boolean' | 'column' | 'binary' | 'unary' | 'function';
   value?: string | number | boolean;
   operator?: string;
@@ -43,12 +43,13 @@ const mathFunctions: Record<string, (...args: number[]) => number> = {
   max: Math.max,
   sum: (...args) => args.reduce((sum, val) => sum + val, 0),
   avg: (...args) => args.reduce((sum, val) => sum + val, 0) / args.length,
+  count: (...args) => args.length,
 };
 
 /**
  * Строковые функции
  */
-const stringFunctions: Record<string, (...args: Array<string | number | undefined>) => string> = {
+const stringFunctions: Record<string, (...args: Array<string | number | undefined>) => string | number> = {
   upper: (str) => String(str).toUpperCase(),
   lower: (str) => String(str).toLowerCase(),
   trim: (str) => String(str).trim(),
@@ -57,7 +58,7 @@ const stringFunctions: Record<string, (...args: Array<string | number | undefine
     String(str).substring(Number(start), end !== undefined ? Number(end) : undefined),
   replace: (str, search, replace) => 
     String(str).replace(new RegExp(String(search), 'g'), String(replace)),
-  length: (str) => String(String(str).length),
+  length: (str) => String(str).length,
 };
 
 /**
@@ -75,16 +76,16 @@ const dateFunctions: Record<string, (...args: Array<Date | string | number>) => 
   day: (date) => new Date(date).getDate(),
   hour: (date) => new Date(date).getHours(),
   minute: (date) => new Date(date).getMinutes(),
-  dateAdd: (date, days) => {
+  dateadd: (date, days) => {
     const result = new Date(date);
     result.setDate(result.getDate() + Number(days));
     return result;
   },
-  dateDiff: (date1, date2) => {
+  datediff: (date1, date2) => {
     const diff = new Date(date1).getTime() - new Date(date2).getTime();
     return Math.floor(diff / (1000 * 60 * 60 * 24));
   },
-  formatDate: (date, format) => {
+  formatdate: (date, format) => {
     const d = new Date(date);
     const formats: Record<string, string> = {
       'YYYY': String(d.getFullYear()),
@@ -110,19 +111,28 @@ const logicalFunctions: Record<string, (...args: FormulaValue[]) => FormulaValue
   and: (...args) => args.every(Boolean),
   or: (...args) => args.some(Boolean),
   not: (value) => !value,
-  isNull: (value) => value == null,
-  isEmpty: (value) => value == null || value === '' || (Array.isArray(value) && value.length === 0),
+  isnull: (value) => value == null,
+  isempty: (value) => value == null || value === '' || (Array.isArray(value) && value.length === 0),
 };
 
 /**
  * Все доступные функции
  */
-const allFunctions: Record<string, FormulaFunction> = {
+const allFunctionsRaw: Record<string, FormulaFunction> = {
   ...mathFunctions,
   ...stringFunctions,
   ...dateFunctions,
   ...logicalFunctions,
 } as Record<string, FormulaFunction>;
+
+// Case-insensitive function registry
+const allFunctions: Record<string, FormulaFunction> = new Proxy(allFunctionsRaw, {
+  get(target, prop: string) {
+    const key = String(prop).toLowerCase();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return (target as any)[key];
+  },
+}) as unknown as Record<string, FormulaFunction>;
 
 /**
  * Парсит выражение формулы в токены
@@ -168,6 +178,19 @@ function tokenize(expression: string): Token[] {
       continue;
     }
 
+    // Ссылки на колонки {column}
+    if (char === '{') {
+      let col = '';
+      i++;
+      while (i < expression.length && expression[i] !== '}') {
+        col += expression[i];
+        i++;
+      }
+      i++; // Пропускаем }
+      tokens.push({ type: 'column', value: col });
+      continue;
+    }
+
     // Идентификаторы и функции
     if (/[a-zA-Z_]/.test(char)) {
       let id = '';
@@ -187,8 +210,8 @@ function tokenize(expression: string): Token[] {
       continue;
     }
 
-    // Операторы
-    if ('+-*/=<>!&|'.includes(char)) {
+    // Операторы (включая ^)
+    if ('+-*/^=<>!&|'.includes(char)) {
       let op = char;
       i++;
       if (i < expression.length) {
@@ -327,19 +350,35 @@ function evaluate(tokens: Token[], context: FormulaContext): FormulaValue {
   }
 
   function parseMulDiv(): FormulaValue {
-    let left = parseUnary();
+    let left = parsePower();
 
     while (index < tokens.length && tokens[index]?.type === 'operator' && 
            (tokens[index].value === '*' || tokens[index].value === '/')) {
       const op = String(tokens[index].value);
       index++;
-      const right = parseUnary();
+      const right = parsePower();
       
       if (op === '*') {
         left = Number(left) * Number(right);
       } else {
-        left = Number(left) / Number(right);
+        const divisor = Number(right);
+        if (divisor === 0) {
+          throw new Error('Division by zero');
+        }
+        left = Number(left) / divisor;
       }
+    }
+
+    return left;
+  }
+
+  function parsePower(): FormulaValue {
+    let left = parseUnary();
+
+    while (index < tokens.length && tokens[index]?.type === 'operator' && tokens[index].value === '^') {
+      index++;
+      const right = parseUnary();
+      left = Math.pow(Number(left), Number(right));
     }
 
     return left;
@@ -382,9 +421,20 @@ function evaluate(tokens: Token[], context: FormulaContext): FormulaValue {
       return token.value as boolean;
     }
 
+    // Ссылки на колонки
+    if (token.type === 'column') {
+      const colName = String(token.value);
+      index++;
+      const value = context[colName];
+      if (value === undefined) {
+        throw new Error(`Column not found: ${colName}`);
+      }
+      return value as FormulaValue;
+    }
+
     // Функции
     if (token.type === 'function') {
-      const funcName = String(token.value);
+      const funcName = String(token.value).toLowerCase();
       index++;
       
       if (index >= tokens.length || tokens[index].value !== '(') {
@@ -435,7 +485,11 @@ function evaluate(tokens: Token[], context: FormulaContext): FormulaValue {
         return undefined;
       }
       
-      return context[varName] as FormulaValue;
+      const value = context[varName];
+      if (value === undefined) {
+        throw new Error(`Column not found: ${varName}`);
+      }
+      return value as FormulaValue;
     }
 
     // Выражения в скобках
@@ -453,6 +507,232 @@ function evaluate(tokens: Token[], context: FormulaContext): FormulaValue {
   }
 
   return parseExpression();
+}
+
+/**
+ * Парсит формулу в AST
+ */
+export function parseFormula(formula: string): FormulaAST {
+  const tokens = tokenize(formula);
+  let index = 0;
+
+  function parseOr(): FormulaAST {
+    let left = parseAnd();
+
+    while (index < tokens.length && tokens[index]?.type === 'operator' && tokens[index].value === '||') {
+      index++;
+      const right = parseAnd();
+      left = {
+        type: 'binary',
+        operator: '||',
+        left,
+        right
+      };
+    }
+
+    return left;
+  }
+
+  function parseAnd(): FormulaAST {
+    let left = parseEquality();
+
+    while (index < tokens.length && tokens[index]?.type === 'operator' && tokens[index].value === '&&') {
+      index++;
+      const right = parseEquality();
+      left = {
+        type: 'binary',
+        operator: '&&',
+        left,
+        right
+      };
+    }
+
+    return left;
+  }
+
+  function parseEquality(): FormulaAST {
+    let left = parseComparison();
+
+    while (index < tokens.length && tokens[index]?.type === 'operator' && 
+           (tokens[index].value === '==' || tokens[index].value === '!=')) {
+      const op = String(tokens[index].value);
+      index++;
+      const right = parseComparison();
+      left = {
+        type: 'binary',
+        operator: op,
+        left,
+        right
+      };
+    }
+
+    return left;
+  }
+
+  function parseComparison(): FormulaAST {
+    let left = parseAddSub();
+
+    while (index < tokens.length && tokens[index]?.type === 'operator' && 
+           ['<', '<=', '>', '>='].includes(String(tokens[index].value))) {
+      const op = String(tokens[index].value);
+      index++;
+      const right = parseAddSub();
+      left = {
+        type: 'binary',
+        operator: op,
+        left,
+        right
+      };
+    }
+
+    return left;
+  }
+
+  function parseAddSub(): FormulaAST {
+    let left = parseMulDiv();
+
+    while (index < tokens.length && tokens[index]?.type === 'operator' && 
+           (tokens[index].value === '+' || tokens[index].value === '-')) {
+      const op = String(tokens[index].value);
+      index++;
+      const right = parseMulDiv();
+      left = {
+        type: 'binary',
+        operator: op,
+        left,
+        right
+      };
+    }
+
+    return left;
+  }
+
+  function parseMulDiv(): FormulaAST {
+    let left = parsePower();
+
+    while (index < tokens.length && tokens[index]?.type === 'operator' && 
+           (tokens[index].value === '*' || tokens[index].value === '/' || tokens[index].value === '%')) {
+      const op = String(tokens[index].value);
+      index++;
+      const right = parsePower();
+      left = {
+        type: 'binary',
+        operator: op,
+        left,
+        right
+      };
+    }
+
+    return left;
+  }
+
+  function parsePower(): FormulaAST {
+    let left = parseUnary();
+
+    while (index < tokens.length && tokens[index]?.type === 'operator' && tokens[index].value === '^') {
+      index++;
+      const right = parseUnary();
+      left = {
+        type: 'binary',
+        operator: '^',
+        left,
+        right
+      };
+    }
+
+    return left;
+  }
+
+  function parseUnary(): FormulaAST {
+    if (index < tokens.length && tokens[index]?.type === 'operator' && 
+        (tokens[index].value === '+' || tokens[index].value === '-' || tokens[index].value === '!')) {
+      const op = String(tokens[index].value);
+      index++;
+      return {
+        type: 'unary',
+        operator: op,
+        operand: parseUnary()
+      };
+    }
+
+    return parsePrimary();
+  }
+
+  function parsePrimary(): FormulaAST {
+    if (index >= tokens.length) {
+      throw new Error('Unexpected end of expression');
+    }
+
+    const token = tokens[index++];
+
+    if (token.type === 'number') {
+      return { type: 'number', value: token.value };
+    }
+
+    if (token.type === 'string') {
+      return { type: 'string', value: token.value };
+    }
+
+    if (token.type === 'boolean') {
+      return { type: 'boolean', value: token.value };
+    }
+
+    if (token.type === 'column') {
+      return {
+        type: 'column',
+        name: String(token.value)
+      };
+    }
+
+    if (token.type === 'function') {
+      if (index >= tokens.length || tokens[index]?.value !== '(') {
+        throw new Error(`Expected '(' after function ${token.value}`);
+      }
+      index++; // skip '('
+      
+      const args: FormulaAST[] = [];
+      
+      if (index < tokens.length && !(tokens[index]?.type === 'paren' && tokens[index].value === ')')) {
+        args.push(parseOr());
+        
+        while (index < tokens.length && tokens[index]?.type === 'paren' && tokens[index].value === ',') {
+          index++; // skip ','
+          args.push(parseOr());
+        }
+      }
+      
+      if (index >= tokens.length || tokens[index]?.type !== 'paren' || tokens[index].value !== ')') {
+        throw new Error('Expected closing parenthesis');
+      }
+      index++; // skip ')'
+      
+      return {
+        type: 'function',
+        name: String(token.value).toUpperCase(),
+        args
+      };
+    }
+
+    if (token.type === 'identifier') {
+      return {
+        type: 'column',
+        name: String(token.value)
+      };
+    }
+
+    if (token.type === 'paren' && token.value === '(') {
+      const result = parseOr();
+      if (index >= tokens.length || tokens[index]?.type !== 'paren' || tokens[index].value !== ')') {
+        throw new Error('Expected closing parenthesis');
+      }
+      index++; // skip ')'
+      return result;
+    }
+
+    throw new Error(`Unexpected token: ${token.type} ${token.value}`);
+  }
+
+  return parseOr();
 }
 
 /**
@@ -488,9 +768,17 @@ export function calculateFormula(
 }
 
 /**
+ * Вычисляет формулу с контекстом
+ */
+export function evaluateFormula(formula: string, context: FormulaContext): FormulaValue {
+  const tokens = tokenize(formula);
+  return evaluate(tokens, context);
+}
+
+/**
  * Валидирует формулу
  */
-export function validateFormula(formula: string): { valid: boolean; error?: string } {
+export function validateFormula(formula: string): boolean {
   try {
     const expression = formula.startsWith('=') ? formula.slice(1) : formula;
     const tokens = tokenize(expression);
@@ -504,55 +792,53 @@ export function validateFormula(formula: string): { valid: boolean; error?: stri
         } else if (token.value === ')' || token.value === ']') {
           parenDepth--;
           if (parenDepth < 0) {
-            return { valid: false, error: 'Несбалансированные скобки' };
+            return false;
           }
         }
       }
     }
     
     if (parenDepth !== 0) {
-      return { valid: false, error: 'Несбалансированные скобки' };
+      return false;
     }
     
-    // Проверяем неизвестные функции
+    // Проверяем неизвестные функции (case-insensitive)
     for (const token of tokens) {
-      if (token.type === 'function' && !allFunctions[String(token.value)]) {
-        return { valid: false, error: `Неизвестная функция: ${token.value}` };
+      if (token.type === 'function') {
+        const name = String(token.value).toLowerCase();
+        if (!allFunctions[name]) {
+          return false;
+        }
       }
     }
     
-    // Проверяем последовательности операторов
+    // Базовая проверка операторов: избегаем явных повторов ++, --, **, //
     for (let i = 0; i < tokens.length - 1; i++) {
-      const current = tokens[i];
-      const next = tokens[i + 1];
-      
-      // Два бинарных оператора подряд (кроме унарных - и !)
-      if (current.type === 'operator' && next.type === 'operator') {
-        const currentOp = String(current.value);
-        const nextOp = String(next.value);
-        
-        // Разрешаем унарные операторы после бинарных
-        if (nextOp === '-' || nextOp === '!') {
-          continue;
-        }
-        
-        // Запрещаем двойные операторы типа ++, --, **, //
-        if ((currentOp === '+' && nextOp === '+') ||
-            (currentOp === '-' && nextOp === '-') ||
-            (currentOp === '*' && nextOp === '*') ||
-            (currentOp === '/' && nextOp === '/')) {
-          return { valid: false, error: `Некорректная последовательность операторов: ${currentOp}${nextOp}` };
+      const a = tokens[i];
+      const b = tokens[i + 1];
+      if (a.type === 'operator' && b.type === 'operator') {
+        const av = String(a.value);
+        const bv = String(b.value);
+        if ((av === '+' && bv === '+') || (av === '-' && bv === '-') || (av === '*' && bv === '*') || (av === '/' && bv === '/')) {
+          return false;
         }
       }
     }
     
-    return { valid: true };
-  } catch (error) {
-    return { 
-      valid: false, 
-      error: error instanceof Error ? error.message : 'Ошибка валидации'
-    };
+    // Пытаемся распарсить
+    parseFormula(expression);
+    
+    return true;
+  } catch {
+    return false;
   }
+}
+
+/**
+ * Получает список доступных функций
+ */
+export function getAvailableFunctions(): string[] {
+  return Object.keys(allFunctionsRaw).map(k => k.toUpperCase());
 }
 
 /**
@@ -565,7 +851,7 @@ export function getFormulaVariables(formula: string): string[] {
     
     const variables = new Set<string>();
     for (const token of tokens) {
-      if (token.type === 'identifier') {
+      if (token.type === 'identifier' || token.type === 'column') {
         variables.add(String(token.value));
       }
     }
@@ -794,250 +1080,15 @@ export const FORMULA_FUNCTIONS = [
  * Примеры формул для документации
  */
 export const formulaExamples = [
-  { formula: '=price * quantity', description: 'Умножение двух колонок' },
-  { formula: '=IF(status == "active", "Да", "Нет")', description: 'Условное выражение' },
-  { formula: '=UPPER(name)', description: 'Преобразование в верхний регистр' },
-  { formula: '=SUM(amount, tax, shipping)', description: 'Сумма нескольких колонок' },
-  { formula: '=DATEDIFF(end_date, start_date)', description: 'Разница между датами в днях' },
-  { formula: '=CONCAT(first_name, " ", last_name)', description: 'Объединение строк' },
-  { formula: '=ROUND(price * 1.2, 2)', description: 'Округление с налогом' },
+  { formula: '={price} * {quantity}', description: 'Умножение двух колонок' },
+  { formula: '=IF({status} == "active", "Да", "Нет")', description: 'Условное выражение' },
+  { formula: '=UPPER({name})', description: 'Преобразование в верхний регистр' },
+  { formula: '=SUM({amount}, {tax}, {shipping})', description: 'Сумма нескольких колонок' },
+  { formula: '=DATEDIFF({end_date}, {start_date})', description: 'Разница между датами в днях' },
+  { formula: '=CONCAT({first_name}, " ", {last_name})', description: 'Объединение строк' },
+  { formula: '=ROUND({price} * 1.2)', description: 'Округление с налогом' },
   { formula: '=NOW()', description: 'Текущая дата и время' },
 ];
-
-/**
- * Парсит формулу в AST
- */
-export function parseFormula(formula: string): FormulaAST {
-  try {
-    const tokens = tokenize(formula);
-    return parseExpression(tokens);
-  } catch (error) {
-    throw new Error(`Invalid syntax: ${error}`);
-  }
-}
-
-/**
- * Парсит выражение из токенов
- */
-function parseExpression(tokens: Token[]): FormulaAST {
-  let index = 0;
-
-  function parseOr(): FormulaAST {
-    let left = parseAnd();
-
-    while (index < tokens.length && tokens[index]?.type === 'operator' && tokens[index].value === '||') {
-      index++;
-      const right = parseAnd();
-      left = {
-        type: 'binary',
-        operator: '||',
-        left,
-        right
-      };
-    }
-
-    return left;
-  }
-
-  function parseAnd(): FormulaAST {
-    let left = parseEquality();
-
-    while (index < tokens.length && tokens[index]?.type === 'operator' && tokens[index].value === '&&') {
-      index++;
-      const right = parseEquality();
-      left = {
-        type: 'binary',
-        operator: '&&',
-        left,
-        right
-      };
-    }
-
-    return left;
-  }
-
-  function parseEquality(): FormulaAST {
-    let left = parseComparison();
-
-    while (index < tokens.length && tokens[index]?.type === 'operator' && 
-           (tokens[index].value === '==' || tokens[index].value === '!=')) {
-      const op = String(tokens[index].value);
-      index++;
-      const right = parseComparison();
-      left = {
-        type: 'binary',
-        operator: op,
-        left,
-        right
-      };
-    }
-
-    return left;
-  }
-
-  function parseComparison(): FormulaAST {
-    let left = parseAddSub();
-
-    while (index < tokens.length && tokens[index]?.type === 'operator' && 
-           ['<', '<=', '>', '>='].includes(String(tokens[index].value))) {
-      const op = String(tokens[index].value);
-      index++;
-      const right = parseAddSub();
-      left = {
-        type: 'binary',
-        operator: op,
-        left,
-        right
-      };
-    }
-
-    return left;
-  }
-
-  function parseAddSub(): FormulaAST {
-    let left = parseMulDiv();
-
-    while (index < tokens.length && tokens[index]?.type === 'operator' && 
-           (tokens[index].value === '+' || tokens[index].value === '-')) {
-      const op = String(tokens[index].value);
-      index++;
-      const right = parseMulDiv();
-      left = {
-        type: 'binary',
-        operator: op,
-        left,
-        right
-      };
-    }
-
-    return left;
-  }
-
-  function parseMulDiv(): FormulaAST {
-    let left = parseUnary();
-
-    while (index < tokens.length && tokens[index]?.type === 'operator' && 
-           (tokens[index].value === '*' || tokens[index].value === '/' || tokens[index].value === '%')) {
-      const op = String(tokens[index].value);
-      index++;
-      const right = parseUnary();
-      left = {
-        type: 'binary',
-        operator: op,
-        left,
-        right
-      };
-    }
-
-    return left;
-  }
-
-  function parseUnary(): FormulaAST {
-    if (index < tokens.length && tokens[index]?.type === 'operator' && 
-        (tokens[index].value === '+' || tokens[index].value === '-')) {
-      const op = String(tokens[index].value);
-      index++;
-      return {
-        type: 'unary',
-        operator: op,
-        operand: parsePrimary()
-      };
-    }
-
-    return parsePrimary();
-  }
-
-  function parsePrimary(): FormulaAST {
-    if (index >= tokens.length) {
-      throw new Error('Unexpected end of expression');
-    }
-
-    const token = tokens[index++];
-
-    if (token.type === 'number') {
-      return { type: 'number', value: token.value };
-    }
-
-    if (token.type === 'string') {
-      return { type: 'string', value: token.value };
-    }
-
-    if (token.type === 'boolean') {
-      return { type: 'boolean', value: token.value };
-    }
-
-    if (token.type === 'identifier') {
-      if (index < tokens.length && tokens[index]?.type === 'paren' && tokens[index].value === '(') {
-        // Function call
-        index++; // skip '('
-        const args: FormulaAST[] = [];
-        
-        if (index < tokens.length && tokens[index]?.type !== 'paren' || tokens[index]?.value !== ')') {
-          args.push(parseExpression(tokens));
-          
-          while (index < tokens.length && tokens[index]?.type === 'paren' && tokens[index].value === ',') {
-            index++; // skip ','
-            args.push(parseExpression(tokens));
-          }
-        }
-        
-        if (index >= tokens.length || tokens[index]?.type !== 'paren' || tokens[index].value !== ')') {
-          throw new Error('Expected closing parenthesis');
-        }
-        index++; // skip ')'
-        
-        return {
-          type: 'function',
-          name: String(token.value).toUpperCase(),
-          args
-        };
-      } else {
-        // Column reference
-        return {
-          type: 'column',
-          name: String(token.value).replace(/[{}]/g, '')
-        };
-      }
-    }
-
-    if (token.type === 'paren' && token.value === '(') {
-      const result = parseExpression(tokens);
-      if (index >= tokens.length || tokens[index]?.type !== 'paren' || tokens[index].value !== ')') {
-        throw new Error('Expected closing parenthesis');
-      }
-      index++; // skip ')'
-      return result;
-    }
-
-    throw new Error(`Unexpected token: ${token.type} ${token.value}`);
-  }
-
-  return parseOr();
-}
-
-/**
- * Вычисляет формулу с контекстом
- */
-export function evaluateFormula(formula: string, context: FormulaContext): FormulaValue {
-  try {
-    const tokens = tokenize(formula);
-    return evaluate(tokens, context);
-  } catch (error) {
-    throw new Error(`Error evaluating formula: ${error}`);
-  }
-}
-
-/**
- * Получает доступные функции
- */
-export function getAvailableFunctions() {
-  return {
-    mathematical: ['SUM', 'AVG', 'MIN', 'MAX', 'COUNT', 'ABS', 'CEIL', 'FLOOR', 'ROUND', 'SQRT', 'POW'],
-    string: ['UPPER', 'LOWER', 'TRIM', 'CONCAT', 'SUBSTRING', 'REPLACE', 'LENGTH'],
-    date: ['NOW', 'TODAY', 'YEAR', 'MONTH', 'DAY', 'DATEADD', 'DATEDIFF', 'FORMATDATE'],
-    logical: ['IF', 'AND', 'OR', 'NOT', 'ISNULL', 'ISEMPTY']
-  };
-}
 
 /**
  * Класс FormulaEngine для управления формулами
@@ -1086,7 +1137,16 @@ export class FormulaEngine {
       }
 
       visiting.add(name);
-      const result = this.evaluate(formula, context);
+      
+      // Evaluate dependencies first
+      const extendedContext = { ...context };
+      for (const dep of formula.dependencies) {
+        if (this.formulas.has(dep)) {
+          extendedContext[dep] = evaluateFormula(dep);
+        }
+      }
+      
+      const result = this.evaluate(formula, extendedContext);
       visiting.delete(name);
       visited.add(name);
       results[name] = result;
@@ -1095,7 +1155,9 @@ export class FormulaEngine {
     };
 
     for (const name of this.formulas.keys()) {
-      evaluateFormula(name);
+      if (!visited.has(name)) {
+        evaluateFormula(name);
+      }
     }
 
     return results;

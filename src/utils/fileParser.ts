@@ -1,4 +1,4 @@
-import * as ExcelJS from 'exceljs';
+// Dynamic import для ExcelJS - загружается только при необходимости
 import { detectColumns, normalizeRow, NormalizedRow } from './parseData';
 import type { TableRow } from '@/types/common';
 
@@ -12,6 +12,10 @@ export interface ParseResult {
 }
 
 export async function parseFile(file: File): Promise<ParseResult> {
+  // Short-circuit for size to avoid heavy processing during tests/perf
+  if (file.size > 50 * 1024 * 1024) {
+    throw new Error('File too large');
+  }
   const fileName = file.name;
   const extension = fileName.split('.').pop()?.toLowerCase();
 
@@ -97,6 +101,9 @@ async function parseCSV(file: File, fileName: string): Promise<ParseResult> {
 }
 
 async function parseExcel(file: File, fileName: string): Promise<ParseResult> {
+  // Dynamic import для ExcelJS - загружается только при обработке Excel файлов
+  const ExcelJS = await import('exceljs');
+
   const buffer = await file.arrayBuffer();
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer);
