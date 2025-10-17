@@ -93,7 +93,7 @@ describe('FormulaHighlighter', () => {
     });
 
     it('должен возвращать цвет по умолчанию для неизвестного типа', () => {
-      expect(getTokenColor('unknown' as any)).toContain('gray');
+      expect(getTokenColor('unknown' as never)).toContain('gray');
     });
   });
 

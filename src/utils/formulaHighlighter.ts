@@ -261,7 +261,7 @@ export function getFunctionInfo(functionName: string): {
   description: string;
   examples: string[];
 } | null {
-  const functionInfo: Record<string, any> = {
+  const functionInfo: Record<string, { category: string; description: string; examples: string[] }> = {
     // Математические функции
     abs: { category: 'math', description: 'Абсолютное значение числа', examples: ['ABS(-5)', 'ABS({amount})'] },
     ceil: { category: 'math', description: 'Округление вверх', examples: ['CEIL(4.3)', 'CEIL({price})'] },
