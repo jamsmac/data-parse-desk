@@ -1116,13 +1116,22 @@ export type Database = {
         Returns: boolean
       }
       create_database: {
-        Args: {
-          color?: string
-          description?: string
-          icon?: string
-          name: string
-          user_id: string
-        }
+        Args:
+          | {
+              color?: string
+              description?: string
+              icon?: string
+              name: string
+              project_id?: string
+              user_id: string
+            }
+          | {
+              color?: string
+              description?: string
+              icon?: string
+              name: string
+              user_id: string
+            }
         Returns: {
           color: string | null
           created_at: string
