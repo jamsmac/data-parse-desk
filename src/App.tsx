@@ -11,10 +11,9 @@ import { Loader2 } from "lucide-react";
 // Eagerly load only auth pages for fastest initial load
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import Index from "./pages/Index";
 
 // Lazy load all other pages to reduce initial bundle
-const Dashboard = lazy(() => import("./pages/Dashboard"));
-const DatabaseView = lazy(() => import("./pages/DatabaseView"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Reports = lazy(() => import("./pages/Reports"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
@@ -58,25 +57,7 @@ const App = () => (
                 path="/dashboard"
                 element={
                   <ProtectedRoute
-                    element={
-                      <Suspense fallback={<PageLoader />}>
-                        <Dashboard />
-                      </Suspense>
-                    }
-                  />
-                }
-              />
-
-              {/* Heavy pages - Lazy loaded to reduce initial bundle */}
-              <Route
-                path="/database/:id"
-                element={
-                  <ProtectedRoute
-                    element={
-                      <Suspense fallback={<PageLoader />}>
-                        <DatabaseView />
-                      </Suspense>
-                    }
+                    element={<Index />}
                   />
                 }
               />

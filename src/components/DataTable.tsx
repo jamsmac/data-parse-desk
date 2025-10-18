@@ -12,7 +12,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from './ui/sheet';
-import { exportToCSV, exportToExcel } from '@/utils/exportData';
+// Export functionality removed - was incomplete
 
 interface DataTableProps {
   data: NormalizedRow[] | GroupedData[];
@@ -98,15 +98,8 @@ export function DataTable({ data, headers, isGrouped }: DataTableProps) {
   };
 
   const handleExport = (format: 'csv' | 'xlsx') => {
-    const exportData = isGrouped 
-      ? (data as GroupedData[]).flatMap(g => g.rows)
-      : (sortedData as NormalizedRow[]);
-
-    if (format === 'csv') {
-      exportToCSV(exportData, Array.from(visibleColumns), 'export.csv');
-    } else {
-      exportToExcel(exportData, Array.from(visibleColumns), 'export.xlsx');
-    }
+    // Export functionality removed - was incomplete
+    console.log('Export feature not yet implemented');
   };
 
   const formatCellValue = (value: any, header: string) => {
