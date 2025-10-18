@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import type { Database, TableSchema } from '@/types/database';
 
 export default function DatabaseView() {
-  const { projectId, databaseId } = useParams();
+  const { databaseId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -117,7 +117,7 @@ export default function DatabaseView() {
   };
 
   const handleDeleteDatabase = async () => {
-    if (!databaseId || !projectId) return;
+    if (!databaseId) return;
 
     try {
       const { error } = await supabase.rpc('delete_database', {
@@ -131,7 +131,7 @@ export default function DatabaseView() {
         description: 'База данных успешно удалена',
       });
 
-      navigate(`/projects/${projectId}`);
+      navigate('/dashboard');
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -226,11 +226,11 @@ export default function DatabaseView() {
         <div className="mb-6">
           <Button
             variant="ghost"
-            onClick={() => navigate(`/projects/${projectId}`)}
+            onClick={() => navigate('/dashboard')}
             className="mb-4"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Назад к проекту
+            Назад к базам данных
           </Button>
 
           <div className="flex items-center justify-between">

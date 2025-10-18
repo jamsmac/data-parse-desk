@@ -14,23 +14,23 @@ import type { Database as DatabaseType } from '@/types/database';
 
 interface DatabaseCardProps {
   database: DatabaseType;
-  onClick?: () => void;
+  onOpen?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
 }
 
 export const DatabaseCard: React.FC<DatabaseCardProps> = ({
   database,
-  onClick,
+  onOpen,
   onEdit,
   onDelete,
 }) => {
   const handleCardClick = (e: React.MouseEvent) => {
-    // Не вызываем onClick если клик был по меню действий
+    // Не вызываем onOpen если клик был по меню действий
     if ((e.target as HTMLElement).closest('[data-dropdown-trigger]')) {
       return;
     }
-    onClick?.();
+    onOpen?.();
   };
 
   const formatDate = (dateString: string) => {
