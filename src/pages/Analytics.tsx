@@ -7,6 +7,7 @@ import { PivotTable } from '@/components/charts/PivotTable';
 import { ChartGallery } from '@/components/charts/ChartGallery';
 import { DashboardBuilder } from '@/components/charts/DashboardBuilder';
 import { SystemStats } from '@/components/analytics/SystemStats';
+import { RealtimeStats } from '@/components/analytics/RealtimeStats';
 import { ChartConfig } from '@/types/charts';
 import { DashboardConfig } from '@/components/charts/DashboardBuilder';
 import { ChartTemplate } from '@/components/charts/ChartGallery';
@@ -149,7 +150,10 @@ export default function Analytics() {
         </TabsList>
 
         <TabsContent value="stats" className="mt-6">
-          <SystemStats />
+          <div className="space-y-6">
+            <RealtimeStats />
+            <SystemStats />
+          </div>
         </TabsContent>
 
         <TabsContent value="gallery" className="mt-6">

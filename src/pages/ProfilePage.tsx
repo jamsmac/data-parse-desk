@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,8 @@ import {
   Key,
   Bell,
   Upload,
+  CreditCard,
+  ExternalLink,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -41,6 +43,37 @@ export default function ProfilePage() {
   const [avatarUrl, setAvatarUrl] = useState(user?.user_metadata?.avatar_url as string || '');
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [subscription, setSubscription] = useState<any>(null);
+  const [subLoading, setSubLoading] = useState(false);
+
+  useEffect(() => {
+    checkSubscription();
+  }, []);
+
+  const checkSubscription = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('check-subscription');
+      if (error) throw error;
+      setSubscription(data);
+    } catch (error) {
+      console.error('Error checking subscription:', error);
+    }
+  };
+
+  const handleManageSubscription = async () => {
+    setSubLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('customer-portal');
+      if (error) throw error;
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Failed to open customer portal");
+    } finally {
+      setSubLoading(false);
+    }
+  };
   
   // Early return after all hooks
   if (!user) {
@@ -220,7 +253,7 @@ export default function ProfilePage() {
 
         {/* Tabs */}
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="profile">
               <UserIcon className="mr-2 h-4 w-4" />
               Профиль
@@ -228,6 +261,10 @@ export default function ProfilePage() {
             <TabsTrigger value="security">
               <Key className="mr-2 h-4 w-4" />
               Безопасность
+            </TabsTrigger>
+            <TabsTrigger value="subscription">
+              <CreditCard className="mr-2 h-4 w-4" />
+              Подписка
             </TabsTrigger>
             <TabsTrigger value="notifications">
               <Bell className="mr-2 h-4 w-4" />
@@ -406,6 +443,57 @@ export default function ProfilePage() {
                     <Badge>Активно</Badge>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Subscription Tab */}
+          <TabsContent value="subscription">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="h-5 w-5" />
+                  Управление подпиской
+                </CardTitle>
+                <CardDescription>
+                  Просмотр и управление вашей подпиской
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {subscription?.subscribed ? (
+                  <div className="space-y-4">
+                    <div className="p-4 border rounded-lg bg-primary/5">
+                      <p className="font-medium">Активная подписка</p>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        {subscription.subscription_end && (
+                          <>Продлится {new Date(subscription.subscription_end).toLocaleDateString('ru-RU')}</>
+                        )}
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={handleManageSubscription} 
+                      disabled={subLoading}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      {subLoading ? 'Загрузка...' : 'Управление подпиской'}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <p className="text-sm text-muted-foreground">
+                      Нет активной подписки. Обновите план для доступа к премиум-функциям.
+                    </p>
+                    <Button 
+                      onClick={checkSubscription}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      Обновить статус
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
