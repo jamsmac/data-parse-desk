@@ -12,7 +12,8 @@ import {
   ReportConfig,
 } from '@/types/reports';
 import { ChartConfig } from '@/types/charts';
-import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export default function Reports() {
   const [activeTab, setActiveTab] = useState('templates');
@@ -20,7 +21,6 @@ export default function Reports() {
   const [editingTemplate, setEditingTemplate] = useState<ReportTemplateType | null>(null);
   const [templates, setTemplates] = useState<ReportTemplateType[]>([]);
   const [schedules, setSchedules] = useState<ScheduledReport[]>([]);
-  const { toast } = useToast();
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -92,7 +92,7 @@ export default function Reports() {
       setTemplates([...templates, template]);
     }
     
-    toast({ title: 'Успешно', description: 'Шаблон сохранен' });
+    toast.success('Шаблон сохранен');
     setEditingTemplate(null);
     setIsBuilderOpen(false);
     setActiveTab('templates');
@@ -111,7 +111,7 @@ export default function Reports() {
 
   const handleDeleteTemplate = (templateId: string) => {
     setTemplates(templates.filter(t => t.id !== templateId));
-    toast({ title: 'Успешно', description: 'Шаблон удален' });
+    toast.success('Шаблон удален');
   };
 
   const handleAddSchedule = (schedule: Omit<ScheduledReport, 'id' | 'createdAt'>) => {
@@ -122,7 +122,7 @@ export default function Reports() {
     };
 
     setSchedules([...schedules, newSchedule]);
-    toast({ title: 'Успешно', description: 'Расписание добавлено' });
+    toast.success('Расписание добавлено');
   };
 
   const handleUpdateSchedule = (scheduleId: string, updates: Partial<ScheduledReport>) => {
@@ -131,13 +131,34 @@ export default function Reports() {
 
   const handleDeleteSchedule = (scheduleId: string) => {
     setSchedules(schedules.filter(s => s.id !== scheduleId));
-    toast({ title: 'Успешно', description: 'Расписание удалено' });
+    toast.success('Расписание удалено');
   };
 
   const handleExport = async (config: ExportConfig) => {
-    console.log('Exporting with config:', config);
-    // Здесь будет логика экспорта в PDF
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const mockData = [{ name: 'Test', value: 100 }];
+      const { data, error } = await supabase.functions.invoke('generate-report', {
+        body: {
+          templateId: mockReport.template?.id,
+          format: mockReport.format,
+          data: { rows: mockData, name: mockReport.name },
+        },
+      });
+      if (error) throw error;
+      const blob = new Blob([data]);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${mockReport.name}.${mockReport.format}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Отчет экспортирован');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Ошибка экспорта');
+    }
   };
 
   return (

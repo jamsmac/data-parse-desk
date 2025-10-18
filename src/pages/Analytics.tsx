@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Download } from 'lucide-react';
 import { ChartBuilder } from '@/components/charts/ChartBuilder';
 import { PivotTable } from '@/components/charts/PivotTable';
 import { ChartGallery } from '@/components/charts/ChartGallery';
@@ -10,11 +10,23 @@ import { SystemStats } from '@/components/analytics/SystemStats';
 import { ChartConfig } from '@/types/charts';
 import { DashboardConfig } from '@/components/charts/DashboardBuilder';
 import { ChartTemplate } from '@/components/charts/ChartGallery';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { format } from 'date-fns';
+import { DateRange } from 'react-day-picker';
 
 export default function Analytics() {
   const [activeTab, setActiveTab] = useState('gallery');
   const [savedCharts, setSavedCharts] = useState<ChartConfig[]>([]);
   const [savedDashboards, setSavedDashboards] = useState<DashboardConfig[]>([]);
+  const [dateRange, setDateRange] = useState<DateRange | undefined>({
+    from: new Date(new Date().setDate(new Date().getDate() - 30)),
+    to: new Date(),
+  });
+  const [realtimeData, setRealtimeData] = useState<any[]>([]);
 
   // Mock data - в реальном приложении это будет из API
   const mockColumns = [
@@ -49,9 +61,40 @@ export default function Analytics() {
   };
 
   const handleExportPivot = (data: any[][]) => {
-    console.log('Exporting pivot data:', data);
-    // Здесь будет логика экспорта
+    try {
+      // Convert to CSV
+      const csv = data.map(row => row.join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `analytics-${Date.now()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success('Данные экспортированы');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error('Ошибка экспорта');
+    }
   };
+
+  // Setup Realtime subscription for analytics
+  useEffect(() => {
+    const channel = supabase
+      .channel('credit_transactions')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'credit_transactions' }, (payload) => {
+        console.log('Realtime update:', payload);
+        setRealtimeData(prev => [payload.new, ...prev.slice(0, 99)]);
+        toast.info('Новые данные получены');
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -61,6 +104,38 @@ export default function Analytics() {
           <p className="text-muted-foreground mt-2">
             Создавайте графики, сводные таблицы и дашборды для анализа данных
           </p>
+        </div>
+        <div className="flex gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline">
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {dateRange?.from ? (
+                  dateRange.to ? (
+                    <>
+                      {format(dateRange.from, 'dd.MM.yyyy')} - {format(dateRange.to, 'dd.MM.yyyy')}
+                    </>
+                  ) : (
+                    format(dateRange.from, 'dd.MM.yyyy')
+                  )
+                ) : (
+                  'Выберите период'
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="range"
+                selected={dateRange}
+                onSelect={setDateRange}
+                numberOfMonths={2}
+              />
+            </PopoverContent>
+          </Popover>
+          <Button onClick={() => handleExportPivot(mockData.map(d => Object.values(d)))}>
+            <Download className="mr-2 h-4 w-4" />
+            Экспорт CSV
+          </Button>
         </div>
       </div>
 

@@ -3,6 +3,9 @@ project_id = "puavudiivxuknvtbnotv"
 [functions.ai-orchestrator]
 verify_jwt = true
 
+[functions.generate-report]
+verify_jwt = true
+
 [functions.create-payment-intent]
 verify_jwt = true
 
