@@ -34,7 +34,7 @@ interface GraphEdge {
   type: 'one_to_many' | 'many_to_one' | 'many_to_many';
 }
 
-export default function RelationshipGraph({
+export function RelationshipGraph({
   databases,
   relations,
   onDatabaseClick,

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Plus, Settings, Trash2, GripVertical, Check, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Settings, Trash2, GripVertical, Check, X, Link2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
@@ -11,6 +11,7 @@ import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { RelationColumnEditor } from '@/components/relations/RelationColumnEditor';
 import type { TableSchema, ColumnType } from '@/types/database';
 
 export interface ColumnManagerProps {
@@ -39,6 +40,8 @@ export default function ColumnManager({ databaseId, onSchemasChange }: ColumnMan
   const [columns, setColumns] = useState<TableSchema[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingColumn, setEditingColumn] = useState<TableSchema | null>(null);
+  const [isRelationDialogOpen, setIsRelationDialogOpen] = useState(false);
+  const [databases, setDatabases] = useState<any[]>([]);
   
   const [newColumn, setNewColumn] = useState({
     column_name: '',
@@ -47,10 +50,10 @@ export default function ColumnManager({ databaseId, onSchemasChange }: ColumnMan
     default_value: '',
   });
 
-  // Load columns on mount
-  useState(() => {
+  useEffect(() => {
     loadColumns();
-  });
+    loadDatabases();
+  }, [databaseId]);
 
   const loadColumns = async () => {
     try {
@@ -61,6 +64,22 @@ export default function ColumnManager({ databaseId, onSchemasChange }: ColumnMan
       setColumns((data || []) as any);
     } catch (error: any) {
       console.error('Error loading columns:', error);
+    }
+  };
+
+  const loadDatabases = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase.rpc('get_user_databases', {
+        p_user_id: user.id,
+      });
+
+      if (error) throw error;
+      setDatabases(data || []);
+    } catch (error: any) {
+      console.error('Error loading databases:', error);
     }
   };
 
@@ -134,91 +153,97 @@ export default function ColumnManager({ databaseId, onSchemasChange }: ColumnMan
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Колонки</h3>
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogTrigger asChild>
-            <Button size="sm" className="gap-2">
-              <Plus className="h-4 w-4" />
-              Добавить колонку
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Новая колонка</DialogTitle>
-              <DialogDescription>
-                Добавьте новую колонку в базу данных
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="grid gap-4 py-4">
-              <div className="grid gap-2">
-                <Label htmlFor="column_name">Название колонки *</Label>
-                <Input
-                  id="column_name"
-                  placeholder="Название"
-                  value={newColumn.column_name}
-                  onChange={(e) => setNewColumn({ ...newColumn, column_name: e.target.value })}
-                />
-              </div>
+        <div className="flex gap-2">
+          <Button onClick={() => setIsRelationDialogOpen(true)} size="sm" variant="outline">
+            <Link2 className="h-4 w-4 mr-2" />
+            Добавить связь
+          </Button>
+          <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm" className="gap-2">
+                <Plus className="h-4 w-4" />
+                Добавить колонку
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
+              <DialogHeader>
+                <DialogTitle>Новая колонка</DialogTitle>
+                <DialogDescription>
+                  Добавьте новую колонку в базу данных
+                </DialogDescription>
+              </DialogHeader>
               
-              <div className="grid gap-2">
-                <Label htmlFor="column_type">Тип данных</Label>
-                <Select
-                  value={newColumn.column_type}
-                  onValueChange={(value) => setNewColumn({ ...newColumn, column_type: value as ColumnType })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {COLUMN_TYPES.map((type) => (
-                      <SelectItem key={type.value} value={type.value}>
-                        <div className="flex items-center gap-2">
-                          <span>{type.icon}</span>
-                          <span>{type.label}</span>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="is_required">Обязательное поле</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Поле должно быть заполнено
-                  </p>
-                </div>
-                <Switch
-                  id="is_required"
-                  checked={newColumn.is_required}
-                  onCheckedChange={(checked) => setNewColumn({ ...newColumn, is_required: checked })}
-                />
-              </div>
-              
-              {!newColumn.is_required && (
+              <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="default_value">Значение по умолчанию</Label>
+                  <Label htmlFor="column_name">Название колонки *</Label>
                   <Input
-                    id="default_value"
-                    placeholder="Пусто"
-                    value={newColumn.default_value}
-                    onChange={(e) => setNewColumn({ ...newColumn, default_value: e.target.value })}
+                    id="column_name"
+                    placeholder="Название"
+                    value={newColumn.column_name}
+                    onChange={(e) => setNewColumn({ ...newColumn, column_name: e.target.value })}
                   />
                 </div>
-              )}
-            </div>
-            
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                Отмена
-              </Button>
-              <Button onClick={handleAddColumn}>
-                Добавить
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+                
+                <div className="grid gap-2">
+                  <Label htmlFor="column_type">Тип данных</Label>
+                  <Select
+                    value={newColumn.column_type}
+                    onValueChange={(value) => setNewColumn({ ...newColumn, column_type: value as ColumnType })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {COLUMN_TYPES.map((type) => (
+                        <SelectItem key={type.value} value={type.value}>
+                          <div className="flex items-center gap-2">
+                            <span>{type.icon}</span>
+                            <span>{type.label}</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="is_required">Обязательное поле</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Поле должно быть заполнено
+                    </p>
+                  </div>
+                  <Switch
+                    id="is_required"
+                    checked={newColumn.is_required}
+                    onCheckedChange={(checked) => setNewColumn({ ...newColumn, is_required: checked })}
+                  />
+                </div>
+                
+                {!newColumn.is_required && (
+                  <div className="grid gap-2">
+                    <Label htmlFor="default_value">Значение по умолчанию</Label>
+                    <Input
+                      id="default_value"
+                      placeholder="Пусто"
+                      value={newColumn.default_value}
+                      onChange={(e) => setNewColumn({ ...newColumn, default_value: e.target.value })}
+                    />
+                  </div>
+                )}
+              </div>
+              
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+                  Отмена
+                </Button>
+                <Button onClick={handleAddColumn}>
+                  Добавить
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Card>
@@ -229,7 +254,7 @@ export default function ColumnManager({ databaseId, onSchemasChange }: ColumnMan
             </div>
           ) : (
             <div className="divide-y">
-              {columns.map((column, index) => {
+              {columns.map((column) => {
                 const typeInfo = getColumnTypeInfo(column.column_type);
                 const isEditing = editingColumn?.id === column.id;
 
@@ -314,6 +339,38 @@ export default function ColumnManager({ databaseId, onSchemasChange }: ColumnMan
           )}
         </CardContent>
       </Card>
+
+      <RelationColumnEditor
+        open={isRelationDialogOpen}
+        onOpenChange={setIsRelationDialogOpen}
+        databases={databases}
+        currentDatabaseId={databaseId}
+        onSave={async (config) => {
+          // Create relation column
+          try {
+            await supabase.rpc('create_table_schema', {
+              p_database_id: databaseId,
+              p_column_name: config.columnName,
+              p_column_type: 'relation',
+              p_is_required: false,
+              p_position: columns.length,
+              p_relation_config: {
+                target_database_id: (config as any).targetDatabaseId,
+                relation_type: (config as any).relationType,
+                display_field: (config as any).displayField,
+              },
+            });
+            
+            toast.success('Связь добавлена');
+            setIsRelationDialogOpen(false);
+            loadColumns();
+            onSchemasChange();
+          } catch (error) {
+            toast.error('Ошибка при добавлении связи');
+            console.error(error);
+          }
+        }}
+      />
     </div>
   );
 }

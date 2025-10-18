@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { ChevronDown, ChevronUp, Eye, EyeOff, Download } from 'lucide-react';
+import { ChevronDown, ChevronUp, Eye, Download, Edit2 } from 'lucide-react';
 import { NormalizedRow, formatAmount, GroupedData } from '@/utils/parseData';
 import { Button } from './ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
@@ -12,17 +12,19 @@ import {
   SheetHeader,
   SheetTitle,
 } from './ui/sheet';
-// Export functionality removed - was incomplete
+import { EditableCell } from '@/components/database/EditableCell';
 
 interface DataTableProps {
   data: NormalizedRow[] | GroupedData[];
   headers: string[];
   isGrouped: boolean;
+  onCellUpdate?: (rowId: string, column: string, value: any) => Promise<void>;
+  columnTypes?: Record<string, string>;
 }
 
 type SortDirection = 'asc' | 'desc' | null;
 
-export function DataTable({ data, headers, isGrouped }: DataTableProps) {
+export function DataTable({ data, headers, isGrouped, onCellUpdate, columnTypes = {} }: DataTableProps) {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(50);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -30,6 +32,7 @@ export function DataTable({ data, headers, isGrouped }: DataTableProps) {
   const [visibleColumns, setVisibleColumns] = useState<Set<string>>(new Set(headers));
   const [selectedRow, setSelectedRow] = useState<NormalizedRow | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [editingCell, setEditingCell] = useState<{ rowId: string; column: string } | null>(null);
 
   const visibleHeaders = headers.filter(h => visibleColumns.has(h));
 
@@ -97,9 +100,21 @@ export function DataTable({ data, headers, isGrouped }: DataTableProps) {
     setExpandedGroups(newExpanded);
   };
 
-  const handleExport = (format: 'csv' | 'xlsx') => {
-    // Export functionality removed - was incomplete
-    console.log('Export feature not yet implemented');
+  const handleCellDoubleClick = (rowId: string, column: string) => {
+    if (onCellUpdate) {
+      setEditingCell({ rowId, column });
+    }
+  };
+
+  const handleCellSave = async (value: any) => {
+    if (!editingCell || !onCellUpdate) return;
+    
+    await onCellUpdate(editingCell.rowId, editingCell.column, value);
+    setEditingCell(null);
+  };
+
+  const handleCellCancel = () => {
+    setEditingCell(null);
   };
 
   const formatCellValue = (value: any, header: string) => {
@@ -160,17 +175,6 @@ export function DataTable({ data, headers, isGrouped }: DataTableProps) {
             </SheetContent>
           </Sheet>
         </div>
-
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => handleExport('csv')}>
-            <Download className="mr-2 h-4 w-4" />
-            CSV
-          </Button>
-          <Button variant="outline" onClick={() => handleExport('xlsx')}>
-            <Download className="mr-2 h-4 w-4" />
-            Excel
-          </Button>
-        </div>
       </div>
 
       {/* Table */}
@@ -221,11 +225,34 @@ export function DataTable({ data, headers, isGrouped }: DataTableProps) {
                         className="cursor-pointer hover:bg-table-row-hover"
                         onClick={() => setSelectedRow(row)}
                       >
-                        {visibleHeaders.map(header => (
-                          <TableCell key={header}>
-                            {formatCellValue(row[header], header)}
-                          </TableCell>
-                        ))}
+                        {visibleHeaders.map(header => {
+                          const isEditing = editingCell?.rowId === row.id && editingCell?.column === header;
+                          const value = row[header];
+                          
+                          return (
+                            <TableCell 
+                              key={header}
+                              onDoubleClick={() => handleCellDoubleClick(row.id, header)}
+                              className="cursor-pointer hover:bg-accent/50 transition-colors"
+                            >
+                              {isEditing ? (
+                                <EditableCell
+                                  value={value}
+                                  columnType={columnTypes[header] || 'text'}
+                                  onSave={handleCellSave}
+                                  onCancel={handleCellCancel}
+                                />
+                              ) : (
+                                <div className="flex items-center justify-between group">
+                                  <span>{formatCellValue(value, header)}</span>
+                                  {onCellUpdate && (
+                                    <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+                                  )}
+                                </div>
+                              )}
+                            </TableCell>
+                          );
+                        })}
                       </TableRow>
                     ))}
                   </>
@@ -237,11 +264,34 @@ export function DataTable({ data, headers, isGrouped }: DataTableProps) {
                     className="cursor-pointer hover:bg-table-row-hover"
                     onClick={() => setSelectedRow(row)}
                   >
-                    {visibleHeaders.map(header => (
-                      <TableCell key={header}>
-                        {formatCellValue(row[header], header)}
-                      </TableCell>
-                    ))}
+                    {visibleHeaders.map(header => {
+                      const isEditing = editingCell?.rowId === row.id && editingCell?.column === header;
+                      const value = row[header];
+                      
+                      return (
+                        <TableCell 
+                          key={header}
+                          onDoubleClick={() => handleCellDoubleClick(row.id, header)}
+                          className="cursor-pointer hover:bg-accent/50 transition-colors"
+                        >
+                          {isEditing ? (
+                            <EditableCell
+                              value={value}
+                              columnType={columnTypes[header] || 'text'}
+                              onSave={handleCellSave}
+                              onCancel={handleCellCancel}
+                            />
+                          ) : (
+                            <div className="flex items-center justify-between group">
+                              <span>{formatCellValue(value, header)}</span>
+                              {onCellUpdate && (
+                                <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+                              )}
+                            </div>
+                          )}
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                 ))
               )}

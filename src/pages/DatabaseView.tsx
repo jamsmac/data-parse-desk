@@ -360,6 +360,23 @@ export default function DatabaseView() {
             }))} 
             headers={schemas.map(s => s.column_name)}
             isGrouped={false}
+            onCellUpdate={async (rowId, column, value) => {
+              // Find the row
+              const row = tableData.find((r: any) => r.id === rowId);
+              if (!row) return;
+              
+              // Update the row data
+              const updatedData = {
+                ...row.data,
+                [column]: value,
+              };
+              
+              await handleUpdateRow(rowId, updatedData);
+            }}
+            columnTypes={schemas.reduce((acc, s) => {
+              acc[s.column_name] = s.column_type;
+              return acc;
+            }, {} as Record<string, string>)}
           />
         </div>
 

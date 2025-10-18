@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Plus, Upload, Search } from 'lucide-react';
+import { ArrowLeft, Plus, Upload, Search, Network } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Header } from '@/components/Header';
 import { DatabaseCard } from '@/components/database/DatabaseCard';
 import { DatabaseFormDialog } from '@/components/database/DatabaseFormDialog';
+import { RelationshipGraph } from '@/components/relations/RelationshipGraph';
 import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export default function ProjectView() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -20,6 +22,7 @@ export default function ProjectView() {
   
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('databases');
 
   // Получение проекта
   const { data: project } = useQuery({
@@ -146,48 +149,79 @@ export default function ProjectView() {
           </Button>
         </div>
 
-        {/* Поиск */}
-        <div className="mb-6">
-          <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Поиск баз данных..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10"
-            />
-          </div>
-        </div>
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+          <TabsList>
+            <TabsTrigger value="databases">Базы данных</TabsTrigger>
+            <TabsTrigger value="graph">График связей</TabsTrigger>
+          </TabsList>
 
-        {/* Список баз данных */}
-        {isLoading ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Загрузка баз данных...</p>
-          </div>
-        ) : filteredDatabases && filteredDatabases.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredDatabases.map((database) => (
-              <DatabaseCard
-                key={database.id}
-                database={database as any}
-                onOpen={() => navigate(`/projects/${projectId}/database/${database.id}`)}
-                onDelete={() => deleteDatabaseMutation.mutate(database.id)}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground mb-4">
-              {searchQuery ? 'Базы данных не найдены' : 'В этом проекте пока нет баз данных'}
-            </p>
-            {!searchQuery && (
-              <Button onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Создать базу данных
-              </Button>
+          <TabsContent value="databases" className="mt-6">
+            {/* Поиск */}
+            <div className="mb-6">
+              <div className="relative max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Поиск баз данных..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+
+            {/* Список баз данных */}
+            {isLoading ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Загрузка баз данных...</p>
+              </div>
+            ) : filteredDatabases && filteredDatabases.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredDatabases.map((database) => (
+                  <DatabaseCard
+                    key={database.id}
+                    database={database as any}
+                    onOpen={() => navigate(`/projects/${projectId}/database/${database.id}`)}
+                    onDelete={() => deleteDatabaseMutation.mutate(database.id)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground mb-4">
+                  {searchQuery ? 'Базы данных не найдены' : 'В этом проекте пока нет баз данных'}
+                </p>
+                {!searchQuery && (
+                  <Button onClick={() => setIsCreateDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Создать базу данных
+                  </Button>
+                )}
+              </div>
             )}
-          </div>
-        )}
+          </TabsContent>
+
+          <TabsContent value="graph" className="mt-6">
+            {databases && databases.length > 0 ? (
+              <RelationshipGraph
+                databases={databases as any}
+                relations={[]}
+                onDatabaseClick={(db) => navigate(`/projects/${projectId}/database/${db.id}`)}
+              />
+            ) : (
+              <div className="text-center py-12">
+                <Network className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground mb-4">
+                  Создайте базы данных и связи между ними, чтобы увидеть график
+                </p>
+                <Button onClick={() => setIsCreateDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Создать базу данных
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Диалоги */}
