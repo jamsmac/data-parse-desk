@@ -19,6 +19,7 @@ const DatabaseView = lazy(() => import("./pages/DatabaseView"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Reports = lazy(() => import("./pages/Reports"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const Settings = lazy(() => import("./pages/Settings"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading component for lazy-loaded pages
@@ -125,6 +126,18 @@ const App = () => (
                     element={
                       <Suspense fallback={<PageLoader />}>
                         <ProfilePage />
+                      </Suspense>
+                    }
+                  />
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <Settings />
                       </Suspense>
                     }
                   />

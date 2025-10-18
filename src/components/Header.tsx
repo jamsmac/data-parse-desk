@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -18,14 +19,17 @@ import {
   LogOut,
   Bell,
   Settings,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from './ui/badge';
+import { AIAssistantPanel } from './ai/AIAssistantPanel';
 
 export function Header() {
   const { user, logout } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -124,8 +128,19 @@ export function Header() {
           </nav>
         </div>
 
-        {/* Right Side - Notifications & User Menu */}
+        {/* Right Side - AI Assistant, Notifications & User Menu */}
         <div className="flex items-center gap-2">
+          {/* AI Assistant */}
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setIsAIPanelOpen(true)}
+            className="gap-2 hover-scale"
+          >
+            <Sparkles className="h-4 w-4 text-primary" />
+            <span className="hidden md:inline">AI Ассистент</span>
+          </Button>
+
           {/* Notifications */}
           <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-5 w-5" />
@@ -167,7 +182,7 @@ export function Header() {
                 <User className="mr-2 h-4 w-4" />
                 Профиль
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/settings')}>
                 <Settings className="mr-2 h-4 w-4" />
                 Настройки
               </DropdownMenuItem>
@@ -183,6 +198,12 @@ export function Header() {
           </DropdownMenu>
         </div>
       </div>
+
+      {/* AI Assistant Panel */}
+      <AIAssistantPanel 
+        open={isAIPanelOpen}
+        onOpenChange={setIsAIPanelOpen}
+      />
     </header>
   );
 }

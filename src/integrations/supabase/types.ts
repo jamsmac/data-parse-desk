@@ -14,6 +14,282 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_agents: {
+        Row: {
+          agent_type: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          model: string | null
+          name: string
+          system_prompt: string
+        }
+        Insert: {
+          agent_type: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          model?: string | null
+          name: string
+          system_prompt: string
+        }
+        Update: {
+          agent_type?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          model?: string | null
+          name?: string
+          system_prompt?: string
+        }
+        Relationships: []
+      }
+      ai_requests: {
+        Row: {
+          agent_type: string
+          completed_at: string | null
+          created_at: string | null
+          credits_used: number | null
+          error_message: string | null
+          id: string
+          input_data: Json
+          output_data: Json | null
+          status: string | null
+          tokens_used: number | null
+          user_id: string
+        }
+        Insert: {
+          agent_type: string
+          completed_at?: string | null
+          created_at?: string | null
+          credits_used?: number | null
+          error_message?: string | null
+          id?: string
+          input_data: Json
+          output_data?: Json | null
+          status?: string | null
+          tokens_used?: number | null
+          user_id: string
+        }
+        Update: {
+          agent_type?: string
+          completed_at?: string | null
+          created_at?: string | null
+          credits_used?: number | null
+          error_message?: string | null
+          id?: string
+          input_data?: Json
+          output_data?: Json | null
+          status?: string | null
+          tokens_used?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      cell_history: {
+        Row: {
+          cell_metadata_id: string
+          change_type: string
+          changed_at: string | null
+          changed_by: string | null
+          id: string
+          new_value: Json | null
+          old_value: Json | null
+          source_file_id: string | null
+        }
+        Insert: {
+          cell_metadata_id: string
+          change_type: string
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          source_file_id?: string | null
+        }
+        Update: {
+          cell_metadata_id?: string
+          change_type?: string
+          changed_at?: string | null
+          changed_by?: string | null
+          id?: string
+          new_value?: Json | null
+          old_value?: Json | null
+          source_file_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cell_history_cell_metadata_id_fkey"
+            columns: ["cell_metadata_id"]
+            isOneToOne: false
+            referencedRelation: "cell_metadata"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_history_source_file_id_fkey"
+            columns: ["source_file_id"]
+            isOneToOne: false
+            referencedRelation: "database_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cell_metadata: {
+        Row: {
+          column_name: string
+          database_id: string
+          id: string
+          imported_at: string | null
+          imported_by: string | null
+          row_id: string
+          source_file_id: string | null
+          source_row_number: number | null
+          version: number | null
+        }
+        Insert: {
+          column_name: string
+          database_id: string
+          id?: string
+          imported_at?: string | null
+          imported_by?: string | null
+          row_id: string
+          source_file_id?: string | null
+          source_row_number?: number | null
+          version?: number | null
+        }
+        Update: {
+          column_name?: string
+          database_id?: string
+          id?: string
+          imported_at?: string | null
+          imported_by?: string | null
+          row_id?: string
+          source_file_id?: string | null
+          source_row_number?: number | null
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cell_metadata_database_id_fkey"
+            columns: ["database_id"]
+            isOneToOne: false
+            referencedRelation: "databases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_metadata_row_id_fkey"
+            columns: ["row_id"]
+            isOneToOne: false
+            referencedRelation: "table_data"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cell_metadata_source_file_id_fkey"
+            columns: ["source_file_id"]
+            isOneToOne: false
+            referencedRelation: "database_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_transactions: {
+        Row: {
+          amount: number
+          balance_after: number
+          created_at: string | null
+          description: string | null
+          id: string
+          operation_type: string | null
+          stripe_payment_id: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          balance_after: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          operation_type?: string | null
+          stripe_payment_id?: string | null
+          transaction_type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          balance_after?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          operation_type?: string | null
+          stripe_payment_id?: string | null
+          transaction_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      database_files: {
+        Row: {
+          database_id: string
+          duplicate_strategy: string | null
+          duplicates_found: number | null
+          file_hash: string | null
+          file_size: number | null
+          file_type: string | null
+          filename: string
+          id: string
+          import_mode: string
+          metadata: Json | null
+          rows_imported: number | null
+          rows_skipped: number | null
+          uploaded_at: string | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          database_id: string
+          duplicate_strategy?: string | null
+          duplicates_found?: number | null
+          file_hash?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          filename: string
+          id?: string
+          import_mode?: string
+          metadata?: Json | null
+          rows_imported?: number | null
+          rows_skipped?: number | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          database_id?: string
+          duplicate_strategy?: string | null
+          duplicates_found?: number | null
+          file_hash?: string | null
+          file_size?: number | null
+          file_type?: string | null
+          filename?: string
+          id?: string
+          import_mode?: string
+          metadata?: Json | null
+          rows_imported?: number | null
+          rows_skipped?: number | null
+          uploaded_at?: string | null
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "database_files_database_id_fkey"
+            columns: ["database_id"]
+            isOneToOne: false
+            referencedRelation: "databases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       database_metadata: {
         Row: {
           description: string | null
@@ -298,6 +574,42 @@ export type Database = {
         }
         Relationships: []
       }
+      storage_providers: {
+        Row: {
+          config: Json
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          last_sync_at: string | null
+          name: string
+          provider_type: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          config: Json
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          name: string
+          provider_type: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_sync_at?: string | null
+          name?: string
+          provider_type?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       table_data: {
         Row: {
           created_at: string | null
@@ -386,6 +698,42 @@ export type Database = {
           },
         ]
       }
+      telegram_accounts: {
+        Row: {
+          first_name: string | null
+          id: string
+          is_active: boolean | null
+          last_interaction_at: string | null
+          last_name: string | null
+          linked_at: string | null
+          telegram_id: number
+          telegram_username: string | null
+          user_id: string
+        }
+        Insert: {
+          first_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_interaction_at?: string | null
+          last_name?: string | null
+          linked_at?: string | null
+          telegram_id: number
+          telegram_username?: string | null
+          user_id: string
+        }
+        Update: {
+          first_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          last_interaction_at?: string | null
+          last_name?: string | null
+          linked_at?: string | null
+          telegram_id?: number
+          telegram_username?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       upload_log: {
         Row: {
           duplicate_records: number | null
@@ -430,6 +778,36 @@ export type Database = {
           status?: string | null
           total_rows?: number | null
           upload_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_credits: {
+        Row: {
+          created_at: string | null
+          free_credits: number | null
+          id: string
+          paid_credits: number | null
+          total_credits_used: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          free_credits?: number | null
+          id?: string
+          paid_credits?: number | null
+          total_credits_used?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          free_credits?: number | null
+          id?: string
+          paid_credits?: number | null
+          total_credits_used?: number | null
+          updated_at?: string | null
           user_id?: string
         }
         Relationships: []
