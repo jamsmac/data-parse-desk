@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,11 +8,13 @@ import { Loader2, Database, Eye, EyeOff } from 'lucide-react';
 import { LoginCredentials } from '@/types/auth';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
   const [credentials, setCredentials] = useState<LoginCredentials>({
     email: '',
     password: '',
@@ -20,18 +22,64 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [loginAttempts, setLoginAttempts] = useState<number[]>([]);
+  const lockoutEndRef = useRef<number | null>(null);
 
   // Get the page user tried to access before being redirected
   const from = (location.state as any)?.from || '/projects';
 
+  // Rate limiting config
+  const MAX_ATTEMPTS = 5;
+  const WINDOW_MS = 60000; // 1 minute
+  const LOCKOUT_MS = 300000; // 5 minutes
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    const now = Date.now();
+
+    // Check if locked out
+    if (lockoutEndRef.current && now < lockoutEndRef.current) {
+      const remainingSeconds = Math.ceil((lockoutEndRef.current - now) / 1000);
+      toast({
+        title: "Слишком много попыток",
+        description: `Пожалуйста, подождите ${remainingSeconds} секунд`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Clean old attempts
+    const recentAttempts = loginAttempts.filter((timestamp) => now - timestamp < WINDOW_MS);
+
+    // Check rate limit
+    if (recentAttempts.length >= MAX_ATTEMPTS) {
+      const lockEnd = now + LOCKOUT_MS;
+      lockoutEndRef.current = lockEnd;
+      
+      toast({
+        title: "Слишком много попыток входа",
+        description: `Аккаунт временно заблокирован на ${LOCKOUT_MS / 60000} минут для защиты от несанкционированного доступа`,
+        variant: "destructive",
+      });
+
+      setTimeout(() => {
+        lockoutEndRef.current = null;
+        setLoginAttempts([]);
+      }, LOCKOUT_MS);
+
+      return;
+    }
+
+    // Record attempt
+    setLoginAttempts([...recentAttempts, now]);
     setIsLoading(true);
 
     try {
       await login(credentials);
-      // Redirect to the page they tried to access, or dashboard
+      // Clear attempts on successful login
+      setLoginAttempts([]);
       navigate(from, { replace: true });
     } catch (err: any) {
       setError(err.message || 'Ошибка входа. Проверьте данные.');
