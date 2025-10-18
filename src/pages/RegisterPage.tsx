@@ -71,8 +71,8 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-md animate-fade-in">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
             <div className="p-3 bg-primary/10 rounded-full">
@@ -231,8 +231,8 @@ export default function RegisterPage() {
 
           <div className="mt-6 pt-6 border-t">
             <div className="text-center text-xs text-muted-foreground space-y-1">
-              <p>Безопасная регистрация через Supabase Auth</p>
-              <p>Ваши данные надежно защищены</p>
+              <p>Безопасная регистрация</p>
+              <p>Все данные защищены шифрованием</p>
             </div>
           </div>
         </CardContent>
