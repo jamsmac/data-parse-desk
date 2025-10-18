@@ -9,6 +9,7 @@ import { DataTable } from '@/components/DataTable';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { ColumnManager } from '@/components/database/ColumnManager';
 import { UploadFileDialog } from '@/components/import/UploadFileDialog';
+import { ExportButton } from '@/components/database/ExportButton';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import type { Database, TableSchema } from '@/types/database';
 
@@ -252,6 +253,10 @@ export default function DatabaseView() {
             </div>
 
             <div className="flex gap-2">
+              <ExportButton
+                data={tableData}
+                fileName={database?.name || 'export'}
+              />
               <Button variant="outline" size="sm" onClick={() => setIsUploadDialogOpen(true)}>
                 <Upload className="mr-2 h-4 w-4" />
                 Загрузить файл

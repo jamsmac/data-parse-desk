@@ -55,6 +55,7 @@
     "esbuild": "^0.25.11",
     "exceljs": "^4.4.0",
     "input-otp": "^1.4.2",
+    "jspdf": "^3.0.3",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
     "papaparse": "^5.5.3",
