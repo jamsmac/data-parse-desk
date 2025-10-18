@@ -77,24 +77,17 @@ export const AIAssistantPanel = ({ open, onOpenChange, databaseId }: AIAssistant
     mutationFn: async (data: { agent_type: string; input: string }) => {
       if (!user?.id) throw new Error('Not authenticated');
 
-      // Создаем запрос
-      const { data: request, error } = await supabase
-        .from('ai_requests')
-        .insert({
-          user_id: user.id,
+      // Вызываем AI Orchestrator Edge Function
+      const { data: result, error } = await supabase.functions.invoke('ai-orchestrator', {
+        body: {
           agent_type: data.agent_type,
           input_data: { message: data.input, database_id: databaseId },
-          status: 'pending',
-        })
-        .select()
-        .single();
+        },
+      });
 
       if (error) throw error;
 
-      // TODO: Вызвать Edge Function для обработки через AI
-      // Здесь будет вызов ai-orchestrator Edge Function
-
-      return request;
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ai-requests'] });

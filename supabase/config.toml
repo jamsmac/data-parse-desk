@@ -1,1 +1,13 @@
 project_id = "puavudiivxuknvtbnotv"
+
+[functions.ai-orchestrator]
+verify_jwt = true
+
+[functions.create-payment-intent]
+verify_jwt = true
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.telegram-webhook]
+verify_jwt = false

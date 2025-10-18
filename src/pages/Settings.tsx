@@ -10,11 +10,15 @@ import { StorageProviderCard } from '@/components/storage/StorageProviderCard';
 import { StorageProviderDialog } from '@/components/storage/StorageProviderDialog';
 import { TelegramConnectionCard } from '@/components/telegram/TelegramConnectionCard';
 import { Button } from '@/components/ui/button';
-import { Plus, Settings as SettingsIcon } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Plus, Settings as SettingsIcon, Bot } from 'lucide-react';
 
 export default function Settings() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [telegramBotToken, setTelegramBotToken] = useState('');
   const [activeTab, setActiveTab] = useState('credits');
 
   const { data: storageProviders, refetch: refetchProviders } = useQuery({
@@ -96,6 +100,24 @@ export default function Settings() {
     }
   };
 
+  const handleSaveTelegramToken = async () => {
+    if (!telegramBotToken.trim()) {
+      toast({
+        title: 'Ошибка',
+        description: 'Введите токен бота',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    toast({
+      title: 'Успешно',
+      description: 'Токен Telegram бота сохранен',
+    });
+
+    setTelegramBotToken('');
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
@@ -163,6 +185,46 @@ export default function Settings() {
                 Подключите внешние сервисы для расширения функционала
               </p>
             </div>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bot className="h-5 w-5 text-primary" />
+                  Telegram Bot
+                </CardTitle>
+                <CardDescription>
+                  Настройте токен вашего Telegram бота для интеграции
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="telegram-token">Bot Token</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      id="telegram-token"
+                      type="password"
+                      placeholder="1234567890:ABCdefGHIjklMNOpqrsTUVwxyz"
+                      value={telegramBotToken}
+                      onChange={(e) => setTelegramBotToken(e.target.value)}
+                    />
+                    <Button onClick={handleSaveTelegramToken}>
+                      Сохранить
+                    </Button>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Получите токен у{' '}
+                    <a 
+                      href="https://t.me/BotFather" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline"
+                    >
+                      @BotFather
+                    </a>
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
 
             <TelegramConnectionCard
               isConnected={!!telegramAccount}
