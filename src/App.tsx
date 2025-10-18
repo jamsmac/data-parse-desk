@@ -11,9 +11,11 @@ import { Loader2 } from "lucide-react";
 // Eagerly load only auth pages for fastest initial load
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
-import Index from "./pages/Index";
 
 // Lazy load all other pages to reduce initial bundle
+const Projects = lazy(() => import("./pages/Projects"));
+const ProjectView = lazy(() => import("./pages/ProjectView"));
+const DatabaseView = lazy(() => import("./pages/DatabaseView"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Reports = lazy(() => import("./pages/Reports"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
@@ -52,15 +54,49 @@ const App = () => (
               <Route path="/register" element={<RegisterPage />} />
 
               {/* Protected routes - All lazy loaded for optimal bundle size */}
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/" element={<Navigate to="/projects" replace />} />
+              
               <Route
-                path="/dashboard"
+                path="/projects"
                 element={
                   <ProtectedRoute
-                    element={<Index />}
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <Projects />
+                      </Suspense>
+                    }
                   />
                 }
               />
+
+              <Route
+                path="/projects/:projectId"
+                element={
+                  <ProtectedRoute
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProjectView />
+                      </Suspense>
+                    }
+                  />
+                }
+              />
+
+              <Route
+                path="/projects/:projectId/database/:databaseId"
+                element={
+                  <ProtectedRoute
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <DatabaseView />
+                      </Suspense>
+                    }
+                  />
+                }
+              />
+
+              {/* Legacy dashboard redirect */}
+              <Route path="/dashboard" element={<Navigate to="/projects" replace />} />
               <Route
                 path="/analytics"
                 element={

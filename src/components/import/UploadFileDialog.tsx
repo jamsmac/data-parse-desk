@@ -14,21 +14,19 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Upload, File, X, AlertCircle, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface UploadFileDialogProps {
+export interface UploadFileDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onUpload: (file: File) => Promise<void>;
-  acceptedFormats?: string[];
-  maxSize?: number; // в MB
+  onSuccess: () => void;
 }
 
 export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
   open,
   onOpenChange,
-  onUpload,
-  acceptedFormats = ['.csv', '.xlsx', '.xls', '.json'],
-  maxSize = 10,
+  onSuccess,
 }) => {
+  const acceptedFormats = ['.csv', '.xlsx', '.xls'];
+  const maxSize = 10;
   const [file, setFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -102,7 +100,8 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
     setError(null);
 
     try {
-      await onUpload(file);
+      // File upload logic will be handled in parent component
+      onSuccess();
       setFile(null);
       onOpenChange(false);
     } catch (err) {

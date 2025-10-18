@@ -38,6 +38,64 @@ export type Database = {
         }
         Relationships: []
       }
+      database_relations: {
+        Row: {
+          cascade_delete: boolean | null
+          created_at: string | null
+          id: string
+          junction_table_id: string | null
+          relation_type: string
+          source_column: string
+          source_database_id: string
+          target_column: string
+          target_database_id: string
+        }
+        Insert: {
+          cascade_delete?: boolean | null
+          created_at?: string | null
+          id?: string
+          junction_table_id?: string | null
+          relation_type: string
+          source_column: string
+          source_database_id: string
+          target_column: string
+          target_database_id: string
+        }
+        Update: {
+          cascade_delete?: boolean | null
+          created_at?: string | null
+          id?: string
+          junction_table_id?: string | null
+          relation_type?: string
+          source_column?: string
+          source_database_id?: string
+          target_column?: string
+          target_database_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "database_relations_junction_table_id_fkey"
+            columns: ["junction_table_id"]
+            isOneToOne: false
+            referencedRelation: "databases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "database_relations_source_database_id_fkey"
+            columns: ["source_database_id"]
+            isOneToOne: false
+            referencedRelation: "databases"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "database_relations_target_database_id_fkey"
+            columns: ["target_database_id"]
+            isOneToOne: false
+            referencedRelation: "databases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       databases: {
         Row: {
           color: string | null
@@ -46,6 +104,7 @@ export type Database = {
           icon: string | null
           id: string
           name: string
+          project_id: string | null
           table_count: number
           tags: string[] | null
           updated_at: string
@@ -58,6 +117,7 @@ export type Database = {
           icon?: string | null
           id?: string
           name: string
+          project_id?: string | null
           table_count?: number
           tags?: string[] | null
           updated_at?: string
@@ -70,12 +130,21 @@ export type Database = {
           icon?: string | null
           id?: string
           name?: string
+          project_id?: string | null
           table_count?: number
           tags?: string[] | null
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "databases_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       orders: {
         Row: {
@@ -155,6 +224,168 @@ export type Database = {
         }
         Relationships: []
       }
+      project_members: {
+        Row: {
+          id: string
+          invited_at: string | null
+          invited_by: string | null
+          project_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          project_id: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          invited_at?: string | null
+          invited_by?: string | null
+          project_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      projects: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_archived: boolean | null
+          name: string
+          settings: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_archived?: boolean | null
+          name: string
+          settings?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_archived?: boolean | null
+          name?: string
+          settings?: Json | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      table_data: {
+        Row: {
+          created_at: string | null
+          data: Json
+          database_id: string
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          data?: Json
+          database_id: string
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data?: Json
+          database_id?: string
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "table_data_database_id_fkey"
+            columns: ["database_id"]
+            isOneToOne: false
+            referencedRelation: "databases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      table_schemas: {
+        Row: {
+          column_name: string
+          column_type: string
+          created_at: string | null
+          database_id: string
+          default_value: Json | null
+          formula_config: Json | null
+          id: string
+          is_required: boolean | null
+          lookup_config: Json | null
+          position: number
+          relation_config: Json | null
+          rollup_config: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          column_name: string
+          column_type: string
+          created_at?: string | null
+          database_id: string
+          default_value?: Json | null
+          formula_config?: Json | null
+          id?: string
+          is_required?: boolean | null
+          lookup_config?: Json | null
+          position?: number
+          relation_config?: Json | null
+          rollup_config?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          column_name?: string
+          column_type?: string
+          created_at?: string | null
+          database_id?: string
+          default_value?: Json | null
+          formula_config?: Json | null
+          id?: string
+          is_required?: boolean | null
+          lookup_config?: Json | null
+          position?: number
+          relation_config?: Json | null
+          rollup_config?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "table_schemas_database_id_fkey"
+            columns: ["database_id"]
+            isOneToOne: false
+            referencedRelation: "databases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       upload_log: {
         Row: {
           duplicate_records: number | null
@@ -208,6 +439,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      bulk_delete_table_rows: {
+        Args: { p_ids: string[] }
+        Returns: boolean
+      }
+      bulk_insert_table_rows: {
+        Args: { p_database_id: string; p_rows: Json[] }
+        Returns: {
+          created_at: string | null
+          data: Json
+          database_id: string
+          id: string
+          updated_at: string | null
+        }[]
+      }
+      clear_database_data: {
+        Args: { p_database_id: string }
+        Returns: boolean
+      }
       create_database: {
         Args: {
           color?: string
@@ -223,11 +472,104 @@ export type Database = {
           icon: string | null
           id: string
           name: string
+          project_id: string | null
           table_count: number
           tags: string[] | null
           updated_at: string
           user_id: string
         }
+      }
+      create_database_relation: {
+        Args: {
+          p_cascade_delete?: boolean
+          p_junction_table_id?: string
+          p_relation_type: string
+          p_source_column: string
+          p_source_database_id: string
+          p_target_column: string
+          p_target_database_id: string
+        }
+        Returns: {
+          cascade_delete: boolean | null
+          created_at: string | null
+          id: string
+          junction_table_id: string | null
+          relation_type: string
+          source_column: string
+          source_database_id: string
+          target_column: string
+          target_database_id: string
+        }
+      }
+      create_project: {
+        Args: {
+          p_color?: string
+          p_description?: string
+          p_icon?: string
+          p_name: string
+          p_user_id: string
+        }
+        Returns: {
+          color: string | null
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_archived: boolean | null
+          name: string
+          settings: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+      }
+      create_table_schema: {
+        Args: {
+          p_column_name: string
+          p_column_type: string
+          p_database_id: string
+          p_default_value?: Json
+          p_formula_config?: Json
+          p_is_required?: boolean
+          p_lookup_config?: Json
+          p_position?: number
+          p_relation_config?: Json
+          p_rollup_config?: Json
+        }
+        Returns: {
+          column_name: string
+          column_type: string
+          created_at: string | null
+          database_id: string
+          default_value: Json | null
+          formula_config: Json | null
+          id: string
+          is_required: boolean | null
+          lookup_config: Json | null
+          position: number
+          relation_config: Json | null
+          rollup_config: Json | null
+          updated_at: string | null
+        }
+      }
+      delete_database: {
+        Args: { p_id: string }
+        Returns: boolean
+      }
+      delete_database_relation: {
+        Args: { p_id: string }
+        Returns: boolean
+      }
+      delete_project: {
+        Args: { p_id: string }
+        Returns: boolean
+      }
+      delete_table_row: {
+        Args: { p_id: string }
+        Returns: boolean
+      }
+      delete_table_schema: {
+        Args: { p_id: string }
+        Returns: boolean
       }
       get_database: {
         Args: { p_id: string }
@@ -238,11 +580,84 @@ export type Database = {
           icon: string | null
           id: string
           name: string
+          project_id: string | null
           table_count: number
           tags: string[] | null
           updated_at: string
           user_id: string
         }
+      }
+      get_database_relations: {
+        Args: { p_database_id: string }
+        Returns: {
+          cascade_delete: boolean | null
+          created_at: string | null
+          id: string
+          junction_table_id: string | null
+          relation_type: string
+          source_column: string
+          source_database_id: string
+          target_column: string
+          target_database_id: string
+        }[]
+      }
+      get_database_stats: {
+        Args: { p_database_id: string }
+        Returns: {
+          column_count: number
+          last_updated: string
+          row_count: number
+        }[]
+      }
+      get_project_databases: {
+        Args: { p_project_id: string }
+        Returns: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          project_id: string | null
+          table_count: number
+          tags: string[] | null
+          updated_at: string
+          user_id: string
+        }[]
+      }
+      get_table_data: {
+        Args: {
+          p_database_id: string
+          p_limit?: number
+          p_offset?: number
+          p_sort_column?: string
+          p_sort_direction?: string
+        }
+        Returns: {
+          created_at: string
+          data: Json
+          id: string
+          total_count: number
+          updated_at: string
+        }[]
+      }
+      get_table_schemas: {
+        Args: { p_database_id: string }
+        Returns: {
+          column_name: string
+          column_type: string
+          created_at: string | null
+          database_id: string
+          default_value: Json | null
+          formula_config: Json | null
+          id: string
+          is_required: boolean | null
+          lookup_config: Json | null
+          position: number
+          relation_config: Json | null
+          rollup_config: Json | null
+          updated_at: string | null
+        }[]
       }
       get_user_databases: {
         Args: { p_user_id: string }
@@ -253,11 +668,124 @@ export type Database = {
           icon: string | null
           id: string
           name: string
+          project_id: string | null
           table_count: number
           tags: string[] | null
           updated_at: string
           user_id: string
         }[]
+      }
+      get_user_projects: {
+        Args: { p_user_id: string }
+        Returns: {
+          color: string | null
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_archived: boolean | null
+          name: string
+          settings: Json | null
+          updated_at: string | null
+          user_id: string
+        }[]
+      }
+      insert_table_row: {
+        Args: { p_data: Json; p_database_id: string }
+        Returns: {
+          created_at: string | null
+          data: Json
+          database_id: string
+          id: string
+          updated_at: string | null
+        }
+      }
+      reorder_columns: {
+        Args: { p_column_order: string[]; p_database_id: string }
+        Returns: boolean
+      }
+      update_database: {
+        Args: {
+          p_color?: string
+          p_description?: string
+          p_icon?: string
+          p_id: string
+          p_name?: string
+          p_tags?: string[]
+        }
+        Returns: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          project_id: string | null
+          table_count: number
+          tags: string[] | null
+          updated_at: string
+          user_id: string
+        }
+      }
+      update_project: {
+        Args: {
+          p_color?: string
+          p_description?: string
+          p_icon?: string
+          p_id: string
+          p_is_archived?: boolean
+          p_name?: string
+        }
+        Returns: {
+          color: string | null
+          created_at: string | null
+          description: string | null
+          icon: string | null
+          id: string
+          is_archived: boolean | null
+          name: string
+          settings: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+      }
+      update_table_row: {
+        Args: { p_data: Json; p_id: string }
+        Returns: {
+          created_at: string | null
+          data: Json
+          database_id: string
+          id: string
+          updated_at: string | null
+        }
+      }
+      update_table_schema: {
+        Args: {
+          p_column_name?: string
+          p_column_type?: string
+          p_default_value?: Json
+          p_formula_config?: Json
+          p_id: string
+          p_is_required?: boolean
+          p_lookup_config?: Json
+          p_relation_config?: Json
+          p_rollup_config?: Json
+        }
+        Returns: {
+          column_name: string
+          column_type: string
+          created_at: string | null
+          database_id: string
+          default_value: Json | null
+          formula_config: Json | null
+          id: string
+          is_required: boolean | null
+          lookup_config: Json | null
+          position: number
+          relation_config: Json | null
+          rollup_config: Json | null
+          updated_at: string | null
+        }
       }
     }
     Enums: {

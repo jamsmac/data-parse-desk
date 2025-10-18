@@ -10,13 +10,12 @@ import { Switch } from '../ui/switch';
 import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import type { TableSchema, ColumnType } from '@/types/database';
 
 export interface ColumnManagerProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
   databaseId: string;
-  columns: TableSchema[];
+  onSchemasChange: () => void;
 }
 
 const COLUMN_TYPES: { value: ColumnType; label: string; icon: string }[] = [
@@ -36,7 +35,8 @@ const COLUMN_TYPES: { value: ColumnType; label: string; icon: string }[] = [
   { value: 'lookup', label: 'Lookup', icon: '👁' },
 ];
 
-export default function ColumnManager({ open, onOpenChange, databaseId, columns }: ColumnManagerProps) {
+export default function ColumnManager({ databaseId, onSchemasChange }: ColumnManagerProps) {
+  const [columns, setColumns] = useState<TableSchema[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingColumn, setEditingColumn] = useState<TableSchema | null>(null);
   
@@ -47,6 +47,23 @@ export default function ColumnManager({ open, onOpenChange, databaseId, columns 
     default_value: '',
   });
 
+  // Load columns on mount
+  useState(() => {
+    loadColumns();
+  });
+
+  const loadColumns = async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_table_schemas', {
+        p_database_id: databaseId,
+      });
+      if (error) throw error;
+      setColumns((data || []) as any);
+    } catch (error: any) {
+      console.error('Error loading columns:', error);
+    }
+  };
+
   const handleAddColumn = async () => {
     if (!newColumn.column_name.trim()) {
       toast.error('Введите название колонки');
@@ -54,7 +71,14 @@ export default function ColumnManager({ open, onOpenChange, databaseId, columns 
     }
 
     try {
-      // TODO: Вызвать API для создания колонки
+      await supabase.rpc('create_table_schema', {
+        p_database_id: databaseId,
+        p_column_name: newColumn.column_name,
+        p_column_type: newColumn.column_type,
+        p_is_required: newColumn.is_required,
+        p_position: columns.length,
+      });
+      
       toast.success('Колонка добавлена');
       setIsAddDialogOpen(false);
       setNewColumn({
@@ -63,7 +87,8 @@ export default function ColumnManager({ open, onOpenChange, databaseId, columns 
         is_required: false,
         default_value: '',
       });
-      // Refresh будет через React Query invalidation
+      loadColumns();
+      onSchemasChange();
     } catch (error) {
       toast.error('Ошибка при добавлении колонки');
       console.error(error);
@@ -72,9 +97,10 @@ export default function ColumnManager({ open, onOpenChange, databaseId, columns 
 
   const handleDeleteColumn = async (columnId: string) => {
     try {
-      // TODO: Вызвать API для удаления колонки
+      await supabase.rpc('delete_table_schema', { p_id: columnId });
       toast.success('Колонка удалена');
-      // Refresh будет через React Query invalidation
+      loadColumns();
+      onSchemasChange();
     } catch (error) {
       toast.error('Ошибка при удалении колонки');
       console.error(error);
@@ -83,10 +109,17 @@ export default function ColumnManager({ open, onOpenChange, databaseId, columns 
 
   const handleUpdateColumn = async (column: TableSchema) => {
     try {
-      // TODO: Вызвать API для обновления колонки
+      await supabase.rpc('update_table_schema', {
+        p_id: column.id,
+        p_column_name: column.column_name,
+        p_column_type: column.column_type,
+        p_is_required: column.is_required,
+      });
+      
       toast.success('Колонка обновлена');
       setEditingColumn(null);
-      // Refresh будет через React Query invalidation
+      loadColumns();
+      onSchemasChange();
     } catch (error) {
       toast.error('Ошибка при обновлении колонки');
       console.error(error);
@@ -98,16 +131,7 @@ export default function ColumnManager({ open, onOpenChange, databaseId, columns 
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Управление колонками</DialogTitle>
-          <DialogDescription>
-            Добавляйте, редактируйте и удаляйте колонки базы данных
-          </DialogDescription>
-        </DialogHeader>
-        
-        <div className="space-y-4">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Колонки</h3>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
@@ -290,9 +314,7 @@ export default function ColumnManager({ open, onOpenChange, databaseId, columns 
           )}
         </CardContent>
       </Card>
-        </div>
-      </DialogContent>
-    </Dialog>
+    </div>
   );
 }
 
