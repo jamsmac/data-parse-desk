@@ -30,7 +30,7 @@ serve(async (req) => {
     console.log('Generating report:', { templateId, format, userId: user.id });
 
     // Generate report based on format
-    let reportContent: string | Uint8Array;
+    let reportContent: BodyInit;
     let contentType: string;
     let filename: string;
     const reportName = data?.name || 'report';
@@ -62,8 +62,9 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error('Report generation error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: errorMessage }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -72,7 +73,7 @@ serve(async (req) => {
   }
 });
 
-async function generatePDFReport(data: any, config: any): Promise<Uint8Array> {
+async function generatePDFReport(data: any, config: any): Promise<BodyInit> {
   // Import jsPDF dynamically
   const { default: jsPDF } = await import('https://esm.sh/jspdf@2.5.1');
   
@@ -151,7 +152,7 @@ async function generatePDFReport(data: any, config: any): Promise<Uint8Array> {
   return doc.output('arraybuffer');
 }
 
-async function generateExcelReport(data: any): Promise<Uint8Array> {
+async function generateExcelReport(data: any): Promise<BodyInit> {
   // Import ExcelJS dynamically
   const ExcelJS = await import('https://esm.sh/exceljs@4.4.0');
   
