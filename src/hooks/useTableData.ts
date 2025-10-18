@@ -25,67 +25,45 @@ export function useTableData({ databaseId, page, pageSize, filters, sort }: UseT
     try {
       setLoading(true);
 
-      // Build query step by step to avoid deep type instantiation
-      const baseQuery = supabase
-        .from('table_data')
-        .select('*', { count: 'exact' })
-        .eq('database_id', databaseId)
-        .range((page - 1) * pageSize, page * pageSize - 1);
-      
-      let query: any = baseQuery;
-
-      // Apply filters
+      // Convert filters to JSONB format for RPC
+      const filterObj: Record<string, any> = {};
       filters.forEach(filter => {
         if (!filter.value) return;
-
-        const columnPath = `data->>${filter.column}`;
         
-        switch (filter.operator) {
-          case 'equals':
-            query = query.eq(columnPath, filter.value);
-            break;
-          case 'notEquals':
-            query = query.neq(columnPath, filter.value);
-            break;
-          case 'contains':
-            query = query.ilike(columnPath, `%${filter.value}%`);
-            break;
-          case 'startsWith':
-            query = query.ilike(columnPath, `${filter.value}%`);
-            break;
-          case 'endsWith':
-            query = query.ilike(columnPath, `%${filter.value}`);
-            break;
-          case 'gt':
-            query = query.gt(columnPath, filter.value);
-            break;
-          case 'lt':
-            query = query.lt(columnPath, filter.value);
-            break;
-          case 'gte':
-            query = query.gte(columnPath, filter.value);
-            break;
-          case 'lte':
-            query = query.lte(columnPath, filter.value);
-            break;
+        let filterType = 'text';
+        let filterOperator: string = filter.operator;
+        
+        // Determine filter type and operator
+        if (['gt', 'lt', 'gte', 'lte'].includes(filter.operator)) {
+          filterType = 'number';
+          filterOperator = filter.operator === 'gt' ? '>' : 
+                    filter.operator === 'lt' ? '<' :
+                    filter.operator === 'gte' ? '>=' : '<=';
         }
+        
+        filterObj[filter.column] = {
+          type: filterType,
+          operator: filterOperator,
+          value: filter.value
+        };
       });
 
-      // Apply sorting
-      if (sort.column) {
-        query = query.order(`data->>${sort.column}`, { 
-          ascending: sort.direction === 'asc' 
-        });
-      } else {
-        query = query.order('created_at', { ascending: false });
-      }
-
-      const { data: rows, error, count } = await query;
+      const { data: rows, error } = await supabase.rpc('get_table_data', {
+        p_database_id: databaseId,
+        p_limit: pageSize,
+        p_offset: (page - 1) * pageSize,
+        p_sort_column: sort.column || null,
+        p_sort_direction: sort.direction || 'asc',
+        p_filters: Object.keys(filterObj).length > 0 ? filterObj : null,
+      });
 
       if (error) throw error;
 
-      setData(rows || []);
-      setTotalCount(count || 0);
+      const dataRows = rows || [];
+      const total = dataRows.length > 0 ? dataRows[0].total_count : 0;
+
+      setData(dataRows);
+      setTotalCount(Number(total));
     } catch (error: any) {
       console.error('Error loading table data:', error);
       toast.error('Failed to load data');

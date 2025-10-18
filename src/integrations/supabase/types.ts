@@ -595,6 +595,39 @@ export type Database = {
         }
         Relationships: []
       }
+      saved_charts: {
+        Row: {
+          chart_config: Json
+          created_at: string | null
+          id: string
+          name: string
+          position: number | null
+          project_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          chart_config: Json
+          created_at?: string | null
+          id?: string
+          name: string
+          position?: number | null
+          project_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          chart_config?: Json
+          created_at?: string | null
+          id?: string
+          name?: string
+          position?: number | null
+          project_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       storage_providers: {
         Row: {
           config: Json
@@ -1025,13 +1058,22 @@ export type Database = {
         }[]
       }
       get_table_data: {
-        Args: {
-          p_database_id: string
-          p_limit?: number
-          p_offset?: number
-          p_sort_column?: string
-          p_sort_direction?: string
-        }
+        Args:
+          | {
+              p_database_id: string
+              p_filters?: Json
+              p_limit?: number
+              p_offset?: number
+              p_sort_column?: string
+              p_sort_direction?: string
+            }
+          | {
+              p_database_id: string
+              p_limit?: number
+              p_offset?: number
+              p_sort_column?: string
+              p_sort_direction?: string
+            }
         Returns: {
           created_at: string
           data: Json
