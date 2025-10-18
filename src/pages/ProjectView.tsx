@@ -58,12 +58,18 @@ export default function ProjectView() {
 
   // Создание базы данных
   const createDatabaseMutation = useMutation({
-    mutationFn: async (databaseData: { 
-      name: string; 
-      description?: string; 
-      icon?: string; 
-      color?: string;
-      tags?: string[];
+    mutationFn: async ({ 
+      databaseData, 
+      file 
+    }: { 
+      databaseData: { 
+        name: string; 
+        description?: string; 
+        icon?: string; 
+        color?: string;
+        tags?: string[];
+      },
+      file?: File
     }) => {
       if (!user?.id || !projectId) throw new Error('Missing required data');
 
@@ -77,6 +83,41 @@ export default function ProjectView() {
       });
 
       if (error) throw error;
+
+      // If file is provided, import data
+      if (file && data?.id) {
+        const { parseFile } = await import('@/utils/fileParser');
+        const parsed = await parseFile(file);
+
+        // Create table schemas from headers
+        for (let i = 0; i < parsed.headers.length; i++) {
+          const header = parsed.headers[i];
+          let columnType = 'text';
+          
+          if (parsed.dateColumns.includes(header)) {
+            columnType = 'date';
+          } else if (parsed.amountColumns.includes(header)) {
+            columnType = 'number';
+          }
+
+          await supabase.rpc('create_table_schema', {
+            p_database_id: data.id,
+            p_column_name: header,
+            p_column_type: columnType,
+            p_position: i,
+          });
+        }
+
+        // Insert data rows
+        const rows = parsed.data.map(row => row.data);
+        if (rows.length > 0) {
+          await supabase.rpc('bulk_insert_table_rows', {
+            p_database_id: data.id,
+            p_rows: rows,
+          });
+        }
+      }
+
       return data;
     },
     onSuccess: (data) => {
@@ -228,8 +269,8 @@ export default function ProjectView() {
       <DatabaseFormDialog
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
-        onSave={async (data) => {
-          await createDatabaseMutation.mutateAsync(data as any);
+        onSave={async (data, file) => {
+          await createDatabaseMutation.mutateAsync({ databaseData: data as any, file });
         }}
       />
 
