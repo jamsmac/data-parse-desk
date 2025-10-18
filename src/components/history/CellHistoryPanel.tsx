@@ -1,11 +1,12 @@
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
-import { Clock, FileText, User, RotateCcw } from 'lucide-react';
+import { Clock, FileText, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
@@ -24,26 +25,24 @@ export const CellHistoryPanel = ({
   columnName,
   databaseId 
 }: CellHistoryPanelProps) => {
-  const { data: history, isLoading } = useQuery({
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  const { data: history, isLoading, refetch } = useQuery({
     queryKey: ['cell-history', rowId, columnName],
     queryFn: async () => {
-      // Получаем метаданные ячейки
       const { data: metadata } = await supabase
         .from('cell_metadata')
-        .select('id, source_file_id, imported_at, version')
+        .select('id')
         .eq('row_id', rowId)
         .eq('column_name', columnName)
         .single();
 
       if (!metadata) return [];
 
-      // Получаем историю изменений
       const { data: changes } = await supabase
         .from('cell_history')
-        .select(`
-          *,
-          database_files:source_file_id(filename)
-        `)
+        .select('*, database_files:source_file_id(filename)')
         .eq('cell_metadata_id', metadata.id)
         .order('changed_at', { ascending: false });
 
@@ -52,11 +51,69 @@ export const CellHistoryPanel = ({
     enabled: open && !!rowId && !!columnName,
   });
 
+  const handleRevert = async (historyId: string) => {
+    try {
+      const historyItem = history?.find(h => h.id === historyId);
+      if (!historyItem) return;
+
+      const { data: currentData } = await supabase
+        .from('table_data')
+        .select('data')
+        .eq('id', rowId)
+        .single();
+
+      if (!currentData?.data) return;
+
+      const updatedData = {
+        ...(currentData.data as Record<string, any>),
+        [columnName]: historyItem.old_value
+      };
+
+      const { error } = await supabase
+        .from('table_data')
+        .update({ data: updatedData })
+        .eq('id', rowId);
+
+      if (error) throw error;
+
+      const { data: cellMeta } = await supabase
+        .from('cell_metadata')
+        .select('id')
+        .eq('row_id', rowId)
+        .eq('column_name', columnName)
+        .single();
+
+      if (cellMeta) {
+        await supabase.from('cell_history').insert({
+          cell_metadata_id: cellMeta.id,
+          change_type: 'revert',
+          old_value: historyItem.new_value,
+          new_value: historyItem.old_value,
+          changed_by: user?.id,
+        });
+      }
+
+      toast({
+        title: 'Успешно',
+        description: 'Изменения откатаны',
+      });
+
+      refetch();
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось откатить изменения',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const getChangeTypeColor = (type: string) => {
     switch (type) {
       case 'created': return 'bg-green-500';
       case 'updated': return 'bg-blue-500';
       case 'imported': return 'bg-purple-500';
+      case 'revert': return 'bg-orange-500';
       default: return 'bg-gray-500';
     }
   };
@@ -66,6 +123,7 @@ export const CellHistoryPanel = ({
       case 'created': return 'Создано';
       case 'updated': return 'Обновлено';
       case 'imported': return 'Импортировано';
+      case 'revert': return 'Откачено';
       default: return type;
     }
   };
@@ -97,7 +155,11 @@ export const CellHistoryPanel = ({
                       {getChangeTypeLabel(change.change_type)}
                     </Badge>
                     {index < history.length - 1 && (
-                      <Button variant="ghost" size="sm">
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => handleRevert(change.id)}
+                      >
                         <RotateCcw className="h-3 w-3 mr-1" />
                         Вернуть
                       </Button>

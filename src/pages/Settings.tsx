@@ -2,19 +2,22 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import { Header } from '@/components/Header';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CreditsPanel } from '@/components/credits/CreditsPanel';
 import { StorageProviderCard } from '@/components/storage/StorageProviderCard';
+import { StorageProviderDialog } from '@/components/storage/StorageProviderDialog';
 import { TelegramConnectionCard } from '@/components/telegram/TelegramConnectionCard';
 import { Button } from '@/components/ui/button';
 import { Plus, Settings as SettingsIcon } from 'lucide-react';
 
 export default function Settings() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('credits');
 
-  const { data: storageProviders } = useQuery({
+  const { data: storageProviders, refetch: refetchProviders } = useQuery({
     queryKey: ['storage-providers', user?.id],
     queryFn: async () => {
       if (!user?.id) return [];
@@ -22,13 +25,13 @@ export default function Settings() {
         .from('storage_providers')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false});
       return data || [];
     },
     enabled: !!user?.id,
   });
 
-  const { data: telegramAccount } = useQuery({
+  const { data: telegramAccount, refetch: refetchTelegram } = useQuery({
     queryKey: ['telegram-account', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
@@ -36,11 +39,62 @@ export default function Settings() {
         .from('telegram_accounts')
         .select('*')
         .eq('user_id', user.id)
+        .eq('is_active', true)
         .single();
       return data;
     },
     enabled: !!user?.id,
   });
+
+  const handleDeleteProvider = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('storage_providers')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Успешно',
+        description: 'Провайдер удален',
+      });
+
+      refetchProviders();
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить провайдер',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDisconnectTelegram = async () => {
+    if (!telegramAccount) return;
+
+    try {
+      const { error } = await supabase
+        .from('telegram_accounts')
+        .update({ is_active: false })
+        .eq('id', telegramAccount.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Успешно',
+        description: 'Telegram отключен',
+      });
+
+      refetchTelegram();
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось отключить Telegram',
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -76,10 +130,7 @@ export default function Settings() {
                   Подключите облачные хранилища для автоматического бэкапа
                 </p>
               </div>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Добавить хранилище
-              </Button>
+              <StorageProviderDialog onSuccess={refetchProviders} />
             </div>
 
             {storageProviders && storageProviders.length > 0 ? (
@@ -93,17 +144,14 @@ export default function Settings() {
                     isActive={provider.is_active || false}
                     lastSyncAt={provider.last_sync_at || undefined}
                     onConfigure={() => {}}
-                    onDelete={() => {}}
+                    onDelete={() => handleDeleteProvider(provider.id)}
                   />
                 ))}
               </div>
             ) : (
               <div className="text-center py-12 border rounded-lg">
                 <p className="text-muted-foreground mb-4">Хранилища не подключены</p>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Добавить первое хранилище
-                </Button>
+                <StorageProviderDialog onSuccess={refetchProviders} />
               </div>
             )}
           </TabsContent>
@@ -123,12 +171,12 @@ export default function Settings() {
               linkedAt={telegramAccount?.linked_at || undefined}
               lastInteraction={telegramAccount?.last_interaction_at || undefined}
               onConnect={() => {
-                // TODO: Открыть диалог подключения Telegram
-                window.open('https://t.me/YOUR_BOT_NAME', '_blank');
+                toast({
+                  title: 'Инструкция',
+                  description: 'Настройте бота Telegram и webhook для подключения',
+                });
               }}
-              onDisconnect={() => {
-                // TODO: Отключить Telegram
-              }}
+              onDisconnect={handleDisconnectTelegram}
             />
           </TabsContent>
         </Tabs>

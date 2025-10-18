@@ -4,20 +4,21 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useToast } from '@/hooks/use-toast';
 import { Coins, TrendingUp, TrendingDown, ShoppingCart } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
 const CREDIT_PACKAGES = [
-  { credits: 100, price: 5, label: 'Стартовый' },
-  { credits: 500, price: 20, label: 'Базовый', popular: true },
-  { credits: 1000, price: 35, label: 'Профессиональный' },
-  { credits: 5000, price: 150, label: 'Корпоративный' },
+  { id: 'small', credits: 100, price: 10, label: 'Малый' },
+  { id: 'medium', credits: 500, price: 40, label: 'Средний', popular: true },
+  { id: 'large', credits: 1000, price: 70, label: 'Большой' },
 ];
 
 export const CreditsPanel = () => {
   const { user } = useAuth();
+  const { toast } = useToast();
 
   const { data: credits } = useQuery({
     queryKey: ['user-credits', user?.id],
@@ -50,9 +51,25 @@ export const CreditsPanel = () => {
 
   const totalCredits = (credits?.free_credits || 0) + (credits?.paid_credits || 0);
 
-  const handlePurchase = (packageItem: typeof CREDIT_PACKAGES[0]) => {
-    // TODO: Интеграция со Stripe
-    console.log('Purchase:', packageItem);
+  const handlePurchase = async (packageId: string) => {
+    try {
+      const { data, error } = await supabase.functions.invoke('create-payment-intent', {
+        body: { package_id: packageId }
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        window.open(data.url, '_blank');
+      }
+    } catch (error) {
+      console.error('Payment error:', error);
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось создать платеж',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -95,10 +112,10 @@ export const CreditsPanel = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {CREDIT_PACKAGES.map((pkg) => (
               <div
-                key={pkg.credits}
+                key={pkg.id}
                 className={`border rounded-lg p-4 space-y-3 ${
                   pkg.popular ? 'border-primary shadow-lg' : ''
                 }`}
@@ -117,7 +134,7 @@ export const CreditsPanel = () => {
                   </p>
                 </div>
                 <Button
-                  onClick={() => handlePurchase(pkg)}
+                  onClick={() => handlePurchase(pkg.id)}
                   variant={pkg.popular ? 'default' : 'outline'}
                   className="w-full"
                 >
