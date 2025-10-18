@@ -12,7 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import type { Database, TableSchema } from '@/types/database';
 
 export default function DatabaseView() {
-  const { databaseId } = useParams();
+  const { projectId, databaseId } = useParams<{ projectId: string; databaseId: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -131,7 +131,7 @@ export default function DatabaseView() {
         description: 'База данных успешно удалена',
       });
 
-      navigate('/dashboard');
+      navigate(`/projects/${projectId}`);
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -226,11 +226,11 @@ export default function DatabaseView() {
         <div className="mb-6">
           <Button
             variant="ghost"
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate(`/projects/${projectId}`)}
             className="mb-4"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Назад к базам данных
+            Назад к проекту
           </Button>
 
           <div className="flex items-center justify-between">

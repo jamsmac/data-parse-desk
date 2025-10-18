@@ -104,7 +104,7 @@ export type Database = {
           icon: string | null
           id: string
           name: string
-          project_id: string | null
+          project_id: string
           table_count: number
           tags: string[] | null
           updated_at: string
@@ -117,7 +117,7 @@ export type Database = {
           icon?: string | null
           id?: string
           name: string
-          project_id?: string | null
+          project_id: string
           table_count?: number
           tags?: string[] | null
           updated_at?: string
@@ -130,7 +130,7 @@ export type Database = {
           icon?: string | null
           id?: string
           name?: string
-          project_id?: string | null
+          project_id?: string
           table_count?: number
           tags?: string[] | null
           updated_at?: string
@@ -472,7 +472,7 @@ export type Database = {
           icon: string | null
           id: string
           name: string
-          project_id: string | null
+          project_id: string
           table_count: number
           tags: string[] | null
           updated_at: string
@@ -580,7 +580,7 @@ export type Database = {
           icon: string | null
           id: string
           name: string
-          project_id: string | null
+          project_id: string
           table_count: number
           tags: string[] | null
           updated_at: string
@@ -618,7 +618,7 @@ export type Database = {
           icon: string | null
           id: string
           name: string
-          project_id: string | null
+          project_id: string
           table_count: number
           tags: string[] | null
           updated_at: string
@@ -668,7 +668,7 @@ export type Database = {
           icon: string | null
           id: string
           name: string
-          project_id: string | null
+          project_id: string
           table_count: number
           tags: string[] | null
           updated_at: string
@@ -720,7 +720,7 @@ export type Database = {
           icon: string | null
           id: string
           name: string
-          project_id: string | null
+          project_id: string
           table_count: number
           tags: string[] | null
           updated_at: string

@@ -13,7 +13,8 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 
 // Lazy load all other pages to reduce initial bundle
-const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Projects = lazy(() => import("./pages/Projects"));
+const ProjectView = lazy(() => import("./pages/ProjectView"));
 const DatabaseView = lazy(() => import("./pages/DatabaseView"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Reports = lazy(() => import("./pages/Reports"));
@@ -53,15 +54,15 @@ const App = () => (
               <Route path="/register" element={<RegisterPage />} />
 
               {/* Protected routes - All lazy loaded for optimal bundle size */}
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/" element={<Navigate to="/projects" replace />} />
               
               <Route
-                path="/dashboard"
+                path="/projects"
                 element={
                   <ProtectedRoute
                     element={
                       <Suspense fallback={<PageLoader />}>
-                        <Dashboard />
+                        <Projects />
                       </Suspense>
                     }
                   />
@@ -69,7 +70,20 @@ const App = () => (
               />
 
               <Route
-                path="/database/:databaseId"
+                path="/projects/:projectId"
+                element={
+                  <ProtectedRoute
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ProjectView />
+                      </Suspense>
+                    }
+                  />
+                }
+              />
+
+              <Route
+                path="/projects/:projectId/database/:databaseId"
                 element={
                   <ProtectedRoute
                     element={
