@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
@@ -12,13 +12,47 @@ import {
   ReportConfig,
 } from '@/types/reports';
 import { ChartConfig } from '@/types/charts';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Reports() {
   const [activeTab, setActiveTab] = useState('templates');
-  const [templates, setTemplates] = useState<ReportTemplateType[]>([]);
-  const [schedules, setSchedules] = useState<ScheduledReport[]>([]);
   const [isBuilderOpen, setIsBuilderOpen] = useState(false);
   const [editingTemplate, setEditingTemplate] = useState<ReportTemplateType | null>(null);
+  const [templates, setTemplates] = useState<ReportTemplateType[]>([]);
+  const [schedules, setSchedules] = useState<ScheduledReport[]>([]);
+  const { toast } = useToast();
+
+  // Load from localStorage on mount
+  useEffect(() => {
+    const savedTemplates = localStorage.getItem('report-templates');
+    const savedSchedules = localStorage.getItem('report-schedules');
+    
+    if (savedTemplates) {
+      try {
+        setTemplates(JSON.parse(savedTemplates));
+      } catch (e) {
+        console.error('Failed to parse templates:', e);
+      }
+    }
+    
+    if (savedSchedules) {
+      try {
+        setSchedules(JSON.parse(savedSchedules));
+      } catch (e) {
+        console.error('Failed to parse schedules:', e);
+      }
+    }
+  }, []);
+
+  // Save to localStorage whenever templates change
+  useEffect(() => {
+    localStorage.setItem('report-templates', JSON.stringify(templates));
+  }, [templates]);
+
+  // Save to localStorage whenever schedules change
+  useEffect(() => {
+    localStorage.setItem('report-schedules', JSON.stringify(schedules));
+  }, [schedules]);
 
   // Mock charts - в реальном приложении это будет из API
   const mockCharts: ChartConfig[] = [
@@ -48,14 +82,18 @@ export default function Reports() {
   };
 
   const handleSaveTemplate = (template: ReportTemplateType) => {
-    if (editingTemplate) {
-      setTemplates((prev) =>
-        prev.map((t) => (t.id === template.id ? template : t))
-      );
-      setEditingTemplate(null);
+    const existingIndex = templates.findIndex(t => t.id === template.id);
+    
+    if (existingIndex >= 0) {
+      const updatedTemplates = [...templates];
+      updatedTemplates[existingIndex] = template;
+      setTemplates(updatedTemplates);
     } else {
-      setTemplates((prev) => [...prev, template]);
+      setTemplates([...templates, template]);
     }
+    
+    toast({ title: 'Успешно', description: 'Шаблон сохранен' });
+    setEditingTemplate(null);
     setIsBuilderOpen(false);
     setActiveTab('templates');
   };
@@ -72,7 +110,8 @@ export default function Reports() {
   };
 
   const handleDeleteTemplate = (templateId: string) => {
-    setTemplates((prev) => prev.filter((t) => t.id !== templateId));
+    setTemplates(templates.filter(t => t.id !== templateId));
+    toast({ title: 'Успешно', description: 'Шаблон удален' });
   };
 
   const handleAddSchedule = (schedule: Omit<ScheduledReport, 'id' | 'createdAt'>) => {
@@ -81,17 +120,18 @@ export default function Reports() {
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
     };
-    setSchedules((prev) => [...prev, newSchedule]);
+
+    setSchedules([...schedules, newSchedule]);
+    toast({ title: 'Успешно', description: 'Расписание добавлено' });
   };
 
   const handleUpdateSchedule = (scheduleId: string, updates: Partial<ScheduledReport>) => {
-    setSchedules((prev) =>
-      prev.map((s) => (s.id === scheduleId ? { ...s, ...updates } : s))
-    );
+    setSchedules(schedules.map(s => s.id === scheduleId ? { ...s, ...updates } : s));
   };
 
   const handleDeleteSchedule = (scheduleId: string) => {
-    setSchedules((prev) => prev.filter((s) => s.id !== scheduleId));
+    setSchedules(schedules.filter(s => s.id !== scheduleId));
+    toast({ title: 'Успешно', description: 'Расписание удалено' });
   };
 
   const handleExport = async (config: ExportConfig) => {

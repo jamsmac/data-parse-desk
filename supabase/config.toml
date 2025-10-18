@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.sync-storage]
 verify_jwt = true
+
+[functions.process-voice]
+verify_jwt = true
+
+[functions.process-ocr]
+verify_jwt = true
