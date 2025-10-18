@@ -11,6 +11,7 @@ import { Loader2 } from "lucide-react";
 // Eagerly load only auth pages for fastest initial load
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 
 // Lazy load all other pages to reduce initial bundle
 const Projects = lazy(() => import("./pages/Projects"));
@@ -53,6 +54,7 @@ const App = () => (
               {/* Public routes - Eagerly loaded for fast access */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
 
               {/* Protected routes - All lazy loaded for optimal bundle size */}
               <Route path="/" element={<Navigate to="/projects" replace />} />

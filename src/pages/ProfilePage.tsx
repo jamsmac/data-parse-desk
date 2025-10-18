@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { toast } from 'sonner';
 import {
   User as UserIcon,
   Mail,
@@ -17,6 +19,7 @@ import {
   Loader2,
   Key,
   Bell,
+  Upload,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -34,6 +37,8 @@ export default function ProfilePage() {
     confirm: '',
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState(user?.user_metadata?.avatar_url as string || '');
   const [success, setSuccess] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   
@@ -62,6 +67,43 @@ export default function ProfilePage() {
       setError(err.message || 'Ошибка обновления профиля');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    try {
+      setUploading(true);
+      
+      if (!event.target.files || event.target.files.length === 0) {
+        return;
+      }
+
+      const file = event.target.files[0];
+      const fileExt = file.name.split('.').pop();
+      const filePath = `${user?.id}/avatar.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(filePath);
+
+      const { error: updateError } = await supabase.auth.updateUser({
+        data: { avatar_url: publicUrl }
+      });
+
+      if (updateError) throw updateError;
+
+      setAvatarUrl(publicUrl);
+      toast.success("Аватар обновлен!");
+    } catch (error: any) {
+      toast.error(error.message || "Ошибка загрузки аватара");
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -141,16 +183,22 @@ export default function ProfilePage() {
             <div className="flex items-center gap-6">
               <div className="relative">
                 <Avatar className="h-24 w-24">
-                  <AvatarImage src={user.user_metadata?.avatar_url as string} />
+                  <AvatarImage src={avatarUrl} />
                   <AvatarFallback className="text-2xl">{getInitials(user.user_metadata?.full_name as string)}</AvatarFallback>
                 </Avatar>
-                <Button
-                  size="icon"
-                  variant="secondary"
-                  className="absolute bottom-0 right-0 h-8 w-8 rounded-full"
-                >
-                  <Camera className="h-4 w-4" />
-                </Button>
+                <Label htmlFor="avatar-upload" className="absolute bottom-0 right-0 cursor-pointer">
+                  <div className="bg-primary text-primary-foreground rounded-full p-2 shadow-lg hover:bg-primary/90">
+                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                  </div>
+                  <Input
+                    id="avatar-upload"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleAvatarUpload}
+                    disabled={uploading}
+                  />
+                </Label>
               </div>
               <div className="flex-1">
                 <h3 className="text-xl font-semibold">{user.user_metadata?.full_name || user.email}</h3>
