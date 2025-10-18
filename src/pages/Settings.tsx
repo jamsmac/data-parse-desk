@@ -9,6 +9,9 @@ import { CreditsPanel } from '@/components/credits/CreditsPanel';
 import { StorageProviderCard } from '@/components/storage/StorageProviderCard';
 import { StorageProviderDialog } from '@/components/storage/StorageProviderDialog';
 import { TelegramConnectionCard } from '@/components/telegram/TelegramConnectionCard';
+import { UserManagement } from '@/components/collaboration/UserManagement';
+import { RoleEditor } from '@/components/collaboration/RoleEditor';
+import { PermissionsMatrix } from '@/components/collaboration/PermissionsMatrix';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -153,10 +156,11 @@ export default function Settings() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="credits">Кредиты</TabsTrigger>
             <TabsTrigger value="storage">Хранилища</TabsTrigger>
             <TabsTrigger value="integrations">Интеграции</TabsTrigger>
+            <TabsTrigger value="collaboration">Команда</TabsTrigger>
           </TabsList>
 
           <TabsContent value="credits" className="space-y-6">
@@ -258,6 +262,37 @@ export default function Settings() {
                 });
               }}
               onDisconnect={handleDisconnectTelegram}
+            />
+          </TabsContent>
+
+          <TabsContent value="collaboration" className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-semibold mb-4">Управление командой</h2>
+              <p className="text-muted-foreground mb-6">
+                Управляйте участниками проектов, ролями и разрешениями
+              </p>
+            </div>
+
+            <UserManagement
+              users={[]}
+              currentUserId={user?.id || ''}
+              onInviteUser={async () => {}}
+              onUpdateUserRole={async () => {}}
+              onRemoveUser={async () => {}}
+            />
+
+            <RoleEditor
+              roles={[]}
+              permissions={[]}
+              onCreateRole={async () => {}}
+              onUpdateRole={async () => {}}
+              onDeleteRole={async () => {}}
+            />
+
+            <PermissionsMatrix
+              roles={[]}
+              permissions={[]}
+              onTogglePermission={async () => {}}
             />
           </TabsContent>
         </Tabs>

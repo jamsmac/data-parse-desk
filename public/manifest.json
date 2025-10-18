@@ -77,15 +77,22 @@
       "name": "Dashboard",
       "short_name": "Dashboard",
       "description": "Go to your dashboard",
-      "url": "/dashboard",
-      "icons": [{ "src": "/icons/dashboard-96x96.png", "sizes": "96x96" }]
+      "url": "/",
+      "icons": []
     },
     {
       "name": "Create Database",
       "short_name": "New DB",
       "description": "Create a new database",
-      "url": "/dashboard?action=create",
-      "icons": [{ "src": "/icons/create-96x96.png", "sizes": "96x96" }]
+      "url": "/?action=create",
+      "icons": []
+    },
+    {
+      "name": "Import Data",
+      "short_name": "Import",
+      "description": "Import data from file",
+      "url": "/?action=import",
+      "icons": []
     }
   ],
   "prefer_related_applications": false

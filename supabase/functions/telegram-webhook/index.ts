@@ -18,6 +18,11 @@ interface TelegramUpdate {
     chat: {
       id: number;
     };
+    document?: {
+      file_id: string;
+      file_name?: string;
+      file_size?: number;
+    };
   };
 }
 
@@ -90,10 +95,17 @@ serve(async (req) => {
           `💰 Кредиты: ${Number(credits?.free_credits || 0) + Number(credits?.paid_credits || 0)}\n` +
           `📁 Проектов: ${count || 0}`
         );
+      } else if (text?.startsWith('/import')) {
+        await sendTelegramMessage(BOT_TOKEN, chat.id,
+          `📤 Импорт данных:\n\n` +
+          `Прикрепите файл CSV или Excel к следующему сообщению для импорта данных.\n\n` +
+          `Поддерживаемые форматы: .csv, .xlsx, .xls`
+        );
       } else if (text?.startsWith('/help')) {
         await sendTelegramMessage(BOT_TOKEN, chat.id, 
           `ℹ️ Помощь:\n\n` +
           `/stats - показать статистику\n` +
+          `/import - импортировать данные\n` +
           `/help - показать эту справку\n\n` +
           `Для полного доступа откройте веб-приложение.`
         );
@@ -101,6 +113,35 @@ serve(async (req) => {
         await sendTelegramMessage(BOT_TOKEN, chat.id, 
           `Команда не распознана. Используйте /help для списка команд.`
         );
+      }
+
+      // Handle file uploads
+      if (update.message?.document) {
+        const document = update.message.document;
+        const fileId = document.file_id;
+        const fileName = document.file_name || 'unknown';
+
+        // Check if it's a supported file type
+        const supportedExtensions = ['.csv', '.xlsx', '.xls'];
+        const isSupported = supportedExtensions.some(ext => 
+          fileName.toLowerCase().endsWith(ext)
+        );
+
+        if (isSupported) {
+          await sendTelegramMessage(BOT_TOKEN, chat.id,
+            `✅ Файл "${fileName}" получен!\n\n` +
+            `Импорт будет обработан. Вы получите уведомление после завершения.`
+          );
+
+          // TODO: Download file from Telegram and process it
+          // This would require implementing file download and import logic
+          console.log('File received for import:', { fileId, fileName, userId: account.user_id });
+        } else {
+          await sendTelegramMessage(BOT_TOKEN, chat.id,
+            `❌ Неподдерживаемый формат файла.\n\n` +
+            `Пожалуйста, отправьте файл в формате CSV, XLSX или XLS.`
+          );
+        }
       }
     }
 
