@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       description: 'Добро пожаловать!',
     });
 
-    navigate('/dashboard');
+    navigate('/projects');
   };
 
   const register = async (data: RegisterData) => {

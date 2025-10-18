@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { DataTable } from '@/components/DataTable';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { ColumnManager } from '@/components/database/ColumnManager';
+import { UploadFileDialog } from '@/components/import/UploadFileDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import type { Database, TableSchema } from '@/types/database';
 
@@ -22,6 +23,7 @@ export default function DatabaseView() {
   const [loading, setLoading] = useState(true);
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
 
   useEffect(() => {
     loadDatabase();
@@ -250,6 +252,10 @@ export default function DatabaseView() {
             </div>
 
             <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={() => setIsUploadDialogOpen(true)}>
+                <Upload className="mr-2 h-4 w-4" />
+                Загрузить файл
+              </Button>
               <Button variant="outline" size="sm" onClick={() => handleAddRow({})}>
                 <Plus className="mr-2 h-4 w-4" />
                 Добавить запись
@@ -320,6 +326,20 @@ export default function DatabaseView() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Upload File Dialog */}
+        {databaseId && (
+          <UploadFileDialog
+            open={isUploadDialogOpen}
+            onOpenChange={setIsUploadDialogOpen}
+            onSuccess={() => {
+              setIsUploadDialogOpen(false);
+              loadData();
+              loadSchemas();
+            }}
+            databaseId={databaseId}
+          />
+        )}
       </div>
     </div>
   );

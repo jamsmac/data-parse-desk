@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Header } from '@/components/Header';
 import { DatabaseCard } from '@/components/database/DatabaseCard';
 import { DatabaseFormDialog } from '@/components/database/DatabaseFormDialog';
-import { UploadFileDialog } from '@/components/import/UploadFileDialog';
 import { useToast } from '@/hooks/use-toast';
 
 export default function ProjectView() {
@@ -21,7 +20,6 @@ export default function ProjectView() {
   
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
 
   // Получение проекта
   const { data: project } = useQuery({
@@ -142,16 +140,10 @@ export default function ProjectView() {
               </p>
             )}
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setIsUploadDialogOpen(true)}>
-              <Upload className="h-4 w-4 mr-2" />
-              Загрузить файл
-            </Button>
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Создать базу данных
-            </Button>
-          </div>
+          <Button onClick={() => setIsCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Создать базу данных
+          </Button>
         </div>
 
         {/* Поиск */}
@@ -189,16 +181,10 @@ export default function ProjectView() {
               {searchQuery ? 'Базы данных не найдены' : 'В этом проекте пока нет баз данных'}
             </p>
             {!searchQuery && (
-              <div className="flex gap-2 justify-center">
-                <Button onClick={() => setIsCreateDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Создать базу данных
-                </Button>
-                <Button variant="outline" onClick={() => setIsUploadDialogOpen(true)}>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Загрузить файл
-                </Button>
-              </div>
+              <Button onClick={() => setIsCreateDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Создать базу данных
+              </Button>
             )}
           </div>
         )}
@@ -213,14 +199,6 @@ export default function ProjectView() {
         }}
       />
 
-      <UploadFileDialog
-        open={isUploadDialogOpen}
-        onOpenChange={setIsUploadDialogOpen}
-        onSuccess={() => {
-          setIsUploadDialogOpen(false);
-          queryClient.invalidateQueries({ queryKey: ['project-databases', projectId] });
-        }}
-      />
     </div>
   );
 }
