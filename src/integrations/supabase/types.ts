@@ -19,19 +19,61 @@ export type Database = {
           description: string | null
           key: string
           updated_at: string | null
+          user_id: string
           value: string | null
         }
         Insert: {
           description?: string | null
           key: string
           updated_at?: string | null
+          user_id: string
           value?: string | null
         }
         Update: {
           description?: string | null
           key?: string
           updated_at?: string | null
+          user_id?: string
           value?: string | null
+        }
+        Relationships: []
+      }
+      databases: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          table_count: number
+          tags: string[] | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name: string
+          table_count?: number
+          tags?: string[] | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          name?: string
+          table_count?: number
+          tags?: string[] | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -59,6 +101,7 @@ export type Database = {
           reason: string | null
           refund_time: string | null
           remark: string | null
+          user_id: string
         }
         Insert: {
           address?: string | null
@@ -83,6 +126,7 @@ export type Database = {
           reason?: string | null
           refund_time?: string | null
           remark?: string | null
+          user_id: string
         }
         Update: {
           address?: string | null
@@ -107,6 +151,7 @@ export type Database = {
           reason?: string | null
           refund_time?: string | null
           remark?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -124,6 +169,7 @@ export type Database = {
           status: string | null
           total_rows: number | null
           upload_date: string
+          user_id: string
         }
         Insert: {
           duplicate_records?: number | null
@@ -138,6 +184,7 @@ export type Database = {
           status?: string | null
           total_rows?: number | null
           upload_date?: string
+          user_id: string
         }
         Update: {
           duplicate_records?: number | null
@@ -152,6 +199,7 @@ export type Database = {
           status?: string | null
           total_rows?: number | null
           upload_date?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -160,7 +208,57 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      create_database: {
+        Args: {
+          color?: string
+          description?: string
+          icon?: string
+          name: string
+          user_id: string
+        }
+        Returns: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          table_count: number
+          tags: string[] | null
+          updated_at: string
+          user_id: string
+        }
+      }
+      get_database: {
+        Args: { p_id: string }
+        Returns: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          table_count: number
+          tags: string[] | null
+          updated_at: string
+          user_id: string
+        }
+      }
+      get_user_databases: {
+        Args: { p_user_id: string }
+        Returns: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          name: string
+          table_count: number
+          tags: string[] | null
+          updated_at: string
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

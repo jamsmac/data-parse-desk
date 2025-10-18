@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { Navigate } from 'react-router-dom';
 import { Header } from '@/components/Header';
 import { UploadZone } from '@/components/UploadZone';
 import { FiltersBar } from '@/components/FiltersBar';
@@ -8,12 +9,24 @@ import { parseFile, ParseResult } from '@/utils/fileParser';
 import { NormalizedRow, GroupBy, groupRows } from '@/utils/parseData';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
 const Index = () => {
+  const { user, isLoading: authLoading } = useAuth();
   const [isDark, setIsDark] = useState(() => {
     const saved = localStorage.getItem('theme');
     return saved === 'dark';
   });
+
+  // Require authentication
+  if (authLoading) {
+    return <LoadingSpinner />;
+  }
+  
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
 
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -49,6 +62,7 @@ const Index = () => {
       const { data: existingOrders } = await supabase
         .from('orders')
         .select('order_number')
+        .eq('user_id', user.id)
         .in('order_number', orderNumbers);
       
       const existingOrderSet = new Set(
@@ -71,6 +85,7 @@ const Index = () => {
       // Save new rows to database
       if (newRows.length > 0) {
         const ordersToInsert = newRows.map(row => ({
+          user_id: user.id,
           order_number: row["Order number"] || '',
           operator_code: row["Operator Code"] || null,
           goods_name: row["Goods name"] || null,
@@ -105,6 +120,7 @@ const Index = () => {
 
           // Log upload to upload_log table
           await supabase.from('upload_log').insert({
+            user_id: user.id,
             filename: result.fileName,
             total_rows: result.data.length,
             new_records: newRows.length,
@@ -118,15 +134,17 @@ const Index = () => {
           // Update total_orders in metadata
           const { count } = await supabase
             .from('orders')
-            .select('*', { count: 'exact', head: true });
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id);
           
           await supabase
             .from('database_metadata')
             .upsert({
               key: 'total_orders',
+              user_id: user.id,
               value: String(count || 0),
               description: 'Total number of orders in database',
-            });
+            }, { onConflict: 'key,user_id' });
         }
       }
 
@@ -218,7 +236,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen w-full bg-background">
-      <Header isDark={isDark} onToggleTheme={() => setIsDark(!isDark)} />
+      <Header />
 
       {!parseResult ? (
         <UploadZone onFileSelect={handleFileSelect} isLoading={isLoading} />
