@@ -22,7 +22,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
 
   // Get the page user tried to access before being redirected
-  const from = (location.state as any)?.from || '/dashboard';
+  const from = (location.state as any)?.from || '/projects';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

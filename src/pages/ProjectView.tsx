@@ -72,24 +72,10 @@ export default function ProjectView() {
         description: databaseData.description || null,
         icon: databaseData.icon || '📊',
         color: databaseData.color || '#6366f1',
+        project_id: projectId,
       });
 
       if (error) throw error;
-
-      // Обновить project_id после создания
-      if (data?.id) {
-        const { error: updateError } = await supabase.rpc('update_database', {
-          p_id: data.id,
-          p_name: databaseData.name,
-          p_description: databaseData.description || null,
-          p_icon: databaseData.icon || '📊',
-          p_color: databaseData.color || '#6366f1',
-          p_tags: databaseData.tags || [],
-        });
-
-        if (updateError) throw updateError;
-      }
-
       return data;
     },
     onSuccess: (data) => {

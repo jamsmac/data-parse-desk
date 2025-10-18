@@ -136,7 +136,7 @@ export default function Projects() {
                 description={project.description || undefined}
                 icon={project.icon || undefined}
                 color={project.color || undefined}
-                databaseCount={0} // TODO: получать реальное количество
+                databaseCount={Number(project.database_count) || 0}
                 createdAt={project.created_at || undefined}
                 onOpen={() => navigate(`/projects/${project.id}`)}
                 onDelete={() => deleteProjectMutation.mutate(project.id)}

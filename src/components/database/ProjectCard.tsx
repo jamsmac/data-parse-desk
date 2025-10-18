@@ -40,7 +40,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
     : '';
 
   return (
-    <Card className="group hover:shadow-lg transition-all duration-200 cursor-pointer">
+    <Card className="group hover:shadow-xl hover:border-primary/20 hover:scale-[1.02] transition-all duration-300 cursor-pointer">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3" onClick={onOpen}>

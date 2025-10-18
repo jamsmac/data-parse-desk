@@ -678,15 +678,16 @@ export type Database = {
       get_user_projects: {
         Args: { p_user_id: string }
         Returns: {
-          color: string | null
-          created_at: string | null
-          description: string | null
-          icon: string | null
+          color: string
+          created_at: string
+          database_count: number
+          description: string
+          icon: string
           id: string
-          is_archived: boolean | null
+          is_archived: boolean
           name: string
-          settings: Json | null
-          updated_at: string | null
+          settings: Json
+          updated_at: string
           user_id: string
         }[]
       }
