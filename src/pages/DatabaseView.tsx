@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Trash2, Plus, Filter as FilterIcon } from 'lucide-react';
+import { ArrowLeft, Upload, Trash2, Plus, Filter as FilterIcon, Sparkles, MessageSquare, History } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -14,7 +14,12 @@ import { PaginationControls } from '@/components/database/PaginationControls';
 import { FilterBuilder, type Filter } from '@/components/database/FilterBuilder';
 import { SortControls, type SortConfig } from '@/components/database/SortControls';
 import { useTableData } from '@/hooks/useTableData';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { AIAssistantPanel } from '@/components/ai/AIAssistantPanel';
+import { CommentsPanel } from '@/components/collaboration/CommentsPanel';
+import { ActivityFeed } from '@/components/collaboration/ActivityFeed';
+import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import type { Database, TableSchema } from '@/types/database';
 
@@ -30,6 +35,8 @@ export default function DatabaseView() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [showCollabPanel, setShowCollabPanel] = useState(false);
 
   // Pagination, Filters & Sorting state
   const [page, setPage] = useState(1);
@@ -248,6 +255,22 @@ export default function DatabaseView() {
             </div>
 
             <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAIAssistant(true)}
+              >
+                <Sparkles className="mr-2 h-4 w-4" />
+                AI Помощник
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowCollabPanel(true)}
+              >
+                <MessageSquare className="mr-2 h-4 w-4" />
+                Активность
+              </Button>
               <ExportButton
                 data={tableData}
                 fileName={database?.name || 'export'}
@@ -391,6 +414,47 @@ export default function DatabaseView() {
             databaseId={databaseId}
           />
         )}
+
+        {/* AI Assistant Panel */}
+        <AIAssistantPanel
+          open={showAIAssistant}
+          onOpenChange={setShowAIAssistant}
+          databaseId={databaseId}
+        />
+
+        {/* Collaboration Panel */}
+        <Sheet open={showCollabPanel} onOpenChange={setShowCollabPanel}>
+          <SheetContent className="w-[400px] sm:w-[540px]">
+            <SheetHeader>
+              <SheetTitle>Активность и комментарии</SheetTitle>
+              <SheetDescription>
+                История изменений и обсуждения по базе данных
+              </SheetDescription>
+            </SheetHeader>
+            <div className="mt-6">
+              <Tabs defaultValue="activity">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="activity">
+                    <History className="h-4 w-4 mr-2" />
+                    Активность
+                  </TabsTrigger>
+                  <TabsTrigger value="comments">
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Комментарии
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="activity" className="mt-4">
+                  <ActivityFeed activities={[]} limit={20} />
+                </TabsContent>
+                <TabsContent value="comments" className="mt-4">
+                  <p className="text-sm text-muted-foreground">
+                    Выберите запись для просмотра комментариев
+                  </p>
+                </TabsContent>
+              </Tabs>
+            </div>
+          </SheetContent>
+        </Sheet>
       </div>
     </div>
   );
