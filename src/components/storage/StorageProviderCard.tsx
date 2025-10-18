@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Cloud, HardDrive, CheckCircle2, Settings, Trash } from 'lucide-react';
+import { StorageSyncButton } from './StorageSyncButton';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
@@ -72,9 +73,9 @@ export const StorageProviderCard = ({
         )}
         
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={onConfigure} className="flex-1">
-            <Settings className="h-4 w-4 mr-2" />
-            Настроить
+          <StorageSyncButton providerId={id} />
+          <Button variant="outline" size="sm" onClick={onConfigure}>
+            <Settings className="h-4 w-4" />
           </Button>
           <Button variant="outline" size="sm" onClick={onDelete}>
             <Trash className="h-4 w-4" />

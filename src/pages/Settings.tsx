@@ -110,12 +110,31 @@ export default function Settings() {
       return;
     }
 
-    toast({
-      title: 'Успешно',
-      description: 'Токен Telegram бота сохранен',
-    });
+    try {
+      // Сохраняем токен в metadata
+      const { error } = await supabase
+        .from('database_metadata')
+        .upsert({
+          user_id: user?.id,
+          key: 'telegram_bot_token',
+          value: telegramBotToken,
+        });
 
-    setTelegramBotToken('');
+      if (error) throw error;
+
+      toast({
+        title: 'Успешно',
+        description: 'Токен Telegram бота сохранен',
+      });
+
+      setTelegramBotToken('');
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось сохранить токен',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (

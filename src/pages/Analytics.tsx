@@ -6,6 +6,7 @@ import { ChartBuilder } from '@/components/charts/ChartBuilder';
 import { PivotTable } from '@/components/charts/PivotTable';
 import { ChartGallery } from '@/components/charts/ChartGallery';
 import { DashboardBuilder } from '@/components/charts/DashboardBuilder';
+import { SystemStats } from '@/components/analytics/SystemStats';
 import { ChartConfig } from '@/types/charts';
 import { DashboardConfig } from '@/components/charts/DashboardBuilder';
 import { ChartTemplate } from '@/components/charts/ChartGallery';
@@ -64,12 +65,17 @@ export default function Analytics() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="stats">Статистика</TabsTrigger>
           <TabsTrigger value="gallery">Галерея</TabsTrigger>
           <TabsTrigger value="builder">Конструктор графиков</TabsTrigger>
           <TabsTrigger value="pivot">Сводные таблицы</TabsTrigger>
           <TabsTrigger value="dashboard">Дашборды</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="stats" className="mt-6">
+          <SystemStats />
+        </TabsContent>
 
         <TabsContent value="gallery" className="mt-6">
           <ChartGallery onSelectTemplate={handleSelectTemplate} />
