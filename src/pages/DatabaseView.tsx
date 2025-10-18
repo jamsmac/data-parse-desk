@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Download, Trash2, Plus } from 'lucide-react';
+import { ArrowLeft, Upload, Trash2, Plus, Filter as FilterIcon } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -10,6 +10,11 @@ import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { ColumnManager } from '@/components/database/ColumnManager';
 import { UploadFileDialog } from '@/components/import/UploadFileDialog';
 import { ExportButton } from '@/components/database/ExportButton';
+import { PaginationControls } from '@/components/database/PaginationControls';
+import { FilterBuilder, type Filter } from '@/components/database/FilterBuilder';
+import { SortControls, type SortConfig } from '@/components/database/SortControls';
+import { useTableData } from '@/hooks/useTableData';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import type { Database, TableSchema } from '@/types/database';
 
@@ -20,16 +25,30 @@ export default function DatabaseView() {
   const { toast } = useToast();
   const [database, setDatabase] = useState<Database | null>(null);
   const [schemas, setSchemas] = useState<TableSchema[]>([]);
-  const [tableData, setTableData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Pagination, Filters & Sorting state
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  const [filters, setFilters] = useState<Filter[]>([]);
+  const [sort, setSort] = useState<SortConfig>({ column: null, direction: 'asc' });
+
+  // Use new hook for data fetching with filters & sorting
+  const { data: tableData, totalCount, loading: dataLoading, refresh } = useTableData({
+    databaseId: databaseId || '',
+    page,
+    pageSize,
+    filters,
+    sort,
+  });
 
   useEffect(() => {
     loadDatabase();
     loadSchemas();
-    loadData();
   }, [databaseId, user]);
 
   const loadDatabase = async () => {
@@ -66,33 +85,7 @@ export default function DatabaseView() {
     }
   };
 
-  const loadData = async () => {
-    if (!databaseId) return;
-
-    try {
-      const { data, error } = await supabase.rpc('get_table_data', {
-        p_database_id: databaseId,
-        p_limit: 1000,
-        p_offset: 0,
-      });
-
-      if (error) throw error;
-      
-      // Преобразуем данные из JSONB в массив объектов
-      const normalizedData = (data || []).map((row: any) => ({
-        id: row.id,
-        ...row.data,
-        created_at: row.created_at,
-        updated_at: row.updated_at,
-      }));
-      
-      setTableData(normalizedData);
-    } catch (error: any) {
-      console.error('Error loading data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Data is now loaded via useTableData hook
 
   const handleClearData = async () => {
     if (!databaseId) return;
@@ -109,7 +102,7 @@ export default function DatabaseView() {
         description: 'Все записи удалены из базы данных',
       });
 
-      loadData();
+      refresh();
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -159,7 +152,7 @@ export default function DatabaseView() {
         title: 'Запись добавлена',
       });
 
-      loadData();
+      refresh();
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -182,7 +175,7 @@ export default function DatabaseView() {
         title: 'Запись обновлена',
       });
 
-      loadData();
+      refresh();
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -204,7 +197,7 @@ export default function DatabaseView() {
         title: 'Запись удалена',
       });
 
-      loadData();
+      refresh();
     } catch (error: any) {
       toast({
         variant: 'destructive',
@@ -214,13 +207,15 @@ export default function DatabaseView() {
     }
   };
 
-  if (loading) {
+  if (loading || dataLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner />
       </div>
     );
   }
+
+  const totalPages = Math.ceil(totalCount / pageSize);
 
   return (
     <div className="min-h-screen bg-background">
@@ -285,10 +280,61 @@ export default function DatabaseView() {
           />
         )}
 
+        {/* Filters & Sorting */}
+        <div className="mt-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <FilterIcon className="h-4 w-4 mr-2" />
+                Filters {filters.length > 0 && `(${filters.length})`}
+              </Button>
+              
+              <SortControls
+                columns={schemas.map(s => ({ name: s.column_name, type: s.column_type }))}
+                sort={sort}
+                onChange={setSort}
+              />
+            </div>
+
+            <PaginationControls
+              currentPage={page - 1}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              totalRecords={totalCount}
+              onPageChange={(p) => setPage(p + 1)}
+              onPageSizeChange={(newSize) => {
+                setPageSize(newSize);
+                setPage(1);
+              }}
+            />
+          </div>
+
+          <Collapsible open={showFilters}>
+            <CollapsibleContent>
+              <div className="border rounded-lg p-4">
+                <FilterBuilder
+                  columns={schemas.map(s => ({ name: s.column_name, type: s.column_type }))}
+                  filters={filters}
+                  onChange={setFilters}
+                />
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+
         {/* Data Table */}
         <div className="mt-6">
           <DataTable 
-            data={tableData} 
+            data={tableData.map((row: any) => ({
+              id: row.id,
+              ...row.data,
+              created_at: row.created_at,
+              updated_at: row.updated_at,
+            }))} 
             headers={schemas.map(s => s.column_name)}
             isGrouped={false}
           />
@@ -339,7 +385,7 @@ export default function DatabaseView() {
             onOpenChange={setIsUploadDialogOpen}
             onSuccess={() => {
               setIsUploadDialogOpen(false);
-              loadData();
+              refresh();
               loadSchemas();
             }}
             databaseId={databaseId}
