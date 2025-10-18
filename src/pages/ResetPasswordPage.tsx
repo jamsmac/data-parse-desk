@@ -41,12 +41,12 @@ export default function ResetPasswordPage() {
     e.preventDefault();
 
     if (newPassword !== confirmPassword) {
-      toast.error("Passwords don't match");
+      toast.error("Пароли не совпадают");
       return;
     }
 
     if (newPassword.length < 8) {
-      toast.error("Password must be at least 8 characters");
+      toast.error("Пароль должен содержать минимум 8 символов");
       return;
     }
 
@@ -59,10 +59,19 @@ export default function ResetPasswordPage() {
 
       if (error) throw error;
 
-      toast.success("Password updated successfully!");
+      toast.success("Пароль успешно обновлен!");
       navigate("/login");
     } catch (error: any) {
-      toast.error(error.message || "Failed to update password");
+      // Handle weak password errors
+      if (error.message?.toLowerCase().includes('weak') || 
+          error.message?.toLowerCase().includes('compromised') ||
+          error.message?.toLowerCase().includes('leaked')) {
+        toast.error("Этот пароль слишком простой или был скомпрометирован", {
+          description: "Используйте уникальный пароль или менеджер паролей (например, 1Password, Bitwarden)."
+        });
+      } else {
+        toast.error(error.message || "Ошибка обновления пароля");
+      }
     } finally {
       setLoading(false);
     }
@@ -73,13 +82,13 @@ export default function ResetPasswordPage() {
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>Update Password</CardTitle>
-            <CardDescription>Enter your new password</CardDescription>
+            <CardTitle>Обновить пароль</CardTitle>
+            <CardDescription>Введите новый пароль</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleUpdatePassword} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="newPassword">New Password</Label>
+                <Label htmlFor="newPassword">Новый пароль</Label>
                 <Input
                   id="newPassword"
                   type="password"
@@ -87,11 +96,14 @@ export default function ResetPasswordPage() {
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
                   minLength={8}
-                  placeholder="At least 8 characters"
+                  placeholder="Минимум 8 символов"
                 />
+                <p className="text-xs text-muted-foreground">
+                  💡 Используйте уникальный пароль. Рекомендуется менеджер паролей (1Password, Bitwarden).
+                </p>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Label htmlFor="confirmPassword">Подтвердите пароль</Label>
                 <Input
                   id="confirmPassword"
                   type="password"
@@ -99,11 +111,11 @@ export default function ResetPasswordPage() {
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                   minLength={8}
-                  placeholder="Re-enter password"
+                  placeholder="Повторите пароль"
                 />
               </div>
               <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Updating..." : "Update Password"}
+                {loading ? "Обновление..." : "Обновить пароль"}
               </Button>
             </form>
           </CardContent>
@@ -116,9 +128,9 @@ export default function ResetPasswordPage() {
     <div className="min-h-screen flex items-center justify-center p-4">
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>Reset Password</CardTitle>
+          <CardTitle>Сброс пароля</CardTitle>
           <CardDescription>
-            Enter your email to receive a password reset link
+            Введите email для получения ссылки сброса пароля
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -135,7 +147,7 @@ export default function ResetPasswordPage() {
               />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "Sending..." : "Send Reset Link"}
+              {loading ? "Отправка..." : "Отправить ссылку"}
             </Button>
             <Button
               type="button"
@@ -143,7 +155,7 @@ export default function ResetPasswordPage() {
               className="w-full"
               onClick={() => navigate("/login")}
             >
-              Back to Login
+              Назад к входу
             </Button>
           </form>
         </CardContent>

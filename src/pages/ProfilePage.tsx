@@ -161,7 +161,14 @@ export default function ProfilePage() {
       setSuccess('Пароль успешно изменен');
       setPasswordData({ current: '', new: '', confirm: '' });
     } catch (err: any) {
-      setError(err.message || 'Ошибка изменения пароля');
+      // Handle weak password errors
+      if (err.message?.toLowerCase().includes('weak') || 
+          err.message?.toLowerCase().includes('compromised') ||
+          err.message?.toLowerCase().includes('leaked')) {
+        setError('Этот пароль слишком простой или был скомпрометирован. Используйте уникальный пароль или менеджер паролей (например, 1Password, Bitwarden).');
+      } else {
+        setError(err.message || 'Ошибка изменения пароля');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -394,7 +401,12 @@ export default function ProfilePage() {
                       setPasswordData((prev) => ({ ...prev, new: e.target.value }))
                     }
                     disabled={isLoading}
+                    minLength={8}
+                    placeholder="Минимум 8 символов"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    💡 Используйте уникальный пароль. Рекомендуется менеджер паролей (1Password, Bitwarden).
+                  </p>
                 </div>
 
                 <div className="space-y-2">
