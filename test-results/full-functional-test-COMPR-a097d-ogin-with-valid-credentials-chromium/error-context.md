@@ -1,0 +1,65 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - img [ref=e7]
+        - heading "VendHub DB" [level=2] [ref=e11]
+      - generic [ref=e12]:
+        - img [ref=e13]
+        - textbox "Search databases..." [ref=e16]
+    - button "All Databases 0" [ref=e19]:
+      - img [ref=e20]
+      - img [ref=e22]
+      - generic [ref=e26]: All Databases
+      - generic [ref=e27]: "0"
+    - generic [ref=e29]:
+      - generic [ref=e30]:
+        - generic [ref=e31]: Databases
+        - generic [ref=e32]: "0"
+      - generic [ref=e33]:
+        - generic [ref=e34]: Total Records
+        - generic [ref=e35]: "0"
+    - button "Settings" [ref=e36]:
+      - generic [ref=e37]:
+        - img [ref=e38]
+        - generic [ref=e41]: Settings
+  - generic [ref=e42]:
+    - generic [ref=e44]:
+      - button "Upload" [ref=e45] [cursor=pointer]:
+        - img [ref=e46]
+        - text: Upload
+      - button "Payments" [ref=e49] [cursor=pointer]:
+        - img [ref=e50]
+        - text: Payments
+      - button "Reconciliation" [ref=e52] [cursor=pointer]:
+        - img [ref=e53]
+        - text: Reconciliation
+      - button "Monthly" [ref=e58] [cursor=pointer]:
+        - img [ref=e59]
+        - text: Monthly
+      - button "Tests" [ref=e62] [cursor=pointer]:
+        - img [ref=e63]
+        - text: Tests
+    - generic [ref=e66]:
+      - generic [ref=e67]:
+        - heading "VendHub Local DB Manager v2.2" [level=1] [ref=e68]
+        - paragraph [ref=e69]: Production-ready database with payment reconciliation
+      - generic [ref=e72] [cursor=pointer]:
+        - img [ref=e73]
+        - generic [ref=e76]:
+          - paragraph [ref=e77]: Drop files here or click to browse
+          - paragraph [ref=e78]: Supports Excel (.xlsx, .xls) and CSV files
+      - generic [ref=e79]:
+        - generic [ref=e80]:
+          - generic [ref=e81]: Total Databases
+          - generic [ref=e82]: "0"
+        - generic [ref=e83]:
+          - generic [ref=e84]: Total Records
+          - generic [ref=e85]: "0"
+        - generic [ref=e86]:
+          - generic [ref=e87]: Version
+          - generic [ref=e88]: v2.2
+```

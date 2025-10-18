@@ -103,7 +103,7 @@ export function normalizeDate(value: any): {
     return { date_iso: null, date_only: null, epoch_ms: null };
   }
 
-  let dateStr = String(value).trim();
+  const dateStr = String(value).trim();
 
   // Try parsing with various formats
   for (const format of DATE_FORMATS) {

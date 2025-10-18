@@ -8,12 +8,12 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Loader2 } from "lucide-react";
 
-// Eagerly load critical pages for better UX
+// Eagerly load only auth pages for fastest initial load
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
-import Dashboard from "./pages/Dashboard";
 
-// Lazy load heavy/less-frequently accessed pages
+// Lazy load all other pages to reduce initial bundle
+const Dashboard = lazy(() => import("./pages/Dashboard"));
 const DatabaseView = lazy(() => import("./pages/DatabaseView"));
 const Analytics = lazy(() => import("./pages/Analytics"));
 const Reports = lazy(() => import("./pages/Reports"));
@@ -52,9 +52,20 @@ const App = () => (
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
 
-              {/* Protected routes - Mix of eager and lazy loading */}
+              {/* Protected routes - All lazy loaded for optimal bundle size */}
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <Dashboard />
+                      </Suspense>
+                    }
+                  />
+                }
+              />
 
               {/* Heavy pages - Lazy loaded to reduce initial bundle */}
               <Route

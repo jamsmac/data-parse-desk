@@ -256,7 +256,7 @@ function evaluateTokens(tokens: Token[], context: Record<string, any>): any {
     // Извлекаем аргументы из скобок
     const args: any[] = [];
     let depth = 0;
-    let currentArg: Token[] = [];
+    const currentArg: Token[] = [];
 
     for (let i = 2; i < tokens.length; i++) {
       const token = tokens[i];
