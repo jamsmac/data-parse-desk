@@ -283,17 +283,53 @@ export default function CellEditor({
 
       case 'file':
         return (
-          <Input
-            type="file"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                // TODO: Загрузка файла
-                setValue(file.name);
-              }
-            }}
-            autoFocus
-          />
+          <div className="space-y-2">
+            <Input
+              type="file"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  try {
+                    // Import supabase client
+                    const { supabase } = await import('@/integrations/supabase/client');
+                    
+                    // Get user ID for folder structure
+                    const { data: { user } } = await supabase.auth.getUser();
+                    if (!user) throw new Error('Not authenticated');
+
+                    // Upload to Supabase Storage
+                    const fileName = `${user.id}/${Date.now()}-${file.name}`;
+                    const { data, error } = await supabase.storage
+                      .from('cell-files')
+                      .upload(fileName, file);
+
+                    if (error) throw error;
+
+                    // Get public URL
+                    const { data: { publicUrl } } = supabase.storage
+                      .from('cell-files')
+                      .getPublicUrl(data.path);
+
+                    setValue({ name: file.name, url: publicUrl, path: data.path });
+                    setIsValid(true);
+                  } catch (error) {
+                    console.error('File upload error:', error);
+                    setErrorMessage('Ошибка загрузки файла');
+                    setIsValid(false);
+                  }
+                }
+              }}
+              autoFocus
+            />
+            {value?.url && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>📎 {value.name}</span>
+                {value.url.match(/\.(jpg|jpeg|png|gif|webp)$/i) && (
+                  <img src={value.url} alt={value.name} className="h-20 w-20 object-cover rounded" />
+                )}
+              </div>
+            )}
+          </div>
         );
 
       case 'formula':

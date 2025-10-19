@@ -16,10 +16,14 @@ import {
   FileText,
 } from 'lucide-react';
 import { Activity } from '@/types/auth';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface ActivityFeedProps {
-  activities: Activity[];
+  activities?: Activity[];
   limit?: number;
+  projectId?: string;
+  userId?: string;
 }
 
 const ACTION_ICONS = {
@@ -56,8 +60,66 @@ const ENTITY_LABELS = {
   report: 'отчет',
 };
 
-export function ActivityFeed({ activities, limit }: ActivityFeedProps) {
+export function ActivityFeed({ activities: propActivities, limit, projectId, userId }: ActivityFeedProps) {
+  // Load activities from database if not provided
+  const { data: dbActivities, isLoading } = useQuery({
+    queryKey: ['activities', projectId, userId],
+    queryFn: async () => {
+      let query = supabase
+        .from('activities')
+        .select(`
+          *,
+          user:user_id (
+            id,
+            email,
+            raw_user_meta_data
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (projectId) {
+        query = query.eq('project_id', projectId);
+      }
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+
+      // Transform to match Activity type
+      return data.map((a: any) => ({
+        ...a,
+        user: {
+          email: a.user?.email || '',
+          full_name: a.user?.raw_user_meta_data?.full_name,
+          avatar_url: a.user?.raw_user_meta_data?.avatar_url,
+        }
+      }));
+    },
+    enabled: !propActivities, // Only fetch if activities not provided
+  });
+
+  const activities = propActivities || dbActivities || [];
   const displayActivities = limit ? activities.slice(0, limit) : activities;
+
+  if (isLoading && !propActivities) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ActivityIcon className="h-5 w-5" />
+            Лента активности
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const getInitials = (name?: string, email?: string) => {
     if (name) {
