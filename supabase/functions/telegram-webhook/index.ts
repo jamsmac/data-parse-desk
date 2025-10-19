@@ -24,6 +24,20 @@ interface TelegramUpdate {
       file_size?: number;
     };
   };
+  callback_query?: {
+    id: string;
+    from: {
+      id: number;
+      username?: string;
+      first_name?: string;
+    };
+    message?: {
+      chat: {
+        id: number;
+      };
+    };
+    data?: string;
+  };
 }
 
 serve(async (req) => {
@@ -227,12 +241,15 @@ serve(async (req) => {
             if (checklistViews.length === 0) {
               await sendTelegramMessage(BOT_TOKEN, chat.id, '📋 У вас нет чеклистов.');
             } else {
-              let message = '📋 Ваши чеклисты:\n\n';
-              checklistViews.forEach((v, i) => {
-                message += `${i + 1}. ${v.name}\n`;
-                message += `   /view_${v.id.substring(0, 8)}\n\n`;
-              });
-              await sendTelegramMessage(BOT_TOKEN, chat.id, message);
+              let message = '📋 Выберите чеклист:\n\n';
+              const keyboard = {
+                inline_keyboard: checklistViews.slice(0, 10).map(v => [{
+                  text: `${v.name}`,
+                  callback_data: `view_${v.id}`
+                }])
+              };
+              
+              await sendTelegramMessageWithKeyboard(BOT_TOKEN, chat.id, message, keyboard);
             }
           }
         }
@@ -342,19 +359,183 @@ serve(async (req) => {
 
         if (isSupported) {
           await sendTelegramMessage(BOT_TOKEN, chat.id,
-            `✅ Файл "${fileName}" получен!\n\n` +
-            `Импорт будет обработан. Вы получите уведомление после завершения.`
+            `⏳ Загружаю файл "${fileName}"...`
           );
 
-          // TODO: Download file from Telegram and process it
-          // This would require implementing file download and import logic
-          console.log('File received for import:', { fileId, fileName, userId: account.user_id });
+          try {
+            // Get file path from Telegram
+            const fileResponse = await fetch(
+              `https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId}`
+            );
+            const fileData = await fileResponse.json();
+            
+            if (!fileData.ok || !fileData.result?.file_path) {
+              throw new Error('Failed to get file path from Telegram');
+            }
+
+            const filePath = fileData.result.file_path;
+            const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`;
+
+            // Download file
+            const downloadResponse = await fetch(fileUrl);
+            if (!downloadResponse.ok) {
+              throw new Error('Failed to download file from Telegram');
+            }
+
+            const fileBuffer = await downloadResponse.arrayBuffer();
+            const fileBase64 = btoa(
+              new Uint8Array(fileBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+            );
+
+            // Upload to Supabase Storage
+            const storagePath = `telegram-imports/${account.user_id}/${Date.now()}-${fileName}`;
+            const { error: uploadError } = await supabaseClient
+              .storage
+              .from('avatars') // Using existing bucket
+              .upload(storagePath, fileBuffer, {
+                contentType: fileName.endsWith('.csv') ? 'text/csv' : 
+                             'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+              });
+
+            if (uploadError) {
+              console.error('Upload error:', uploadError);
+              throw new Error('Failed to upload file to storage');
+            }
+
+            // Store file metadata
+            await supabaseClient
+              .from('database_files')
+              .insert({
+                database_id: null, // Will be set when user selects database
+                filename: fileName,
+                file_type: fileName.split('.').pop(),
+                file_size: document.file_size,
+                uploaded_by: account.user_id,
+                metadata: {
+                  telegram_file_id: fileId,
+                  storage_path: storagePath,
+                  source: 'telegram'
+                }
+              });
+
+            await sendTelegramMessage(BOT_TOKEN, chat.id,
+              `✅ Файл "${fileName}" загружен!\n\n` +
+              `Размер: ${Math.round((document.file_size || 0) / 1024)} KB\n\n` +
+              `Используйте /import для импорта данных в базу.`
+            );
+
+          } catch (error) {
+            console.error('File processing error:', error);
+            await sendTelegramMessage(BOT_TOKEN, chat.id,
+              `❌ Ошибка при обработке файла: ${error instanceof Error ? error.message : 'Unknown error'}`
+            );
+          }
         } else {
           await sendTelegramMessage(BOT_TOKEN, chat.id,
             `❌ Неподдерживаемый формат файла.\n\n` +
             `Пожалуйста, отправьте файл в формате CSV, XLSX или XLS.`
           );
         }
+      }
+    } else if (update.callback_query) {
+      // Handle inline button callbacks
+      const { callback_query } = update;
+      const chatId = callback_query.message?.chat.id;
+      const data = callback_query.data;
+
+      if (!chatId || !data) {
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Check if user is linked
+      const { data: account } = await supabaseClient
+        .from('telegram_accounts')
+        .select('*')
+        .eq('telegram_id', callback_query.from.id)
+        .eq('is_active', true)
+        .single();
+
+      if (!account) {
+        await sendTelegramMessage(BOT_TOKEN, chatId, 
+          '❌ Ваш аккаунт не подключен. Используйте /link для подключения.'
+        );
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Handle view callback
+      if (data.startsWith('view_')) {
+        const viewId = data.substring(5);
+        
+        const { data: view } = await supabaseClient
+          .from('composite_views')
+          .select('id, name, config')
+          .eq('id', viewId)
+          .single();
+
+        if (!view) {
+          await sendTelegramMessage(BOT_TOKEN, chatId, '❌ Представление не найдено.');
+        } else {
+          const { data: customData } = await supabaseClient
+            .from('composite_view_custom_data')
+            .select('*')
+            .eq('composite_view_id', view.id)
+            .limit(10);
+
+          let message = `<b>${view.name}</b>\n\n`;
+          const buttons: any[] = [];
+          
+          if (!customData || customData.length === 0) {
+            message += 'Нет данных.';
+          } else {
+            customData.forEach((item, i) => {
+              message += `${i + 1}. Row: ${item.row_identifier}\n`;
+              const data = item.data as any;
+              
+              if (item.column_type === 'checklist' && data.items) {
+                const completed = data.items.filter((i: any) => i.checked).length;
+                const total = data.items.length;
+                message += `   ✅ ${completed}/${total} завершено (${Math.round((completed/total)*100)}%)\n`;
+                
+                // Add buttons for incomplete items
+                data.items
+                  .filter((taskItem: any, idx: number) => !taskItem.checked && idx < 3)
+                  .forEach((taskItem: any, idx: number) => {
+                    buttons.push([{
+                      text: `✓ ${taskItem.text.substring(0, 30)}`,
+                      callback_data: `toggle_${item.id}_${idx}`
+                    }]);
+                  });
+              } else if (item.column_type === 'status') {
+                message += `   📍 ${data.value || 'Не установлен'}\n`;
+              } else if (item.column_type === 'progress') {
+                message += `   📊 ${data.percentage || 0}%\n`;
+              }
+              message += '\n';
+            });
+          }
+
+          const keyboard = buttons.length > 0 ? { inline_keyboard: buttons } : null;
+          
+          if (keyboard) {
+            await sendTelegramMessageWithKeyboard(BOT_TOKEN, chatId, message, keyboard);
+          } else {
+            await sendTelegramMessage(BOT_TOKEN, chatId, message);
+          }
+        }
+
+        // Answer callback query
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/answerCallbackQuery`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            callback_query_id: callback_query.id,
+            text: 'Загружено ✓'
+          }),
+        });
       }
     }
 
@@ -388,6 +569,31 @@ async function sendTelegramMessage(botToken: string, chatId: number, text: strin
     const error = await response.text();
     console.error('Failed to send Telegram message:', error);
   }
-  
+
+  return response.json();
+}
+
+async function sendTelegramMessageWithKeyboard(
+  botToken: string,
+  chatId: number,
+  text: string,
+  keyboard: any
+) {
+  const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text,
+      parse_mode: 'HTML',
+      reply_markup: keyboard,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('Failed to send Telegram message with keyboard:', error);
+  }
+
   return response.json();
 }

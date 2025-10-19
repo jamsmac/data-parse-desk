@@ -83,7 +83,17 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
       toast.success('Схема сгенерирована AI');
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Ошибка анализа');
+      if (error.message?.includes('429') || error.message?.includes('Rate limit')) {
+        toast.error('Превышен лимит запросов', {
+          description: 'Слишком много запросов. Подождите минуту и попробуйте снова.'
+        });
+      } else if (error.message?.includes('402') || error.message?.includes('credits')) {
+        toast.error('Недостаточно кредитов', {
+          description: 'Пополните баланс AI кредитов для продолжения работы.'
+        });
+      } else {
+        toast.error(error.message || 'Ошибка анализа');
+      }
     },
   });
 
@@ -107,7 +117,17 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
       handleClose();
     },
     onError: (error: any) => {
-      toast.error(error.message || 'Ошибка создания таблиц');
+      if (error.message?.includes('429') || error.message?.includes('Rate limit')) {
+        toast.error('Превышен лимит запросов', {
+          description: 'Слишком много запросов. Пожалуйста, попробуйте через минуту.'
+        });
+      } else if (error.message?.includes('402') || error.message?.includes('credits')) {
+        toast.error('Недостаточно кредитов', {
+          description: 'Пополните баланс кредитов в настройках для продолжения работы.'
+        });
+      } else {
+        toast.error(error.message || 'Ошибка создания таблиц');
+      }
     },
   });
 
