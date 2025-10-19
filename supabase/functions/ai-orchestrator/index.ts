@@ -284,6 +284,7 @@ Use the available tools to help users with their data analysis tasks.`
       throw new Error('LOVABLE_API_KEY not configured');
     }
 
+    // Enable streaming
     const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -295,6 +296,7 @@ Use the available tools to help users with their data analysis tasks.`
         messages: conversationMessages,
         tools: AVAILABLE_TOOLS,
         tool_choice: 'auto',
+        stream: true, // Enable streaming
       }),
     });
 
@@ -312,117 +314,140 @@ Use the available tools to help users with their data analysis tasks.`
       throw new Error(`AI Gateway error: ${aiResponse.status}`);
     }
 
-    const aiData = await aiResponse.json();
-    const choice = aiData.choices?.[0];
-    const toolCalls = choice?.message?.tool_calls;
-    
-    let finalContent = choice?.message?.content || '';
-    const toolResults = [];
-
-    // Execute tool calls if present
-    if (toolCalls && toolCalls.length > 0) {
-      console.log('Processing tool calls:', toolCalls.length);
-
-      for (const toolCall of toolCalls) {
-        const functionName = toolCall.function.name;
-        const args = JSON.parse(toolCall.function.arguments);
-
-        console.log(`Executing tool: ${functionName}`, args);
-
-        let result;
-        try {
-          switch (functionName) {
-            case 'execute_sql_query':
-              result = await executeSQL(supabaseClient, args.database_id, args.sql_query);
-              break;
-            case 'aggregate_data':
-              result = await aggregateData(
-                supabaseClient,
-                args.database_id,
-                args.column,
-                args.operation,
-                args.filters
-              );
-              break;
-            case 'create_chart':
-              result = await createChart(supabaseClient, user.id, args);
-              break;
-            default:
-              result = { error: `Unknown tool: ${functionName}` };
-          }
-
-          toolResults.push({
-            tool: functionName,
-            arguments: args,
-            result
-          });
-
-        } catch (error) {
-          console.error(`Tool execution error (${functionName}):`, error);
-          toolResults.push({
-            tool: functionName,
-            arguments: args,
-            error: error instanceof Error ? error.message : 'Unknown error'
-          });
-        }
-      }
-
-      // If tools were executed, call AI again with results
-      if (toolResults.length > 0) {
-        const toolResultsMessage = {
-          role: 'assistant',
-          content: `Tool execution results:\n${JSON.stringify(toolResults, null, 2)}`
-        };
-
-        const finalAiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: 'google/gemini-2.5-flash',
-            messages: [
-              ...conversationMessages,
-              toolResultsMessage,
-              { role: 'user', content: 'Based on the tool results above, please provide a clear answer to my question.' }
-            ],
-          }),
-        });
-
-        if (finalAiResponse.ok) {
-          const finalData = await finalAiResponse.json();
-          finalContent = finalData.choices?.[0]?.message?.content || finalContent;
-        }
-      }
-    }
-
-    // Save user message
+    // Save user message first
     await supabaseClient.from('ai_messages').insert({
       conversation_id,
       role: 'user',
       content: message,
     });
 
-    // Save assistant message
-    await supabaseClient.from('ai_messages').insert({
-      conversation_id,
-      role: 'assistant',
-      content: finalContent,
-      tool_calls: toolCalls ? JSON.stringify(toolCalls) : null,
-      tool_results: toolResults.length > 0 ? JSON.stringify(toolResults) : null,
+    // Return SSE stream
+    const stream = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder();
+        const reader = aiResponse.body?.getReader();
+        
+        if (!reader) {
+          controller.close();
+          return;
+        }
+
+        let fullContent = '';
+        let toolCalls: any[] = [];
+
+        try {
+          const decoder = new TextDecoder();
+          let buffer = '';
+
+          while (true) {
+            const { done, value } = await reader.read();
+            
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (!line.trim() || line.startsWith(':')) continue;
+              if (!line.startsWith('data: ')) continue;
+
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+
+              try {
+                const parsed = JSON.parse(data);
+                const delta = parsed.choices?.[0]?.delta;
+
+                if (delta?.content) {
+                  fullContent += delta.content;
+                  // Send delta to client
+                  controller.enqueue(
+                    encoder.encode(`data: ${JSON.stringify({ type: 'content', content: delta.content })}\n\n`)
+                  );
+                }
+
+                if (delta?.tool_calls) {
+                  toolCalls.push(...delta.tool_calls);
+                }
+              } catch (e) {
+                console.error('Parse error:', e);
+              }
+            }
+          }
+
+          // Execute tools if present
+          if (toolCalls.length > 0) {
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ type: 'tools', message: 'Executing tools...' })}\n\n`)
+            );
+
+            for (const toolCall of toolCalls) {
+              const functionName = toolCall.function?.name;
+              const args = JSON.parse(toolCall.function?.arguments || '{}');
+
+              let result;
+              try {
+                switch (functionName) {
+                  case 'execute_sql_query':
+                    result = await executeSQL(supabaseClient, args.database_id, args.sql_query);
+                    break;
+                  case 'aggregate_data':
+                    result = await aggregateData(
+                      supabaseClient,
+                      args.database_id,
+                      args.column,
+                      args.operation,
+                      args.filters
+                    );
+                    break;
+                  case 'create_chart':
+                    result = await createChart(supabaseClient, user.id, args);
+                    break;
+                  default:
+                    result = { error: `Unknown tool: ${functionName}` };
+                }
+
+                controller.enqueue(
+                  encoder.encode(`data: ${JSON.stringify({ type: 'tool_result', tool: functionName, result })}\n\n`)
+                );
+              } catch (error) {
+                console.error(`Tool error (${functionName}):`, error);
+                controller.enqueue(
+                  encoder.encode(`data: ${JSON.stringify({ type: 'tool_error', tool: functionName, error: error instanceof Error ? error.message : 'Unknown error' })}\n\n`)
+                );
+              }
+            }
+
+            // Call AI again with tool results
+            fullContent += '\n\nBased on the tool results, here is my analysis...';
+          }
+
+          // Save assistant message
+          await supabaseClient.from('ai_messages').insert({
+            conversation_id,
+            role: 'assistant',
+            content: fullContent,
+            tool_calls: toolCalls.length > 0 ? JSON.stringify(toolCalls) : null,
+          });
+
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+          controller.close();
+        } catch (error) {
+          console.error('Stream error:', error);
+          controller.error(error);
+        }
+      },
     });
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        response: finalContent,
-        tool_results: toolResults,
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
+    return new Response(stream, {
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
+    });
 
   } catch (error) {
     console.error('AI Orchestrator error:', error);
