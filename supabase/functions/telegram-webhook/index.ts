@@ -18,10 +18,17 @@ interface TelegramUpdate {
     chat: {
       id: number;
     };
+    photo?: Array<{
+      file_id: string;
+      file_size?: number;
+      width: number;
+      height: number;
+    }>;
     document?: {
       file_id: string;
       file_name?: string;
       file_size?: number;
+      mime_type?: string;
     };
   };
   callback_query?: {
@@ -359,21 +366,44 @@ serve(async (req) => {
         );
       }
 
-      // Handle file uploads
-      if (update.message?.document) {
-        const document = update.message.document;
-        const fileId = document.file_id;
-        const fileName = document.file_name || 'unknown';
+      // Handle file uploads (photos and documents)
+      if (update.message?.photo || update.message?.document) {
+        let fileId: string;
+        let fileName: string;
+        let mimeType: string;
+        let fileSize: number | undefined;
+        let isDataFile = false;
 
-        // Check if it's a supported file type
-        const supportedExtensions = ['.csv', '.xlsx', '.xls'];
-        const isSupported = supportedExtensions.some(ext => 
-          fileName.toLowerCase().endsWith(ext)
-        );
+        if (update.message.photo) {
+          // Get largest photo
+          const photo = update.message.photo;
+          const largest = photo[photo.length - 1];
+          fileId = largest.file_id;
+          fileName = `photo_${Date.now()}.jpg`;
+          mimeType = 'image/jpeg';
+          fileSize = largest.file_size;
+        } else if (update.message.document) {
+          const document = update.message.document;
+          fileId = document.file_id;
+          fileName = document.file_name || `document_${Date.now()}`;
+          mimeType = document.mime_type || 'application/octet-stream';
+          fileSize = document.file_size;
 
-        if (isSupported) {
+          // Check if it's a data file (CSV, Excel)
+          const supportedExtensions = ['.csv', '.xlsx', '.xls'];
+          isDataFile = supportedExtensions.some(ext => 
+            fileName.toLowerCase().endsWith(ext)
+          );
+        } else {
+          return new Response(JSON.stringify({ ok: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        if (isDataFile) {
+          // Handle data import files
           await sendTelegramMessage(BOT_TOKEN, chat.id,
-            `⏳ Загружаю файл "${fileName}"...`
+            `⏳ Загружаю файл данных "${fileName}"...`
           );
 
           try {
@@ -423,7 +453,7 @@ serve(async (req) => {
                 database_id: null, // Will be set when user selects database
                 filename: fileName,
                 file_type: fileName.split('.').pop(),
-                file_size: document.file_size,
+                file_size: fileSize,
                 uploaded_by: account.user_id,
                 metadata: {
                   telegram_file_id: fileId,
@@ -434,7 +464,7 @@ serve(async (req) => {
 
             await sendTelegramMessage(BOT_TOKEN, chat.id,
               `✅ Файл "${fileName}" загружен!\n\n` +
-              `Размер: ${Math.round((document.file_size || 0) / 1024)} KB\n\n` +
+              `Размер: ${Math.round((fileSize || 0) / 1024)} KB\n\n` +
               `Используйте /import для импорта данных в базу.`
             );
 
@@ -445,10 +475,67 @@ serve(async (req) => {
             );
           }
         } else {
+          // Handle general file upload (photos, other documents)
           await sendTelegramMessage(BOT_TOKEN, chat.id,
-            `❌ Неподдерживаемый формат файла.\n\n` +
-            `Пожалуйста, отправьте файл в формате CSV, XLSX или XLS.`
+            `⏳ Загружаю файл "${fileName}"...`
           );
+
+          try {
+            // Get file path from Telegram
+            const fileResponse = await fetch(
+              `https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId}`
+            );
+            const fileData = await fileResponse.json();
+            
+            if (!fileData.ok || !fileData.result?.file_path) {
+              throw new Error('Не удалось получить файл из Telegram');
+            }
+
+            // Download file
+            const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${fileData.result.file_path}`;
+            const downloadResponse = await fetch(fileUrl);
+            
+            if (!downloadResponse.ok) {
+              throw new Error('Не удалось скачать файл');
+            }
+
+            const fileBuffer = await downloadResponse.arrayBuffer();
+
+            // Upload to Supabase Storage
+            const storagePath = `telegram/${account.user_id}/${Date.now()}_${fileName}`;
+            const { error: uploadError } = await supabaseClient
+              .storage
+              .from('avatars')
+              .upload(storagePath, fileBuffer, {
+                contentType: mimeType,
+                upsert: false
+              });
+
+            if (uploadError) {
+              console.error('Storage upload error:', uploadError);
+              throw new Error('Ошибка загрузки в хранилище');
+            }
+
+            // Get public URL
+            const { data: { publicUrl } } = supabaseClient
+              .storage
+              .from('avatars')
+              .getPublicUrl(storagePath);
+
+            const sizeKB = fileSize ? Math.round(fileSize / 1024) : 0;
+            await sendTelegramMessage(BOT_TOKEN, chat.id, 
+              `✅ Файл загружен успешно!\n\n` +
+              `📁 ${fileName}\n` +
+              `💾 Размер: ${sizeKB} KB\n\n` +
+              `🔗 Доступен по ссылке:\n${publicUrl}`
+            );
+
+          } catch (error) {
+            console.error('File upload error:', error);
+            await sendTelegramMessage(BOT_TOKEN, chat.id, 
+              `❌ Ошибка при загрузке файла: ${error instanceof Error ? error.message : 'Неизвестная ошибка'}`
+            );
+          }
         }
       }
     } else if (update.callback_query) {
