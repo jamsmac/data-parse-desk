@@ -109,16 +109,50 @@ async function executeSQL(supabase: any, database_id: string, sql_query: string)
     throw new Error('Only SELECT queries are allowed');
   }
 
-  const { data, error } = await supabase
+  // Get all table data for this database
+  const { data: tableData, error } = await supabase
     .from('table_data')
     .select('data')
     .eq('database_id', database_id);
 
   if (error) throw error;
 
-  // For simple queries, parse and execute on the data
-  // This is a simplified implementation
-  return { rows: data || [], count: data?.length || 0 };
+  // Extract all rows data
+  const rows = tableData?.map((row: any) => row.data) || [];
+  
+  // Simple query parser for common patterns
+  const query = sql_query.toLowerCase();
+  let filteredRows = [...rows];
+  
+  // Handle WHERE clauses (basic support)
+  if (query.includes('where')) {
+    const whereMatch = query.match(/where\s+(.+?)(?:\s+order|\s+limit|$)/i);
+    if (whereMatch) {
+      const condition = whereMatch[1].trim();
+      filteredRows = rows.filter((row: any) => {
+        // Simple equality check: column = 'value' or column = value
+        const eqMatch = condition.match(/(\w+)\s*=\s*[']?([^']+)[']?/);
+        if (eqMatch) {
+          const [, column, value] = eqMatch;
+          return String(row[column]) === value.trim();
+        }
+        return true;
+      });
+    }
+  }
+  
+  // Handle LIMIT
+  const limitMatch = query.match(/limit\s+(\d+)/i);
+  if (limitMatch) {
+    const limit = parseInt(limitMatch[1]);
+    filteredRows = filteredRows.slice(0, limit);
+  }
+
+  return { 
+    rows: filteredRows, 
+    count: filteredRows.length,
+    total: rows.length 
+  };
 }
 
 async function aggregateData(supabase: any, database_id: string, column: string, operation: string, filters?: any) {
