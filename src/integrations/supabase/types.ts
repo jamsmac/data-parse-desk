@@ -98,6 +98,79 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string | null
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string | null
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_conversations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+          tool_calls: Json | null
+          tool_results: Json | null
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+          tool_calls?: Json | null
+          tool_results?: Json | null
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+          tool_calls?: Json | null
+          tool_results?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_requests: {
         Row: {
           agent_type: string
@@ -283,6 +356,91 @@ export type Database = {
             columns: ["database_id"]
             isOneToOne: false
             referencedRelation: "databases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      composite_view_custom_data: {
+        Row: {
+          column_name: string
+          column_type: string
+          composite_view_id: string
+          created_at: string
+          data: Json
+          id: string
+          row_identifier: string
+          updated_at: string
+        }
+        Insert: {
+          column_name: string
+          column_type: string
+          composite_view_id: string
+          created_at?: string
+          data?: Json
+          id?: string
+          row_identifier: string
+          updated_at?: string
+        }
+        Update: {
+          column_name?: string
+          column_type?: string
+          composite_view_id?: string
+          created_at?: string
+          data?: Json
+          id?: string
+          row_identifier?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "composite_view_custom_data_composite_view_id_fkey"
+            columns: ["composite_view_id"]
+            isOneToOne: false
+            referencedRelation: "composite_views"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      composite_views: {
+        Row: {
+          config: Json
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          project_id: string
+          sql_query: string | null
+          updated_at: string
+        }
+        Insert: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          project_id: string
+          sql_query?: string | null
+          updated_at?: string
+        }
+        Update: {
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          project_id?: string
+          sql_query?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "composite_views_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -818,6 +976,44 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      schema_analyses: {
+        Row: {
+          ai_model: string
+          created_at: string
+          id: string
+          input_type: string
+          project_id: string | null
+          schema: Json
+          user_id: string | null
+        }
+        Insert: {
+          ai_model: string
+          created_at?: string
+          id?: string
+          input_type: string
+          project_id?: string | null
+          schema: Json
+          user_id?: string | null
+        }
+        Update: {
+          ai_model?: string
+          created_at?: string
+          id?: string
+          input_type?: string
+          project_id?: string | null
+          schema?: Json
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schema_analyses_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       storage_providers: {
         Row: {

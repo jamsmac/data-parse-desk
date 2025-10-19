@@ -12,6 +12,9 @@ import { DatabaseFormDialog } from '@/components/database/DatabaseFormDialog';
 import { RelationshipGraph } from '@/components/relations/RelationshipGraph';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { CompositeViewList } from '@/components/composite-views/CompositeViewList';
+import { SchemaGeneratorDialog } from '@/components/schema-generator/SchemaGeneratorDialog';
+import { Sparkles } from 'lucide-react';
 
 export default function ProjectView() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -22,6 +25,7 @@ export default function ProjectView() {
   
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isSchemaGeneratorOpen, setIsSchemaGeneratorOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('databases');
 
   // Получение проекта
@@ -184,16 +188,23 @@ export default function ProjectView() {
               </p>
             )}
           </div>
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Создать базу данных
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setIsCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Создать базу данных
+            </Button>
+            <Button variant="outline" onClick={() => setIsSchemaGeneratorOpen(true)}>
+              <Sparkles className="h-4 w-4 mr-2" />
+              AI Генератор схем
+            </Button>
+          </div>
         </div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
           <TabsList>
             <TabsTrigger value="databases">Базы данных</TabsTrigger>
+            <TabsTrigger value="composite">Составные представления</TabsTrigger>
             <TabsTrigger value="graph">График связей</TabsTrigger>
           </TabsList>
 
@@ -242,6 +253,10 @@ export default function ProjectView() {
             )}
           </TabsContent>
 
+          <TabsContent value="composite" className="mt-6">
+            {projectId && <CompositeViewList projectId={projectId} />}
+          </TabsContent>
+
           <TabsContent value="graph" className="mt-6">
             {databases && databases.length > 0 ? (
               <RelationshipGraph
@@ -273,6 +288,14 @@ export default function ProjectView() {
           await createDatabaseMutation.mutateAsync({ databaseData: data as any, file });
         }}
       />
+
+      {projectId && (
+        <SchemaGeneratorDialog
+          open={isSchemaGeneratorOpen}
+          onClose={() => setIsSchemaGeneratorOpen(false)}
+          projectId={projectId}
+        />
+      )}
 
     </div>
   );

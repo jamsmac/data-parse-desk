@@ -14,7 +14,7 @@ import { PaginationControls } from '@/components/database/PaginationControls';
 import { FilterBuilder, type Filter } from '@/components/database/FilterBuilder';
 import { SortControls, type SortConfig } from '@/components/database/SortControls';
 import { useTableData } from '@/hooks/useTableData';
-import { AIAssistantPanel } from '@/components/ai/AIAssistantPanel';
+import { ConversationAIPanel } from '@/components/ai/ConversationAIPanel';
 import { CommentsPanel } from '@/components/collaboration/CommentsPanel';
 import { ActivityFeed } from '@/components/collaboration/ActivityFeed';
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
@@ -433,11 +433,13 @@ export default function DatabaseView() {
         )}
 
         {/* AI Assistant Panel */}
-        <AIAssistantPanel
-          open={showAIAssistant}
-          onOpenChange={setShowAIAssistant}
-          databaseId={databaseId}
-        />
+        {projectId && (
+          <ConversationAIPanel
+            open={showAIAssistant}
+            onOpenChange={setShowAIAssistant}
+            projectId={projectId}
+          />
+        )}
 
         {/* Collaboration Panel */}
         <Sheet open={showCollabPanel} onOpenChange={setShowCollabPanel}>
