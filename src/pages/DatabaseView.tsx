@@ -14,6 +14,7 @@ import { PaginationControls } from '@/components/database/PaginationControls';
 import { FilterBuilder, type Filter } from '@/components/database/FilterBuilder';
 import { SortControls, type SortConfig } from '@/components/database/SortControls';
 import { useTableData } from '@/hooks/useTableData';
+import { useViewPreferences } from '@/hooks/useViewPreferences';
 import { ConversationAIPanel } from '@/components/ai/ConversationAIPanel';
 import { CommentsPanel } from '@/components/collaboration/CommentsPanel';
 import { ActivityFeed } from '@/components/collaboration/ActivityFeed';
@@ -38,11 +39,29 @@ export default function DatabaseView() {
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [showCollabPanel, setShowCollabPanel] = useState(false);
 
-  // Pagination, Filters & Sorting state
+  // Load view preferences (filters, sort, pageSize are auto-restored)
+  const { 
+    preferences, 
+    loading: preferencesLoading,
+    updateFilters,
+    updateSort,
+    updatePageSize 
+  } = useViewPreferences(databaseId || '');
+
+  // Pagination, Filters & Sorting state - initialize from preferences
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
-  const [filters, setFilters] = useState<Filter[]>([]);
-  const [sort, setSort] = useState<SortConfig>({ column: null, direction: 'asc' });
+  const [pageSize, setPageSize] = useState(preferences.pageSize);
+  const [filters, setFilters] = useState<Filter[]>(preferences.filters);
+  const [sort, setSort] = useState<SortConfig>(preferences.sort);
+
+  // Update local state when preferences load
+  useEffect(() => {
+    if (!preferencesLoading) {
+      setPageSize(preferences.pageSize);
+      setFilters(preferences.filters);
+      setSort(preferences.sort);
+    }
+  }, [preferencesLoading, preferences]);
 
   // Use new hook for data fetching with filters & sorting
   const { data: tableData, totalCount, loading: dataLoading, refresh } = useTableData({
@@ -327,7 +346,10 @@ export default function DatabaseView() {
               <SortControls
                 columns={schemas.map(s => ({ name: s.column_name, type: s.column_type }))}
                 sort={sort}
-                onChange={setSort}
+                onChange={(newSort) => {
+                  setSort(newSort);
+                  updateSort(newSort);
+                }}
               />
             </div>
 
@@ -339,6 +361,7 @@ export default function DatabaseView() {
               onPageChange={(p) => setPage(p + 1)}
               onPageSizeChange={(newSize) => {
                 setPageSize(newSize);
+                updatePageSize(newSize);
                 setPage(1);
               }}
             />
@@ -350,7 +373,10 @@ export default function DatabaseView() {
                 <FilterBuilder
                   columns={schemas.map(s => ({ name: s.column_name, type: s.column_type }))}
                   filters={filters}
-                  onChange={setFilters}
+                  onChange={(newFilters) => {
+                    setFilters(newFilters);
+                    updateFilters(newFilters);
+                  }}
                 />
               </div>
             </CollapsibleContent>

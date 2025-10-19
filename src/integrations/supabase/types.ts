@@ -1330,6 +1330,53 @@ export type Database = {
           },
         ]
       }
+      view_preferences: {
+        Row: {
+          created_at: string
+          database_id: string
+          filters: Json | null
+          id: string
+          page_size: number | null
+          sort: Json | null
+          updated_at: string
+          user_id: string
+          view_type: string
+          visible_columns: Json | null
+        }
+        Insert: {
+          created_at?: string
+          database_id: string
+          filters?: Json | null
+          id?: string
+          page_size?: number | null
+          sort?: Json | null
+          updated_at?: string
+          user_id: string
+          view_type?: string
+          visible_columns?: Json | null
+        }
+        Update: {
+          created_at?: string
+          database_id?: string
+          filters?: Json | null
+          id?: string
+          page_size?: number | null
+          sort?: Json | null
+          updated_at?: string
+          user_id?: string
+          view_type?: string
+          visible_columns?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "view_preferences_database_id_fkey"
+            columns: ["database_id"]
+            isOneToOne: false
+            referencedRelation: "databases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
