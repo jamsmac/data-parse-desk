@@ -1,5 +1,5 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -37,7 +37,7 @@ interface CompositeViewConfig {
   custom_columns?: CustomColumnConfig[];
 }
 
-Deno.serve(async (req) => {
+serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -108,7 +108,7 @@ Deno.serve(async (req) => {
         throw new Error(`Invalid SQL: ${testResult.error.message}`);
       }
     } catch (error) {
-      throw new Error(`Query validation failed: ${error.message}`);
+      throw new Error(`Query validation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
     // Create composite view

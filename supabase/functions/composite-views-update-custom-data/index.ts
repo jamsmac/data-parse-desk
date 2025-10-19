@@ -1,12 +1,12 @@
-import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-Deno.serve(async (req) => {
+serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
     // Verify permissions
     const { data: view, error: viewError } = await supabase
       .from('composite_views')
-      .select('project_id, projects!inner(user_id)')
+      .select('project_id')
       .eq('id', composite_view_id)
       .single();
 
@@ -45,7 +45,14 @@ Deno.serve(async (req) => {
       throw new Error('Composite view not found');
     }
 
-    const isOwner = view.projects.user_id === user.id;
+    // Check if user is owner of the project
+    const { data: project } = await supabase
+      .from('projects')
+      .select('user_id')
+      .eq('id', view.project_id)
+      .single();
+
+    const isOwner = project?.user_id === user.id;
     const { data: member } = await supabase
       .from('project_members')
       .select('role')
