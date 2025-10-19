@@ -3,6 +3,9 @@ project_id = "puavudiivxuknvtbnotv"
 [functions.ai-orchestrator]
 verify_jwt = true
 
+[functions.telegram-generate-link-code]
+verify_jwt = true
+
 [functions.generate-report]
 verify_jwt = true
 
@@ -31,4 +34,22 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.create-checkout]
+verify_jwt = true
+
+[functions.composite-views-create]
+verify_jwt = true
+
+[functions.composite-views-query]
+verify_jwt = true
+
+[functions.composite-views-update-custom-data]
+verify_jwt = true
+
+[functions.ai-analyze-schema]
+verify_jwt = true
+
+[functions.ai-create-schema]
+verify_jwt = true
+
+[functions.send-notification]
 verify_jwt = true
