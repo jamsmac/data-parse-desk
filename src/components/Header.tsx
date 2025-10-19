@@ -20,6 +20,7 @@ import {
   Bell,
   Settings,
   Sparkles,
+  Package,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from './ui/badge';
@@ -69,6 +70,11 @@ export function Header() {
       name: 'Отчёты',
       path: '/reports',
       icon: FileText,
+    },
+    {
+      name: 'Маркетплейс',
+      path: '/marketplace',
+      icon: Package,
     },
   ];
 
