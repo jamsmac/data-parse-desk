@@ -21,6 +21,9 @@ const Analytics = lazy(() => import("./pages/Analytics"));
 const Reports = lazy(() => import("./pages/Reports"));
 const ProfilePage = lazy(() => import("./pages/ProfilePage"));
 const Settings = lazy(() => import("./pages/Settings"));
+const Integrations = lazy(() => import("./pages/Integrations"));
+const AdvancedAnalytics = lazy(() => import("./pages/AdvancedAnalytics"));
+const InstallPWA = lazy(() => import("./pages/InstallPWA"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading component for lazy-loaded pages
@@ -55,6 +58,7 @@ const App = () => (
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/install" element={<Suspense fallback={<PageLoader />}><InstallPWA /></Suspense>} />
 
               {/* Protected routes - All lazy loaded for optimal bundle size */}
               <Route path="/" element={<Navigate to="/projects" replace />} />
@@ -140,6 +144,30 @@ const App = () => (
                     element={
                       <Suspense fallback={<PageLoader />}>
                         <Settings />
+                      </Suspense>
+                    }
+                  />
+                }
+              />
+              <Route
+                path="/integrations"
+                element={
+                  <ProtectedRoute
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <Integrations />
+                      </Suspense>
+                    }
+                  />
+                }
+              />
+              <Route
+                path="/advanced-analytics"
+                element={
+                  <ProtectedRoute
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <AdvancedAnalytics />
                       </Suspense>
                     }
                   />
