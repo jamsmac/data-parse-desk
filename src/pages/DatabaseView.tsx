@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Trash2, Plus, Filter as FilterIcon, Sparkles, MessageSquare, History } from 'lucide-react';
+import { ArrowLeft, Upload, Trash2, Plus, Filter as FilterIcon, Sparkles, MessageSquare, History, FileText } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -270,6 +270,14 @@ export default function DatabaseView() {
               >
                 <MessageSquare className="mr-2 h-4 w-4" />
                 Активность
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(`/projects/${projectId}/database/${databaseId}/import-history`)}
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                История импортов
               </Button>
               <ExportButton
                 data={tableData}

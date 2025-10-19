@@ -24,6 +24,8 @@ const Settings = lazy(() => import("./pages/Settings"));
 const Integrations = lazy(() => import("./pages/Integrations"));
 const AdvancedAnalytics = lazy(() => import("./pages/AdvancedAnalytics"));
 const InstallPWA = lazy(() => import("./pages/InstallPWA"));
+const ImportHistory = lazy(() => import("./pages/ImportHistory"));
+const TemplateMarketplace = lazy(() => import("./pages/TemplateMarketplace"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading component for lazy-loaded pages
@@ -168,6 +170,30 @@ const App = () => (
                     element={
                       <Suspense fallback={<PageLoader />}>
                         <AdvancedAnalytics />
+                      </Suspense>
+                    }
+                  />
+                }
+              />
+              <Route
+                path="/projects/:projectId/database/:databaseId/import-history"
+                element={
+                  <ProtectedRoute
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <ImportHistory />
+                      </Suspense>
+                    }
+                  />
+                }
+              />
+              <Route
+                path="/marketplace"
+                element={
+                  <ProtectedRoute
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <TemplateMarketplace />
                       </Suspense>
                     }
                   />
