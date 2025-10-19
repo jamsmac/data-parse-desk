@@ -180,7 +180,9 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
 
         const existingRows = existingData || [];
 
-        for (const row of parseResult.data) {
+        for (let rowIndex = 0; rowIndex < parseResult.data.length; rowIndex++) {
+          const row = parseResult.data[rowIndex];
+          
           // Check for duplicates
           const isDuplicate = existingRows.some(existing => 
             JSON.stringify(existing.data) === JSON.stringify(row)
@@ -223,15 +225,18 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
 
           rowsImported++;
 
-          // Create cell metadata for tracking
-          for (const [columnName, value] of Object.entries(row)) {
-            await supabase.from('cell_metadata').insert({
-              database_id: databaseId,
-              row_id: insertedRow.id,
-              column_name: columnName,
-              source_file_id: fileData.id,
-              imported_by: user.id,
-            });
+          // Create cell metadata for tracking (batch insert for performance)
+          const cellMetadata = Object.keys(row).map(columnName => ({
+            database_id: databaseId,
+            row_id: insertedRow.id,
+            column_name: columnName,
+            source_file_id: fileData.id,
+            source_row_number: rowIndex + 2, // +2 because: +1 for header row, +1 for 1-based indexing
+            imported_by: user.id,
+          }));
+
+          if (cellMetadata.length > 0) {
+            await supabase.from('cell_metadata').insert(cellMetadata);
           }
         }
 
