@@ -82,14 +82,13 @@ serve(async (req) => {
           });
         }
 
-        // Find user by link code
-        const { data: metadata } = await supabaseClient
+        // Find user by link code - look through all users' codes
+        const { data: allCodes, error: codesError } = await supabaseClient
           .from('database_metadata')
           .select('user_id, value')
-          .eq('key', 'telegram_link_code')
-          .single();
+          .eq('key', 'telegram_link_code');
 
-        if (!metadata) {
+        if (codesError || !allCodes || allCodes.length === 0) {
           await sendTelegramMessage(BOT_TOKEN, chat.id, 
             '❌ Код не найден. Сгенерируйте новый код в настройках приложения.'
           );
@@ -98,21 +97,36 @@ serve(async (req) => {
           });
         }
 
-        const linkData = JSON.parse(metadata.value);
-        const expiresAt = new Date(linkData.expires_at);
-
-        if (linkData.code !== code) {
-          await sendTelegramMessage(BOT_TOKEN, chat.id, 
-            '❌ Неверный код. Проверьте код в настройках приложения.'
-          );
-          return new Response(JSON.stringify({ ok: true }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
+        // Check each code
+        let foundUserId: string | null = null;
+        for (const metadata of allCodes) {
+          try {
+            const codeData = JSON.parse(metadata.value as string);
+            
+            // Check if code matches
+            if (codeData.code === code) {
+              // Check if not expired
+              const expiresAt = new Date(codeData.expires_at);
+              if (expiresAt < new Date()) {
+                await sendTelegramMessage(BOT_TOKEN, chat.id, 
+                  '❌ Код истёк. Сгенерируйте новый код (действителен 10 минут).'
+                );
+                return new Response(JSON.stringify({ ok: true }), {
+                  headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                });
+              }
+              
+              foundUserId = metadata.user_id;
+              break;
+            }
+          } catch (e) {
+            console.error('Error parsing code data:', e);
+          }
         }
 
-        if (new Date() > expiresAt) {
+        if (!foundUserId) {
           await sendTelegramMessage(BOT_TOKEN, chat.id, 
-            '❌ Код истек. Сгенерируйте новый код в настройках приложения.'
+            '❌ Неверный код. Проверьте правильность ввода.'
           );
           return new Response(JSON.stringify({ ok: true }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -123,7 +137,7 @@ serve(async (req) => {
         const { error: linkError } = await supabaseClient
           .from('telegram_accounts')
           .insert({
-            user_id: metadata.user_id,
+            user_id: foundUserId,
             telegram_id: from.id,
             telegram_username: from.username,
             first_name: from.first_name,
@@ -145,7 +159,7 @@ serve(async (req) => {
         await supabaseClient
           .from('database_metadata')
           .delete()
-          .eq('user_id', metadata.user_id)
+          .eq('user_id', foundUserId)
           .eq('key', 'telegram_link_code');
 
         await sendTelegramMessage(BOT_TOKEN, chat.id, 
