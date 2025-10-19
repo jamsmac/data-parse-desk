@@ -56,10 +56,107 @@ serve(async (req) => {
         .eq('is_active', true)
         .single();
 
-      if (!account) {
-        // Send welcome message
+      // Handle /link command for new users
+      if (!account && text?.startsWith('/link ')) {
+        const code = text.split(' ')[1]?.trim();
+        if (!code || code.length !== 6) {
+          await sendTelegramMessage(BOT_TOKEN, chat.id, 
+            '❌ Неверный формат. Используйте: /link 123456'
+          );
+          return new Response(JSON.stringify({ ok: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Find user by link code
+        const { data: metadata } = await supabaseClient
+          .from('database_metadata')
+          .select('user_id, value')
+          .eq('key', 'telegram_link_code')
+          .single();
+
+        if (!metadata) {
+          await sendTelegramMessage(BOT_TOKEN, chat.id, 
+            '❌ Код не найден. Сгенерируйте новый код в настройках приложения.'
+          );
+          return new Response(JSON.stringify({ ok: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        const linkData = JSON.parse(metadata.value);
+        const expiresAt = new Date(linkData.expires_at);
+
+        if (linkData.code !== code) {
+          await sendTelegramMessage(BOT_TOKEN, chat.id, 
+            '❌ Неверный код. Проверьте код в настройках приложения.'
+          );
+          return new Response(JSON.stringify({ ok: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        if (new Date() > expiresAt) {
+          await sendTelegramMessage(BOT_TOKEN, chat.id, 
+            '❌ Код истек. Сгенерируйте новый код в настройках приложения.'
+          );
+          return new Response(JSON.stringify({ ok: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Link account
+        const { error: linkError } = await supabaseClient
+          .from('telegram_accounts')
+          .insert({
+            user_id: metadata.user_id,
+            telegram_id: from.id,
+            telegram_username: from.username,
+            first_name: from.first_name,
+            last_name: from.last_name,
+            is_active: true,
+          });
+
+        if (linkError) {
+          console.error('Error linking account:', linkError);
+          await sendTelegramMessage(BOT_TOKEN, chat.id, 
+            '❌ Ошибка подключения. Попробуйте позже.'
+          );
+          return new Response(JSON.stringify({ ok: true }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Delete used link code
+        await supabaseClient
+          .from('database_metadata')
+          .delete()
+          .eq('user_id', metadata.user_id)
+          .eq('key', 'telegram_link_code');
+
         await sendTelegramMessage(BOT_TOKEN, chat.id, 
-          'Привет! Для начала работы подключите ваш аккаунт через настройки приложения DATA PARSE DESK.'
+          `✅ Аккаунт успешно подключен!\n\n` +
+          `Доступные команды:\n` +
+          `/projects - список проектов\n` +
+          `/checklist - мои чеклисты\n` +
+          `/view - просмотр данных\n` +
+          `/stats - статистика\n` +
+          `/help - помощь`
+        );
+
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (!account) {
+        // Send welcome message for unlinked users
+        await sendTelegramMessage(BOT_TOKEN, chat.id, 
+          '👋 Привет! Для начала работы:\n\n' +
+          '1. Откройте DATA PARSE DESK\n' +
+          '2. Перейдите в Настройки → Интеграции\n' +
+          '3. Сгенерируйте код подключения\n' +
+          '4. Отправьте мне команду: /link [код]'
         );
         return new Response(JSON.stringify({ ok: true }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
