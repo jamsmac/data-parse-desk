@@ -113,33 +113,17 @@ export function ConversationAIPanel({ open, onOpenChange, projectId }: Conversat
         setActiveConversationId(convId);
       }
 
-      // Save user message
-      await supabase.from('ai_messages').insert({
-        conversation_id: convId,
-        role: 'user',
-        content: message,
-      });
-
-      // Call AI orchestrator
+      // Call AI orchestrator with correct parameters
       const { data, error } = await supabase.functions.invoke('ai-orchestrator', {
         body: {
-          agent_type: 'analytics_advisor',
-          input_data: {
-            message,
-            conversation_id: convId,
-            project_id: projectId,
-          },
+          conversation_id: convId,
+          message: message,
+          project_id: projectId,
+          database_id: null, // Optional, can be set based on context
         },
       });
 
       if (error) throw error;
-
-      // Save assistant response
-      await supabase.from('ai_messages').insert({
-        conversation_id: convId,
-        role: 'assistant',
-        content: data.output?.response || 'Получен ответ от AI',
-      });
 
       // Update conversation title if first message
       const { count } = await supabase
@@ -148,7 +132,6 @@ export function ConversationAIPanel({ open, onOpenChange, projectId }: Conversat
         .eq('conversation_id', convId);
 
       if (count === 2) {
-        // First exchange complete, generate title
         await supabase
           .from('ai_conversations')
           .update({
