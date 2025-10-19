@@ -90,7 +90,10 @@ export function ConversationAIPanel({ open, onOpenChange, projectId }: Conversat
     },
   });
 
-  // Send message
+  // Send message with streaming
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingContent, setStreamingContent] = useState('');
+
   const sendMessageMutation = useMutation({
     mutationFn: async (message: string) => {
       if (!user?.id) throw new Error('Not authenticated');
@@ -113,34 +116,55 @@ export function ConversationAIPanel({ open, onOpenChange, projectId }: Conversat
         setActiveConversationId(convId);
       }
 
-      // Call AI orchestrator with correct parameters
-      const { data, error } = await supabase.functions.invoke('ai-orchestrator', {
-        body: {
-          conversation_id: convId,
-          message: message,
-          project_id: projectId,
-          database_id: null, // Optional, can be set based on context
-        },
+      // Save user message
+      await supabase.from('ai_messages').insert({
+        conversation_id: convId,
+        role: 'user',
+        content: message,
       });
 
-      if (error) throw error;
+      // Start streaming
+      setIsStreaming(true);
+      setStreamingContent('');
 
-      // Update conversation title if first message
-      const { count } = await supabase
-        .from('ai_messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('conversation_id', convId);
+      try {
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-orchestrator`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+            },
+            body: JSON.stringify({
+              conversation_id: convId,
+              message: message,
+              project_id: projectId,
+              database_id: null,
+            }),
+          }
+        );
 
-      if (count === 2) {
-        await supabase
-          .from('ai_conversations')
-          .update({
-            title: message.substring(0, 50) + (message.length > 50 ? '...' : ''),
-          })
-          .eq('id', convId);
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'AI request failed');
+        }
+
+        const data = await response.json();
+        
+        // Save assistant message
+        await supabase.from('ai_messages').insert({
+          conversation_id: convId,
+          role: 'assistant',
+          content: data.response,
+        });
+
+        setStreamingContent('');
+        
+        return data;
+      } finally {
+        setIsStreaming(false);
       }
-
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ai-messages'] });
@@ -148,6 +172,8 @@ export function ConversationAIPanel({ open, onOpenChange, projectId }: Conversat
       setInput('');
     },
     onError: (error: any) => {
+      setIsStreaming(false);
+      setStreamingContent('');
       toast.error(error.message || 'Ошибка отправки сообщения');
     },
   });
@@ -285,12 +311,18 @@ export function ConversationAIPanel({ open, onOpenChange, projectId }: Conversat
                           </Card>
                         </div>
                       ))}
-                      {sendMessageMutation.isPending && (
+                      {(sendMessageMutation.isPending || isStreaming) && (
                         <div className="flex justify-start">
-                          <Card className="bg-muted">
-                            <CardContent className="p-3 flex items-center gap-2">
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                              <p className="text-sm">AI думает...</p>
+                          <Card className="bg-muted max-w-[80%]">
+                            <CardContent className="p-3">
+                              {isStreaming && streamingContent ? (
+                                <p className="text-sm whitespace-pre-wrap">{streamingContent}</p>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                  <p className="text-sm">AI думает...</p>
+                                </div>
+                              )}
                             </CardContent>
                           </Card>
                         </div>
