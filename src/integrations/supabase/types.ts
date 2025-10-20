@@ -133,6 +133,56 @@ export type Database = {
           },
         ]
       }
+      ai_insights: {
+        Row: {
+          created_at: string
+          data: Json
+          description: string
+          expires_at: string | null
+          id: string
+          insight_type: string
+          is_read: boolean | null
+          project_id: string | null
+          severity: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          description: string
+          expires_at?: string | null
+          id?: string
+          insight_type: string
+          is_read?: boolean | null
+          project_id?: string | null
+          severity?: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          description?: string
+          expires_at?: string | null
+          id?: string
+          insight_type?: string
+          is_read?: boolean | null
+          project_id?: string | null
+          severity?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_insights_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_messages: {
         Row: {
           content: string
