@@ -57,23 +57,20 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `Ты - помощник для работы с базами данных DATA PARSE DESK. ${context}
+            content: `Ты - AI ассистент для DATA PARSE DESK. ${context}
             
-Преобразуй запрос пользователя в структурированный ответ с действиями.
-Доступные действия:
-- query_data: запрос данных из базы
-- create_record: создание новой записи
-- update_record: обновление записи
-- get_stats: получение статистики
-- list_databases: список баз данных
-- help: справка
+Твоя задача - понять natural language запросы и преобразовать их в структурированные действия.
 
-Отвечай ТОЛЬКО в формате JSON:
-{
-  "action": "название_действия",
-  "params": {...},
-  "response": "понятное объяснение для пользователя"
-}`
+Примеры запросов:
+- "Покажи последние 10 заказов" → query_data
+- "Сколько заказов сегодня?" → get_stats  
+- "Создай новый заказ на сумму 5000" → create_record
+- "Список всех баз данных" → list_databases
+- "Обнови статус заказа #123 на 'завершен'" → update_record
+- "Какая средняя сумма заказа?" → aggregate_data
+- "Покажи график продаж за месяц" → create_chart
+
+Отвечай ТОЛЬКО в формате JSON с tool call.`
           },
           {
             role: 'user',
@@ -84,22 +81,60 @@ serve(async (req) => {
           {
             type: 'function',
             function: {
-              name: 'process_query',
-              description: 'Process natural language database query',
+              name: 'process_nl_query',
+              description: 'Process natural language database query and determine action',
               parameters: {
                 type: 'object',
                 properties: {
                   action: {
                     type: 'string',
-                    enum: ['query_data', 'create_record', 'update_record', 'get_stats', 'list_databases', 'help']
+                    enum: [
+                      'query_data',
+                      'create_record',
+                      'update_record',
+                      'get_stats',
+                      'list_databases',
+                      'aggregate_data',
+                      'create_chart',
+                      'help'
+                    ],
+                    description: 'The action to perform'
                   },
                   params: {
                     type: 'object',
-                    description: 'Parameters for the action'
+                    properties: {
+                      database_name: { type: 'string', description: 'Database name if mentioned' },
+                      limit: { type: 'number', description: 'Number of results to return' },
+                      filters: { type: 'object', description: 'Filters to apply' },
+                      column: { type: 'string', description: 'Column name for aggregation' },
+                      operation: { 
+                        type: 'string',
+                        enum: ['SUM', 'AVG', 'COUNT', 'MIN', 'MAX'],
+                        description: 'Aggregation operation'
+                      },
+                      chart_type: {
+                        type: 'string',
+                        enum: ['line', 'bar', 'pie', 'area'],
+                        description: 'Chart type'
+                      },
+                      time_period: { type: 'string', description: 'Time period for data' },
+                      record_data: { type: 'object', description: 'Data for new record' },
+                      record_id: { type: 'string', description: 'ID of record to update' },
+                      updates: { type: 'object', description: 'Fields to update' },
+                    },
+                    additionalProperties: true
+                  },
+                  sql_hint: {
+                    type: 'string',
+                    description: 'SQL-like representation of the query for debugging'
                   },
                   response: {
                     type: 'string',
-                    description: 'User-friendly explanation'
+                    description: 'User-friendly explanation of what will be done'
+                  },
+                  requires_database: {
+                    type: 'boolean',
+                    description: 'Whether this action requires selecting a database'
                   }
                 },
                 required: ['action', 'response']
@@ -107,18 +142,26 @@ serve(async (req) => {
             }
           }
         ],
-        tool_choice: { type: 'function', function: { name: 'process_query' } }
+        tool_choice: { type: 'function', function: { name: 'process_nl_query' } }
       }),
     });
 
     if (!aiResponse.ok) {
       const errorText = await aiResponse.text();
       console.error('AI API error:', aiResponse.status, errorText);
+      
+      if (aiResponse.status === 429) {
+        throw new Error('Rate limit exceeded. Please try again in a moment.');
+      }
+      if (aiResponse.status === 402) {
+        throw new Error('Insufficient AI credits. Please top up your credits.');
+      }
+      
       throw new Error(`AI API error: ${aiResponse.status}`);
     }
 
     const aiData = await aiResponse.json();
-    console.log('AI response:', aiData);
+    console.log('AI response:', JSON.stringify(aiData, null, 2));
 
     // Извлекаем результат из tool call
     const toolCall = aiData.choices[0]?.message?.tool_calls?.[0];
@@ -126,36 +169,98 @@ serve(async (req) => {
       return new Response(
         JSON.stringify({
           action: 'help',
-          response: 'Извините, не удалось понять запрос. Попробуйте сформулировать иначе.',
+          response: 'Извините, не удалось понять запрос. Попробуйте переформулировать или используйте команды:\n\n' +
+                    '/projects - список проектов\n' +
+                    '/checklist - ваши чеклисты\n' +
+                    '/stats - статистика\n' +
+                    '/help - помощь',
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     const result = JSON.parse(toolCall.function.arguments);
+    console.log('Parsed result:', result);
 
-    // Выполняем действие
+    // Выполняем действие на основе типа
     let data = null;
+    let message = result.response;
+
     if (result.action === 'list_databases' && project_id) {
       const { data: dbList } = await supabase
         .from('databases')
-        .select('id, name, description')
-        .eq('project_id', project_id);
+        .select('id, name, description, created_at')
+        .eq('project_id', project_id)
+        .order('created_at', { ascending: false });
+      
       data = dbList;
-    } else if (result.action === 'get_stats' && project_id) {
-      const { count } = await supabase
+      
+      if (dbList && dbList.length > 0) {
+        message = `📊 Найдено ${dbList.length} баз данных:\n\n` +
+          dbList.map((db, i) => `${i + 1}. ${db.name}${db.description ? ` - ${db.description}` : ''}`).join('\n');
+      } else {
+        message = 'У вас пока нет баз данных в этом проекте.';
+      }
+    } 
+    
+    else if (result.action === 'get_stats' && project_id) {
+      const { data: databases } = await supabase
         .from('databases')
-        .select('*', { count: 'exact', head: true })
+        .select('id')
         .eq('project_id', project_id);
-      data = { database_count: count };
+
+      const databaseIds = databases?.map(d => d.id) || [];
+      
+      let totalRecords = 0;
+      if (databaseIds.length > 0) {
+        const { count } = await supabase
+          .from('table_data')
+          .select('*', { count: 'exact', head: true })
+          .in('database_id', databaseIds);
+        totalRecords = count || 0;
+      }
+
+      const { data: compositeViews } = await supabase
+        .from('composite_views')
+        .select('id')
+        .eq('project_id', project_id);
+
+      data = {
+        database_count: databases?.length || 0,
+        record_count: totalRecords,
+        composite_view_count: compositeViews?.length || 0
+      };
+      
+      message = `📈 Статистика проекта:\n\n` +
+        `📊 Баз данных: ${data.database_count}\n` +
+        `📝 Записей: ${data.record_count}\n` +
+        `🔗 Composite Views: ${data.composite_view_count}`;
+    }
+    
+    else if (result.action === 'aggregate_data' && result.params?.column && result.params?.operation) {
+      message = `📊 Для выполнения агрегации "${result.params.operation}" по колонке "${result.params.column}" используйте веб-интерфейс или укажите базу данных.`;
+    }
+    
+    else if (result.action === 'create_chart') {
+      message = `📈 Для создания графика используйте веб-интерфейс в разделе Analytics.\n\n` +
+        `Тип графика: ${result.params?.chart_type || 'bar'}\n` +
+        `Период: ${result.params?.time_period || 'текущий месяц'}`;
+    }
+    
+    else if (result.action === 'query_data') {
+      if (result.requires_database) {
+        message = `🔍 ${result.response}\n\nДля выполнения запроса укажите базу данных или используйте веб-интерфейс.`;
+      }
     }
 
     return new Response(
       JSON.stringify({
         action: result.action,
-        params: result.params,
-        response: result.response,
+        params: result.params || {},
+        sql_hint: result.sql_hint,
+        response: message,
         data,
+        requires_database: result.requires_database,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
