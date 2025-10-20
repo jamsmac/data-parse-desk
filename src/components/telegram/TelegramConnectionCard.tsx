@@ -2,11 +2,20 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MessageCircle, CheckCircle2, XCircle, ExternalLink, Copy, RefreshCw } from 'lucide-react';
+import { MessageCircle, CheckCircle2, XCircle, Copy, RefreshCw, Settings } from 'lucide-react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { TelegramNotificationSettings } from './TelegramNotificationSettings';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 interface TelegramConnectionCardProps {
   isConnected: boolean;
@@ -130,9 +139,28 @@ export const TelegramConnectionCard = ({
               </div>
             </div>
 
-            <Button variant="destructive" size="sm" onClick={onDisconnect} className="w-full">
-              Отключить Telegram
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="destructive" size="sm" onClick={onDisconnect} className="flex-1">
+                Отключить Telegram
+              </Button>
+              
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle>Настройки Telegram уведомлений</DialogTitle>
+                    <DialogDescription>
+                      Управляйте типами уведомлений, которые вы получаете в Telegram
+                    </DialogDescription>
+                  </DialogHeader>
+                  <TelegramNotificationSettings />
+                </DialogContent>
+              </Dialog>
+            </div>
           </>
         ) : (
           <>
