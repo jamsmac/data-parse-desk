@@ -81,6 +81,7 @@ export default function DatabaseView() {
     if (!databaseId || !user) return;
 
     try {
+      setLoading(true);
       const { data, error } = await supabase.rpc('get_database', {
         p_id: databaseId,
       });
@@ -93,6 +94,8 @@ export default function DatabaseView() {
         title: 'Ошибка',
         description: error.message,
       });
+    } finally {
+      setLoading(false);
     }
   };
 
