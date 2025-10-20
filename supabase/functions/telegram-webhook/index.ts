@@ -15,6 +15,7 @@ interface TelegramUpdate {
     text?: string;
     photo?: Array<{ file_id: string; file_size: number }>;
     document?: { file_id: string; file_name: string; mime_type: string; file_size: number };
+    voice?: { file_id: string; duration: number; mime_type?: string; file_size?: number };
   };
   callback_query?: {
     id: string;
@@ -52,6 +53,115 @@ serve(async (req) => {
     }
 
     const message = update.message;
+    
+    // Handle voice messages
+    if (message?.voice) {
+      const telegramId = message.from.id;
+      const chatId = message.chat.id;
+      
+      const supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
+
+      // Check if user is linked
+      const { data: account } = await supabaseClient
+        .from('telegram_accounts')
+        .select('*')
+        .eq('telegram_id', telegramId)
+        .eq('is_active', true)
+        .single();
+
+      if (!account) {
+        await sendTelegramMessage(BOT_TOKEN, chatId,
+          '❌ Ваш аккаунт не подключен. Используйте /link для подключения.'
+        );
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      await sendTelegramMessage(BOT_TOKEN, chatId,
+        `🎤 Распознаю голосовое сообщение (${message.voice.duration}с)...`
+      );
+
+      try {
+        // Get file from Telegram
+        const fileResponse = await fetch(
+          `https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${message.voice.file_id}`
+        );
+        const fileData = await fileResponse.json();
+
+        if (!fileData.ok || !fileData.result?.file_path) {
+          throw new Error('Failed to get voice file from Telegram');
+        }
+
+        // Download voice file
+        const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${fileData.result.file_path}`;
+        const downloadResponse = await fetch(fileUrl);
+        
+        if (!downloadResponse.ok) {
+          throw new Error('Failed to download voice file');
+        }
+
+        const audioBuffer = await downloadResponse.arrayBuffer();
+        const audioBase64 = btoa(
+          new Uint8Array(audioBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+        );
+
+        // Call process-voice function for transcription
+        const { data: transcriptionData, error: transcriptionError } = await supabaseClient.functions.invoke(
+          'process-voice',
+          {
+            body: {
+              audioData: audioBase64,
+              format: 'ogg' // Telegram voice messages are in OGG format
+            }
+          }
+        );
+
+        if (transcriptionError || !transcriptionData?.transcription) {
+          throw new Error('Failed to transcribe voice message');
+        }
+
+        const transcribedText = transcriptionData.transcription;
+        
+        await sendTelegramMessage(BOT_TOKEN, chatId,
+          `📝 Распознанный текст:\n"${transcribedText}"\n\n⏳ Обрабатываю команду...`
+        );
+
+        // Process transcribed text as a natural language query
+        const { data: nlpData, error: nlpError } = await supabaseClient.functions.invoke(
+          'telegram-natural-language',
+          {
+            body: {
+              user_id: account.user_id,
+              query: transcribedText,
+              telegram_id: telegramId
+            }
+          }
+        );
+
+        if (nlpError) {
+          throw new Error('Failed to process natural language query');
+        }
+
+        // Send the result back
+        const resultMessage = nlpData?.message || '✅ Команда выполнена';
+        await sendTelegramMessage(BOT_TOKEN, chatId, resultMessage);
+
+      } catch (error) {
+        console.error('Voice processing error:', error);
+        await sendTelegramMessage(BOT_TOKEN, chatId,
+          `❌ Ошибка обработки голоса: ${error instanceof Error ? error.message : 'Unknown error'}`
+        );
+      }
+
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    
     if (!message || !message.text) {
       // Handle file uploads (photos and documents)
       if (message?.photo || message?.document) {
