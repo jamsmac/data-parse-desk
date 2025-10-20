@@ -28,14 +28,14 @@ export function SortControls({ columns, sort, onChange }: SortControlsProps) {
   return (
     <div className="flex items-center gap-2">
       <Select
-        value={sort.column || ''}
-        onValueChange={(value) => onChange({ ...sort, column: value || null })}
+        value={sort.column || '__none__'}
+        onValueChange={(value) => onChange({ ...sort, column: value === '__none__' ? null : value })}
       >
         <SelectTrigger className="w-[200px]">
           <SelectValue placeholder="Sort by column" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">No sorting</SelectItem>
+          <SelectItem value="__none__">No sorting</SelectItem>
           {columns.map((col) => (
             <SelectItem key={col.name} value={col.name}>
               {col.name}
