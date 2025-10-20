@@ -7,10 +7,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Sparkles, Send, Loader2, Plus, MessageSquare, Mic } from 'lucide-react';
+import { Sparkles, Send, Loader2, Plus, MessageSquare, Mic, BarChart3, Wrench } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import { LineChart, Line, BarChart, Bar, PieChart, Pie, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 
 interface ConversationAIPanelProps {
   open: boolean;
@@ -23,6 +24,8 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   created_at: string;
+  tool_calls?: string;
+  tool_results?: string;
 }
 
 export function ConversationAIPanel({ open, onOpenChange, projectId }: ConversationAIPanelProps) {
@@ -317,31 +320,76 @@ export function ConversationAIPanel({ open, onOpenChange, projectId }: Conversat
                             msg.role === 'user' ? 'justify-end' : 'justify-start'
                           )}
                         >
-                          <Card
-                            className={cn(
-                              'max-w-[80%]',
-                              msg.role === 'user'
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-muted'
-                            )}
-                          >
-                            <CardContent className="p-3">
-                              <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                              <p
-                                className={cn(
-                                  'text-xs mt-1',
-                                  msg.role === 'user'
-                                    ? 'text-primary-foreground/70'
-                                    : 'text-muted-foreground'
-                                )}
-                              >
-                                {new Date(msg.created_at).toLocaleTimeString('ru', {
-                                  hour: '2-digit',
-                                  minute: '2-digit',
-                                })}
-                              </p>
-                            </CardContent>
-                          </Card>
+                           <div className={cn('max-w-[80%]', msg.role === 'user' ? 'w-full' : '')}>
+                            <Card
+                              className={cn(
+                                msg.role === 'user'
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-muted'
+                              )}
+                            >
+                              <CardContent className="p-3">
+                                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                                <p
+                                  className={cn(
+                                    'text-xs mt-1',
+                                    msg.role === 'user'
+                                      ? 'text-primary-foreground/70'
+                                      : 'text-muted-foreground'
+                                  )}
+                                >
+                                  {new Date(msg.created_at).toLocaleTimeString('ru', {
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </p>
+                              </CardContent>
+                            </Card>
+
+                            {/* Render tool results */}
+                            {msg.role === 'assistant' && msg.tool_results && (() => {
+                              try {
+                                const toolResults = JSON.parse(msg.tool_results);
+                                return (
+                                  <div className="mt-2 space-y-2">
+                                    {toolResults.map((result: any, idx: number) => {
+                                      // Render chart if tool is create_chart
+                                      if (result.tool === 'create_chart' && result.result?.chart_id) {
+                                        return (
+                                          <Card key={idx} className="bg-card border-border">
+                                            <CardContent className="p-4">
+                                              <div className="flex items-center gap-2 mb-3">
+                                                <BarChart3 className="h-4 w-4 text-primary" />
+                                                <span className="text-sm font-medium">{result.result.name}</span>
+                                              </div>
+                                              <ChartRenderer config={result.result.config} />
+                                            </CardContent>
+                                          </Card>
+                                        );
+                                      }
+
+                                      // Regular tool result display
+                                      return (
+                                        <Card key={idx} className="bg-muted/50 border-border">
+                                          <CardContent className="p-3">
+                                            <div className="flex items-center gap-2 mb-2">
+                                              <Wrench className="h-4 w-4 text-muted-foreground" />
+                                              <span className="text-sm font-medium">{result.tool}</span>
+                                            </div>
+                                            <pre className="text-xs overflow-auto max-h-32">
+                                              {JSON.stringify(result.result, null, 2)}
+                                            </pre>
+                                          </CardContent>
+                                        </Card>
+                                      );
+                                    })}
+                                  </div>
+                                );
+                              } catch (e) {
+                                return null;
+                              }
+                            })()}
+                          </div>
                         </div>
                       ))}
                       {(sendMessageMutation.isPending || isStreaming) && (
@@ -440,4 +488,161 @@ export function ConversationAIPanel({ open, onOpenChange, projectId }: Conversat
       </SheetContent>
     </Sheet>
   );
+}
+
+// Chart renderer component
+function ChartRenderer({ config }: { config: any }) {
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadChartData();
+  }, [config]);
+
+  const loadChartData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('table_data')
+        .select('data')
+        .eq('database_id', config.database_id);
+
+      if (error) throw error;
+
+      const rows = data?.map(row => row.data) || [];
+      setChartData(rows);
+    } catch (error) {
+      console.error('Error loading chart data:', error);
+      toast.error('Failed to load chart data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="h-64 flex items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!chartData.length) {
+    return (
+      <div className="h-64 flex items-center justify-center text-muted-foreground text-sm">
+        Нет данных для отображения
+      </div>
+    );
+  }
+
+  const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--chart-1))'];
+
+  if (config.type === 'line') {
+    return (
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <XAxis dataKey={config.x_column} stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
+          <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
+          <Tooltip 
+            contentStyle={{ 
+              backgroundColor: 'hsl(var(--card))',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: '8px',
+              fontSize: '12px'
+            }}
+          />
+          <Legend wrapperStyle={{ fontSize: '12px' }} />
+          <Line 
+            type="monotone" 
+            dataKey={config.y_column} 
+            stroke="hsl(var(--primary))" 
+            strokeWidth={2}
+            dot={{ fill: 'hsl(var(--primary))' }}
+          />
+        </LineChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  if (config.type === 'bar') {
+    return (
+      <ResponsiveContainer width="100%" height={300}>
+        <BarChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <XAxis dataKey={config.x_column} stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
+          <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
+          <Tooltip 
+            contentStyle={{ 
+              backgroundColor: 'hsl(var(--card))',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: '8px',
+              fontSize: '12px'
+            }}
+          />
+          <Legend wrapperStyle={{ fontSize: '12px' }} />
+          <Bar dataKey={config.y_column} fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+        </BarChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  if (config.type === 'pie') {
+    return (
+      <ResponsiveContainer width="100%" height={300}>
+        <PieChart>
+          <Pie
+            data={chartData}
+            dataKey={config.y_column}
+            nameKey={config.x_column}
+            cx="50%"
+            cy="50%"
+            outerRadius={100}
+            label
+          >
+            {chartData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip 
+            contentStyle={{ 
+              backgroundColor: 'hsl(var(--card))',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: '8px',
+              fontSize: '12px'
+            }}
+          />
+          <Legend wrapperStyle={{ fontSize: '12px' }} />
+        </PieChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  if (config.type === 'area') {
+    return (
+      <ResponsiveContainer width="100%" height={300}>
+        <AreaChart data={chartData}>
+          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+          <XAxis dataKey={config.x_column} stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
+          <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
+          <Tooltip 
+            contentStyle={{ 
+              backgroundColor: 'hsl(var(--card))',
+              border: '1px solid hsl(var(--border))',
+              borderRadius: '8px',
+              fontSize: '12px'
+            }}
+          />
+          <Legend wrapperStyle={{ fontSize: '12px' }} />
+          <Area 
+            type="monotone" 
+            dataKey={config.y_column} 
+            stroke="hsl(var(--primary))" 
+            fill="hsl(var(--primary) / 0.2)"
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    );
+  }
+
+  return null;
 }
