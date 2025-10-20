@@ -8,11 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, Upload, Clipboard, Sparkles, Database, Loader2, CheckCircle } from 'lucide-react';
+import { FileText, Upload, Clipboard, Sparkles, Database, Loader2, CheckCircle, AlertTriangle, CreditCard, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Progress } from '@/components/ui/progress';
 
 interface SchemaGeneratorDialogProps {
   open: boolean;
@@ -59,6 +61,24 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
   const [textInput, setTextInput] = useState('');
   const [fileInput, setFileInput] = useState<File | null>(null);
   const [generatedSchema, setGeneratedSchema] = useState<GeneratedSchema | null>(null);
+  const [errorDetails, setErrorDetails] = useState<{type: string; message: string} | null>(null);
+
+  // Load user credits
+  const { data: credits } = useQuery({
+    queryKey: ['user-credits', user?.id],
+    queryFn: async () => {
+      if (!user?.id) return null;
+      
+      const { data } = await supabase
+        .from('user_credits')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      return data;
+    },
+    enabled: !!user?.id && open,
+  });
 
   // Temporarily disable templates until table is created
   const templates: any[] = [];
@@ -80,19 +100,37 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
     onSuccess: (schema) => {
       setGeneratedSchema(schema);
       setStep('preview');
+      setErrorDetails(null);
       toast.success('Схема сгенерирована AI');
     },
     onError: (error: any) => {
-      if (error.message?.includes('429') || error.message?.includes('Rate limit')) {
-        toast.error('Превышен лимит запросов', {
-          description: 'Слишком много запросов. Подождите минуту и попробуйте снова.'
+      const errorMessage = error.message || '';
+      
+      if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('rate limit')) {
+        setErrorDetails({
+          type: 'rate_limit',
+          message: 'Превышен лимит запросов к AI. Пожалуйста, подождите минуту перед следующей попыткой.'
         });
-      } else if (error.message?.includes('402') || error.message?.includes('credits')) {
+        toast.error('Слишком много запросов', {
+          description: 'Превышен лимит. Подождите 60 секунд.'
+        });
+      } else if (errorMessage.includes('402') || errorMessage.toLowerCase().includes('credits') || errorMessage.toLowerCase().includes('insufficient')) {
+        const totalCredits = (credits?.free_credits || 0) + (credits?.paid_credits || 0);
+        setErrorDetails({
+          type: 'insufficient_credits',
+          message: `У вас недостаточно AI кредитов (доступно: ${totalCredits.toFixed(2)}). Для генерации схемы требуется 20 кредитов.`
+        });
         toast.error('Недостаточно кредитов', {
-          description: 'Пополните баланс AI кредитов для продолжения работы.'
+          description: 'Пополните баланс для продолжения работы.'
         });
       } else {
-        toast.error(error.message || 'Ошибка анализа');
+        setErrorDetails({
+          type: 'general',
+          message: errorMessage || 'Произошла ошибка при анализе схемы'
+        });
+        toast.error('Ошибка анализа', {
+          description: errorMessage
+        });
       }
     },
   });
@@ -136,6 +174,7 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
     setTextInput('');
     setFileInput(null);
     setGeneratedSchema(null);
+    setErrorDetails(null);
     onClose();
   };
 
@@ -177,6 +216,60 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
 
         {step === 'input' && (
           <div className="space-y-6">
+            {/* Error Alert */}
+            {errorDetails && (
+              <Alert variant={errorDetails.type === 'rate_limit' ? 'default' : 'destructive'}>
+                {errorDetails.type === 'rate_limit' && <Clock className="h-4 w-4" />}
+                {errorDetails.type === 'insufficient_credits' && <CreditCard className="h-4 w-4" />}
+                {errorDetails.type === 'general' && <AlertTriangle className="h-4 w-4" />}
+                <AlertTitle>
+                  {errorDetails.type === 'rate_limit' && 'Превышен лимит запросов'}
+                  {errorDetails.type === 'insufficient_credits' && 'Недостаточно AI кредитов'}
+                  {errorDetails.type === 'general' && 'Ошибка'}
+                </AlertTitle>
+                <AlertDescription>
+                  {errorDetails.message}
+                  {errorDetails.type === 'insufficient_credits' && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-2"
+                      onClick={() => window.open('/settings?tab=credits', '_blank')}
+                    >
+                      <CreditCard className="h-3 w-3 mr-1" />
+                      Пополнить баланс
+                    </Button>
+                  )}
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Credits Display */}
+            {credits && (
+              <Card className="bg-muted/50">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium">Доступно AI кредитов</p>
+                      <p className="text-xs text-muted-foreground">
+                        Генерация схемы: 20 кредитов
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-2xl font-bold">
+                        {((credits.free_credits || 0) + (credits.paid_credits || 0)).toFixed(2)}
+                      </p>
+                      <div className="flex gap-1 text-xs text-muted-foreground">
+                        <span>{(credits.free_credits || 0).toFixed(2)} бесплатных</span>
+                        <span>+</span>
+                        <span>{(credits.paid_credits || 0).toFixed(2)} платных</span>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Templates */}
             {templates && templates.length > 0 && (
               <div className="space-y-3">
@@ -267,37 +360,75 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
 
         {step === 'preview' && generatedSchema && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold">Сгенерированная схема</h3>
-                <p className="text-sm text-muted-foreground">
+            {/* Overall Confidence Score */}
+            <Card className="bg-muted/30">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium">Общая уверенность AI</span>
+                  <span className="text-sm font-bold">
+                    {Math.round(generatedSchema.entities.reduce((sum, e) => sum + e.confidence, 0) / generatedSchema.entities.length)}%
+                  </span>
+                </div>
+                <Progress 
+                  value={generatedSchema.entities.reduce((sum, e) => sum + e.confidence, 0) / generatedSchema.entities.length} 
+                  className="h-2"
+                />
+                <p className="text-xs text-muted-foreground mt-2">
                   {generatedSchema.entities.length} таблиц, {generatedSchema.relationships.length} связей
                 </p>
-              </div>
-              <Badge variant="outline" className="text-sm">
-                AI confidence: {Math.round(generatedSchema.entities.reduce((sum, e) => sum + e.confidence, 0) / generatedSchema.entities.length)}%
-              </Badge>
-            </div>
+              </CardContent>
+            </Card>
+
+            {/* Warnings - Show at top if present */}
+            {generatedSchema.warnings && generatedSchema.warnings.length > 0 && (
+              <Alert variant="default" className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20">
+                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                <AlertTitle className="text-yellow-700 dark:text-yellow-500">
+                  Предупреждения ({generatedSchema.warnings.length})
+                </AlertTitle>
+                <AlertDescription>
+                  <ul className="list-disc list-inside space-y-1 text-sm">
+                    {generatedSchema.warnings.map((warning, idx) => (
+                      <li key={idx} className="text-yellow-700 dark:text-yellow-400">{warning}</li>
+                    ))}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
 
             <ScrollArea className="h-[400px] border rounded-lg p-4">
               <div className="space-y-4">
                 {/* Entities */}
                 {generatedSchema.entities.map((entity, idx) => (
-                  <Card key={idx}>
+                  <Card key={idx} className={entity.confidence < 70 ? 'border-yellow-500/30' : ''}>
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Database className="h-4 w-4" />
                           <CardTitle className="text-base">{entity.name}</CardTitle>
                         </div>
-                        {entity.confidence < 80 && (
-                          <Badge variant="secondary" className="text-xs">
-                            {entity.confidence}% sure
-                          </Badge>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {entity.confidence < 70 ? (
+                            <Badge variant="destructive" className="text-xs">
+                              <AlertTriangle className="h-3 w-3 mr-1" />
+                              {entity.confidence}% низкая уверенность
+                            </Badge>
+                          ) : entity.confidence < 85 ? (
+                            <Badge variant="secondary" className="text-xs">
+                              {entity.confidence}% средняя уверенность
+                            </Badge>
+                          ) : (
+                            <Badge variant="default" className="text-xs">
+                              <CheckCircle className="h-3 w-3 mr-1" />
+                              {entity.confidence}% высокая уверенность
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                       {entity.reasoning && (
-                        <p className="text-xs text-muted-foreground mt-1">{entity.reasoning}</p>
+                        <p className="text-xs text-muted-foreground mt-1 italic">
+                          💡 {entity.reasoning}
+                        </p>
                       )}
                     </CardHeader>
                     <CardContent className="pt-0">
@@ -325,35 +456,24 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
                     <CardContent>
                       <div className="space-y-2">
                         {generatedSchema.relationships.map((rel, idx) => (
-                          <div key={idx} className="text-sm">
+                          <div key={idx} className="flex items-center gap-2 text-sm">
                             <Badge variant="outline" className="text-xs">{rel.type}</Badge>
-                            <span className="mx-2 font-mono text-xs">
+                            <span className="font-mono text-xs">
                               {rel.from} → {rel.to}
                             </span>
-                            {rel.confidence < 80 && (
-                              <Badge variant="secondary" className="text-xs ml-2">
+                            {rel.confidence < 70 ? (
+                              <Badge variant="destructive" className="text-xs">
+                                <AlertTriangle className="h-3 w-3 mr-1" />
                                 {rel.confidence}%
                               </Badge>
-                            )}
+                            ) : rel.confidence < 85 ? (
+                              <Badge variant="secondary" className="text-xs">
+                                {rel.confidence}%
+                              </Badge>
+                            ) : null}
                           </div>
                         ))}
                       </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Warnings */}
-                {generatedSchema.warnings && generatedSchema.warnings.length > 0 && (
-                  <Card className="border-yellow-500/50">
-                    <CardHeader>
-                      <CardTitle className="text-base text-yellow-600">Предупреждения</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="list-disc list-inside space-y-1">
-                        {generatedSchema.warnings.map((warning, idx) => (
-                          <li key={idx} className="text-sm text-muted-foreground">{warning}</li>
-                        ))}
-                      </ul>
                     </CardContent>
                   </Card>
                 )}
