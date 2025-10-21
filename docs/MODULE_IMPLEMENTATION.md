@@ -342,8 +342,355 @@ All AI operations use credits:
 
 ---
 
-**Status**: ✅ ALL MODULES 100% COMPLETE
+## 🎯 TIER 1 FEATURES (100% Complete)
 
-**Last Updated**: October 19, 2025
+### 1. Auto-complete для Статусов
 
-**Version**: 2.0.0
+**Статус:** ✅ 100% Complete
+**Время:** 7 часов
+**Компонент:** StatusCombobox.tsx (230 строк)
+
+**Описание:**
+Автозаполнение для статусных колонок с историей недавних использований и возможностью создания новых статусов на лету.
+
+**Функциональность:**
+- Recent suggestions (последние 7 дней)
+- Keyboard navigation (↑↓ Enter Esc)
+- Create on-the-fly (создание нового статуса)
+- Usage tracking (отслеживание использования)
+- Auto-cleanup (last 100 records)
+
+**Интеграция:**
+- CompositeViewDataTable.tsx
+- Migration: 20251021000004_create_status_usage_history.sql
+- Table: status_usage_history
+- Function: get_recent_statuses()
+
+**Зависимости:**
+```json
+{
+  "cmdk": "^1.1.1"
+}
+```
+
+---
+
+### 2. Formulas в Custom Columns
+
+**Статус:** ✅ 100% Complete
+**Время:** 12 часов
+**Компонент:** FormulaColumn.tsx (200 строк)
+**Edge Function:** evaluate-formula (270 строк)
+
+**Описание:**
+Система формул для автоматических вычислений в кастомных колонках с поддержкой 30+ функций.
+
+**Поддерживаемые функции:**
+
+**Math Functions:**
+- abs, ceil, floor, round, sqrt, pow
+- min, max, sum, avg
+
+**String Functions:**
+- upper, lower, trim, concat
+- substring, replace, length
+
+**Date Functions:**
+- now, today, year, month, day
+- dateAdd, dateDiff, formatDate
+
+**Logical Functions:**
+- if, and, or, not
+- isNull, isEmpty
+
+**Безопасность:**
+- Server-side evaluation (no eval())
+- Input validation
+- Syntax checking
+
+**Функциональность:**
+- Calculation history (last 10 calculations)
+- Recalculate button
+- Auto-recalculation on data changes
+- Audit trail (formula_calculations table)
+- Auto-cleanup (last 100 calculations)
+
+**Интеграция:**
+- CompositeViewDataTable.tsx
+- Migration: 20251021000005_formula_calculations.sql
+- Table: formula_calculations
+- Functions: get_formula_calculation_history(), recalculate_view_formulas()
+
+**Зависимости:**
+```json
+{
+  "@tanstack/react-query": "^5.83.0",
+  "date-fns": "^3.6.0"
+}
+```
+
+---
+
+### 3. Multi-step Schema Generation
+
+**Статус:** ✅ 100% Complete
+**Время:** 8 часов
+**Компоненты:** SchemaStepper, RelationshipPreview, validation.ts, useSchemaAutoSave.ts
+
+**Описание:**
+Визуальный 4-шаговый процесс генерации схем с валидацией, превью и автосохранением.
+
+**4 Steps:**
+1. **Input** - Ввод данных (text/JSON/CSV)
+2. **Preview** - Превью схемы и отношений
+3. **Edit** - Редактирование схемы
+4. **Creating** - Создание базы данных
+
+**Функциональность:**
+- Visual progress stepper
+- Real-time validation (errors + warnings)
+- Auto-save to localStorage (TTL 24 hours)
+- Restore progress after dialog close
+- Tabs for entities/relationships preview
+- Statistics dashboard (total tables, relations)
+- Color-coded relationship types
+
+**Validation Checks:**
+- Empty/short inputs (< 10 characters)
+- File size limits (< 5MB)
+- Duplicate table/column names
+- Missing PRIMARY KEY (warning)
+- Invalid naming (snake_case required)
+- Low confidence scores (< 50%)
+- Insufficient credits
+
+**Компоненты:**
+- SchemaStepper.tsx (85 строк)
+- RelationshipPreview.tsx (180 строк)
+- validation.ts (180 строк) - 4 validation functions
+- useSchemaAutoSave.ts (130 строк)
+- types.ts (40 строк)
+
+**Интеграция:**
+- SchemaGeneratorDialog.tsx (+120 строк)
+
+---
+
+## 🚀 TIER 2 FEATURES (100% Complete)
+
+### 1. File Attachments for Checklist Items
+
+**Статус:** ✅ 100% Complete
+**Время:** 11 часов
+**Компоненты:** AttachmentButton, AttachmentList
+
+**Описание:**
+Система прикрепления файлов к элементам чек-листов с валидацией, хранилищем и управлением.
+
+**Функциональность:**
+
+**Upload:**
+- File size validation (max 10MB)
+- File type whitelist (images, PDFs, docs, spreadsheets, text)
+- Loading states and error handling
+- Success notifications
+
+**Display:**
+- Attachment list per checklist item
+- File icons based on MIME type
+- Human-readable file sizes
+- Empty state handling
+
+**Download:**
+- Download from Supabase Storage
+- Original filename preservation
+- Success notifications
+
+**Delete:**
+- Coordinated cleanup (DB + Storage)
+- Confirmation and feedback
+- Error handling
+
+**Backend:**
+- Migration: 20251021000006_item_attachments.sql
+- Table: item_attachments (metadata)
+- Storage Bucket: item-attachments (private, 10MB limit)
+- Edge Functions: item-attachment-upload, item-attachment-delete
+- Database Functions: get_item_attachments(), delete_item_attachment()
+
+**Security:**
+- RLS policies (SELECT, INSERT, DELETE)
+- Storage policies (3 policies)
+- User authentication required
+- View ownership verification
+- Path sanitization
+
+**Интеграция:**
+- ChecklistColumn.tsx (+50 строк)
+- CompositeViewDataTable.tsx (+3 строк)
+
+---
+
+### 2. Voice Input Improvements
+
+**Статус:** ✅ 100% Complete
+**Компоненты:** VoiceRecorder, useVoiceRecording
+
+**Описание:**
+Улучшенная система голосового ввода с поддержкой OpenAI Whisper и Gemini AI.
+
+**Функциональность:**
+- OpenAI Whisper API (primary transcription)
+- Gemini AI fallback (если Whisper недоступен)
+- Real-time audio visualization
+- Multi-format support (WAV, MP3, WebM)
+- Recording state management
+- Error handling and retry logic
+
+**Интеграция:**
+- ConversationAIPanel.tsx
+- Voice input для AI ассистента
+- Telegram bot voice messages
+
+---
+
+### 3. Schema Version Control
+
+**Статус:** ✅ 100% Complete
+**Время:** 18 часов
+**Компоненты:** SchemaVersionHistory, VersionComparisonDialog
+
+**Описание:**
+Полноценная система контроля версий для схем баз данных с историей, сравнением и восстановлением.
+
+**Функциональность:**
+
+**Version Management:**
+- Automatic version saving on schema changes
+- Version numbering (sequential)
+- Description and metadata
+- Checksum for integrity
+- Current version marking
+
+**Comparison:**
+- Visual diff viewer (added/removed/modified tables)
+- Before/After comparison
+- Column-level changes
+- Statistics (total changes count)
+
+**Restore:**
+- Restore to previous version
+- Create new version from old (option)
+- Set as current version (option)
+- Validation before restore
+
+**Tagging:**
+- Tag important versions
+- Search by tags
+- Color-coded tags
+
+**Backend:**
+- Migration: 20251021000008_schema_version_control.sql
+- Tables: schema_versions, schema_version_tags
+- Edge Function: schema-version-restore
+- Database Functions:
+  - get_schema_version_history()
+  - calculate_schema_diff()
+  - set_current_schema_version()
+  - tag_schema_version()
+
+**Интеграция:**
+- ProjectView.tsx (Version History tab)
+- Automatic versioning on schema changes
+
+---
+
+### 4. View Types Integration (Calendar/Kanban/Gallery)
+
+**Статус:** ✅ 100% Complete
+**Время:** 7 часов
+**Компоненты:** CalendarView, KanbanView, GalleryView
+
+**Описание:**
+Интеграция трёх альтернативных типов отображения данных в DatabaseView с автоопределением колонок.
+
+**Calendar View:**
+- Auto-detects date columns
+- Event list per selected date
+- Monthly navigation
+- Statistics dashboard
+- Date highlighting for events
+- Add event button
+
+**Kanban View:**
+- Auto-detects status columns
+- Drag-and-drop cards between columns (@dnd-kit)
+- Auto-updates database on card move
+- Color-coded status columns
+- Card click handlers
+- Default columns if no status field
+
+**Gallery View:**
+- Grid layout for visual data
+- Auto-detects image columns
+- Title and description display
+- Metadata hover
+- Click to view details
+
+**Smart Column Detection:**
+- Date columns: column_type='date' OR name contains 'date'/'created'
+- Status columns: column_type='status' OR name contains 'status'
+- Title columns: name contains 'title'/'name'
+- Image columns: name contains 'image'/'photo'/'avatar'
+
+**Интеграция:**
+- DatabaseView.tsx (+98 строк)
+- View switcher (Tabs component)
+- Helper function: getKanbanColumns() (57 строк)
+
+**Зависимости:**
+```json
+{
+  "@dnd-kit/core": "^6.3.1",
+  "@dnd-kit/sortable": "^8.0.0"
+}
+```
+
+---
+
+## 🔒 SECURITY FIXES (100% Complete)
+
+### RLS Policies Security Audit
+
+**Статус:** ✅ 100% Complete
+**Дата:** 21 октября 2025
+**Migration:** 20251021000009_fix_insecure_rls_policies.sql
+
+**Проблема:**
+18 небезопасных RLS политик с `USING (true)` позволяли любому пользователю удалять/изменять чужие данные.
+
+**Решение:**
+Заменены все 18 политик на безопасные с проверкой `auth.uid()`.
+
+**Затронутые таблицы:**
+- databases (3 политики)
+- transactions (3 политики)
+- database_metadata (2 политики)
+- table_schemas (2 политики)
+- table_rows (3 политики)
+- database_relations (3 политики)
+- composite_views (2 политики)
+
+**Безопасные политики:**
+- Только владелец может просматривать/изменять
+- Члены проекта могут просматривать (с ролевой проверкой)
+- Только админы проекта могут изменять
+- Проверка membership в project_members
+
+---
+
+**Status**: ✅ ALL FEATURES 100% COMPLETE (Tier 1, Tier 2, Security)
+
+**Last Updated**: October 21, 2025
+
+**Version**: 2.1.0
