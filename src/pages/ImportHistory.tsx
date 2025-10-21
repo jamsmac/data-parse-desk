@@ -9,15 +9,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ArrowLeft, Search, FileText, CheckCircle2, XCircle, Clock, Download } from 'lucide-react';
+import { ArrowLeft, Search, FileText, CheckCircle2, XCircle, Clock, Download, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
+import { ImportDetailsDialog } from '@/components/import/ImportDetailsDialog';
 
 export default function ImportHistory() {
   const { projectId, databaseId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedImport, setSelectedImport] = useState<any>(null);
+  const [showDetailsDialog, setShowDetailsDialog] = useState(false);
 
   const { data: imports, isLoading } = useQuery({
     queryKey: ['import-history', databaseId],
@@ -82,6 +85,11 @@ export default function ImportHistory() {
     }).length,
     totalRows: imports.reduce((sum, i) => sum + (i.rows_imported || 0), 0),
   } : null;
+
+  const handleViewDetails = (importData: any) => {
+    setSelectedImport(importData);
+    setShowDetailsDialog(true);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -182,6 +190,7 @@ export default function ImportHistory() {
                     <TableHead>Дубликатов</TableHead>
                     <TableHead>Режим</TableHead>
                     <TableHead>Дата загрузки</TableHead>
+                    <TableHead>Действия</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -232,6 +241,16 @@ export default function ImportHistory() {
                       <TableCell className="text-sm text-muted-foreground">
                         {imp.uploaded_at && format(new Date(imp.uploaded_at), 'dd MMM yyyy, HH:mm', { locale: ru })}
                       </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleViewDetails(imp)}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          Детали
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -251,6 +270,13 @@ export default function ImportHistory() {
             )}
           </CardContent>
         </Card>
+
+        {/* Details Dialog */}
+        <ImportDetailsDialog
+          open={showDetailsDialog}
+          onOpenChange={setShowDetailsDialog}
+          importData={selectedImport}
+        />
       </main>
     </div>
   );

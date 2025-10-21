@@ -1,6 +1,9 @@
 import { useState, useMemo } from 'react';
-import { ChevronDown, ChevronUp, Eye, Download, Edit2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { ChevronDown, ChevronUp, Eye, Download, Edit2, History, Palette } from 'lucide-react';
 import { NormalizedRow, formatAmount, GroupedData } from '@/utils/parseData';
+import { applyFormattingRules, formatToStyles, type FormattingRule } from '@/utils/conditionalFormatting';
 import { Button } from './ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -12,7 +15,15 @@ import {
   SheetHeader,
   SheetTitle,
 } from './ui/sheet';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from './ui/context-menu';
 import { EditableCell } from '@/components/database/EditableCell';
+import { CellHistoryPanel } from '@/components/history/CellHistoryPanel';
+import { FormattingRulesPanel } from '@/components/formatting/FormattingRulesPanel';
 
 interface DataTableProps {
   data: NormalizedRow[] | GroupedData[];
@@ -20,11 +31,12 @@ interface DataTableProps {
   isGrouped: boolean;
   onCellUpdate?: (rowId: string, column: string, value: any) => Promise<void>;
   columnTypes?: Record<string, string>;
+  databaseId?: string;
 }
 
 type SortDirection = 'asc' | 'desc' | null;
 
-export function DataTable({ data, headers, isGrouped, onCellUpdate, columnTypes = {} }: DataTableProps) {
+export function DataTable({ data, headers, isGrouped, onCellUpdate, columnTypes = {}, databaseId }: DataTableProps) {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(50);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -33,8 +45,29 @@ export function DataTable({ data, headers, isGrouped, onCellUpdate, columnTypes 
   const [selectedRow, setSelectedRow] = useState<NormalizedRow | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [editingCell, setEditingCell] = useState<{ rowId: string; column: string } | null>(null);
+  const [historyCell, setHistoryCell] = useState<{ rowId: string; column: string } | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showFormatting, setShowFormatting] = useState(false);
 
   const visibleHeaders = headers.filter(h => visibleColumns.has(h));
+
+  // Load formatting rules
+  const { data: formattingRules } = useQuery({
+    queryKey: ['formatting-rules', databaseId],
+    queryFn: async () => {
+      if (!databaseId) return [];
+
+      const { data, error } = await supabase
+        .from('conditional_formatting_rules')
+        .select('*')
+        .eq('database_id', databaseId)
+        .order('priority', { ascending: true });
+
+      if (error) throw error;
+      return data as FormattingRule[];
+    },
+    enabled: !!databaseId,
+  });
 
   const sortedData = useMemo(() => {
     if (!sortColumn || !sortDirection || isGrouped) return data;
@@ -174,6 +207,13 @@ export function DataTable({ data, headers, isGrouped, onCellUpdate, columnTypes 
               </div>
             </SheetContent>
           </Sheet>
+
+          {databaseId && (
+            <Button variant="outline" onClick={() => setShowFormatting(true)}>
+              <Palette className="mr-2 h-4 w-4" />
+              Formatting
+            </Button>
+          )}
         </div>
       </div>
 
@@ -258,22 +298,31 @@ export function DataTable({ data, headers, isGrouped, onCellUpdate, columnTypes 
                   </>
                 ))
               ) : (
-                (paginatedData as NormalizedRow[]).map((row, idx) => (
-                  <TableRow 
-                    key={idx}
-                    className="cursor-pointer hover:bg-table-row-hover"
-                    onClick={() => setSelectedRow(row)}
-                  >
-                    {visibleHeaders.map(header => {
-                      const isEditing = editingCell?.rowId === row.id && editingCell?.column === header;
-                      const value = row[header];
-                      
-                      return (
-                        <TableCell 
-                          key={header}
-                          onDoubleClick={() => handleCellDoubleClick(row.id, header)}
-                          className="cursor-pointer hover:bg-accent/50 transition-colors"
-                        >
+                (paginatedData as NormalizedRow[]).map((row, idx) => {
+                  // Apply formatting rules to this row
+                  const { cellFormats, rowFormat } = formattingRules
+                    ? applyFormattingRules(row, formattingRules)
+                    : { cellFormats: {}, rowFormat: null };
+
+                  return (
+                    <TableRow
+                      key={idx}
+                      className="cursor-pointer hover:bg-table-row-hover"
+                      style={rowFormat ? formatToStyles(rowFormat) : undefined}
+                      onClick={() => setSelectedRow(row)}
+                    >
+                      {visibleHeaders.map(header => {
+                        const isEditing = editingCell?.rowId === row.id && editingCell?.column === header;
+                        const value = row[header];
+                        const cellFormat = cellFormats[header];
+
+                        return (
+                          <TableCell
+                            key={header}
+                            onDoubleClick={() => handleCellDoubleClick(row.id, header)}
+                            className="cursor-pointer hover:bg-accent/50 transition-colors"
+                            style={cellFormat ? formatToStyles(cellFormat) : undefined}
+                          >
                           {isEditing ? (
                             <EditableCell
                               value={value}
@@ -282,18 +331,36 @@ export function DataTable({ data, headers, isGrouped, onCellUpdate, columnTypes 
                               onCancel={handleCellCancel}
                             />
                           ) : (
-                            <div className="flex items-center justify-between group">
-                              <span>{formatCellValue(value, header)}</span>
-                              {onCellUpdate && (
-                                <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+                            <ContextMenu>
+                              <ContextMenuTrigger asChild>
+                                <div className="flex items-center justify-between group w-full">
+                                  <span>{formatCellValue(value, header)}</span>
+                                  {onCellUpdate && (
+                                    <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
+                                  )}
+                                </div>
+                              </ContextMenuTrigger>
+                              {databaseId && (
+                                <ContextMenuContent>
+                                  <ContextMenuItem
+                                    onSelect={() => {
+                                      setHistoryCell({ rowId: row.id, column: header });
+                                      setShowHistory(true);
+                                    }}
+                                  >
+                                    <History className="mr-2 h-4 w-4" />
+                                    Показать историю
+                                  </ContextMenuItem>
+                                </ContextMenuContent>
                               )}
-                            </div>
+                            </ContextMenu>
                           )}
                         </TableCell>
                       );
                     })}
                   </TableRow>
-                ))
+                );
+              })
               )}
             </TableBody>
           </Table>
@@ -379,6 +446,27 @@ export function DataTable({ data, headers, isGrouped, onCellUpdate, columnTypes 
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Cell History Panel */}
+      {historyCell && databaseId && (
+        <CellHistoryPanel
+          open={showHistory}
+          onOpenChange={setShowHistory}
+          rowId={historyCell.rowId}
+          columnName={historyCell.column}
+          databaseId={databaseId}
+        />
+      )}
+
+      {/* Formatting Rules Panel */}
+      {databaseId && (
+        <FormattingRulesPanel
+          open={showFormatting}
+          onOpenChange={setShowFormatting}
+          databaseId={databaseId}
+          columns={headers}
+        />
+      )}
     </div>
   );
 }

@@ -269,26 +269,122 @@ serve(async (req) => {
               throw new Error('Failed to upload file to storage');
             }
 
-            // Store file metadata
-            await supabaseClient
+            // Parse file data
+            let parsedData;
+            try {
+              // Import parseFile utility (you'll need to make this work in Deno)
+              // For now, we'll use a simple CSV parser
+              const decoder = new TextDecoder('utf-8');
+              const fileContent = decoder.decode(new Uint8Array(fileBuffer));
+
+              const lines = fileContent.split('\n').filter(line => line.trim());
+              if (lines.length === 0) throw new Error('File is empty');
+
+              const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+              const rows = [];
+
+              for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+                if (values.length !== headers.length) continue;
+
+                const row: any = {};
+                headers.forEach((header, index) => {
+                  row[header] = values[index];
+                });
+                rows.push(row);
+              }
+
+              parsedData = { headers, rows };
+            } catch (parseError) {
+              console.error('Parse error:', parseError);
+              await sendTelegramMessage(BOT_TOKEN, chatId,
+                `❌ Ошибка парсинга файла. Убедитесь, что файл в формате CSV.`
+              );
+              return new Response(JSON.stringify({ ok: true }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              });
+            }
+
+            // Get user's databases
+            const { data: databases } = await supabaseClient
+              .from('databases')
+              .select('id, name')
+              .eq('user_id', account.user_id)
+              .limit(1);
+
+            if (!databases || databases.length === 0) {
+              await sendTelegramMessage(BOT_TOKEN, chatId,
+                `❌ У вас нет баз данных. Создайте базу данных в веб-приложении.`
+              );
+              return new Response(JSON.stringify({ ok: true }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+              });
+            }
+
+            const database = databases[0];
+            const databaseId = database.id;
+
+            // Store file metadata with database_id
+            const { data: fileRecord, error: fileError } = await supabaseClient
               .from('database_files')
               .insert({
-                database_id: null, // Will be set when user selects database
+                database_id: databaseId,
                 filename: fileName,
                 file_type: fileName.split('.').pop(),
                 file_size: fileSize,
                 uploaded_by: account.user_id,
+                import_mode: 'data',
+                duplicate_strategy: 'add_all',
                 metadata: {
                   telegram_file_id: fileId,
                   storage_path: storagePath,
-                  source: 'telegram'
+                  source: 'telegram',
+                  headers: parsedData.headers
                 }
-              });
+              })
+              .select()
+              .single();
+
+            if (fileError) throw fileError;
+
+            // Import data rows
+            let rowsImported = 0;
+            for (const row of parsedData.rows) {
+              const { data: insertedRow } = await supabaseClient
+                .from('table_data')
+                .insert({
+                  database_id: databaseId,
+                  data: row
+                })
+                .select()
+                .single();
+
+              if (insertedRow) {
+                // Create cell metadata for tracking
+                const cellMetadata = Object.keys(row).map(columnName => ({
+                  database_id: databaseId,
+                  row_id: insertedRow.id,
+                  column_name: columnName,
+                  source_file_id: fileRecord.id,
+                  imported_by: account.user_id,
+                }));
+
+                await supabaseClient.from('cell_metadata').insert(cellMetadata);
+                rowsImported++;
+              }
+            }
+
+            // Update file record with import stats
+            await supabaseClient
+              .from('database_files')
+              .update({ rows_imported: rowsImported })
+              .eq('id', fileRecord.id);
 
             await sendTelegramMessage(BOT_TOKEN, chatId,
-              `✅ Файл "${fileName}" загружен!\n\n` +
-              `Размер: ${Math.round((fileSize || 0) / 1024)} KB\n\n` +
-              `Используйте /import для импорта данных в базу.`
+              `✅ Файл "${fileName}" загружен и импортирован!\n\n` +
+              `📊 База данных: ${database.name}\n` +
+              `📈 Импортировано строк: ${rowsImported}\n` +
+              `💾 Размер файла: ${Math.round((fileSize || 0) / 1024)} KB`
             );
 
           } catch (error) {

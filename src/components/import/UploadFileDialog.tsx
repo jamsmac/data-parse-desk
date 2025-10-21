@@ -108,12 +108,31 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
     setError(null);
 
     try {
+      console.log('Starting file upload:', file.name);
+
       // Parse file
       const parseResult = await parseFile(file);
-      
+      console.log('Parse result:', {
+        headers: parseResult.headers,
+        rowCount: parseResult.data.length,
+        dateColumns: parseResult.dateColumns,
+        amountColumns: parseResult.amountColumns,
+      });
+
+      // Validate parse result
+      if (!parseResult.data || parseResult.data.length === 0) {
+        throw new Error('Файл пустой или не удалось распарсить данные');
+      }
+
+      if (!parseResult.headers || parseResult.headers.length === 0) {
+        throw new Error('Не найдены заголовки колонок');
+      }
+
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Пользователь не авторизован');
+
+      console.log('User authenticated:', user.id);
 
       // Save file metadata
       const { data: fileData, error: fileError } = await supabase
@@ -167,81 +186,140 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
           description: `Создано ${parseResult.headers.length} колонок`,
         });
       } else {
-        // Import data
+        // Import data with batch processing
+        console.log('Starting data import...');
         let rowsImported = 0;
         let rowsSkipped = 0;
         let duplicatesFound = 0;
 
-        // Get existing data for duplicate detection
-        const { data: existingData } = await supabase
-          .from('table_data')
-          .select('*')
-          .eq('database_id', databaseId);
+        // Prepare rows for insertion
+        const rowsToInsert = [];
 
-        const existingRows = existingData || [];
+        if (duplicateStrategy === 'add_all') {
+          // Skip duplicate detection, add all rows
+          rowsToInsert.push(...parseResult.data);
+          console.log('Strategy: add_all, inserting all rows');
+        } else {
+          // Get existing data for duplicate detection
+          console.log('Fetching existing data for duplicate detection...');
+          const { data: existingData, error: fetchError } = await supabase
+            .from('table_data')
+            .select('id, data')
+            .eq('database_id', databaseId);
 
-        for (let rowIndex = 0; rowIndex < parseResult.data.length; rowIndex++) {
-          const row = parseResult.data[rowIndex];
-          
-          // Check for duplicates
-          const isDuplicate = existingRows.some(existing => 
-            JSON.stringify(existing.data) === JSON.stringify(row)
-          );
-
-          if (isDuplicate) {
-            duplicatesFound++;
-            if (duplicateStrategy === 'skip') {
-              rowsSkipped++;
-              continue;
-            } else if (duplicateStrategy === 'update') {
-              const existingRow = existingRows.find(existing => 
-                JSON.stringify(existing.data) === JSON.stringify(row)
-              );
-              if (existingRow) {
-                await supabase
-                  .from('table_data')
-                  .update({ data: row })
-                  .eq('id', existingRow.id);
-                rowsImported++;
-              }
-              continue;
-            }
+          if (fetchError) {
+            console.error('Error fetching existing data:', fetchError);
+            throw new Error('Ошибка проверки дубликатов: ' + fetchError.message);
           }
 
-          // Insert new row
-          const { data: insertedRow, error: insertError } = await supabase
+          const existingRows = existingData || [];
+          console.log('Existing rows:', existingRows.length);
+
+          // Check each row for duplicates
+          for (const row of parseResult.data) {
+            const rowHash = JSON.stringify(row);
+            const isDuplicate = existingRows.some(existing =>
+              JSON.stringify(existing.data) === rowHash
+            );
+
+            if (isDuplicate) {
+              duplicatesFound++;
+              if (duplicateStrategy === 'skip') {
+                rowsSkipped++;
+                continue;
+              } else if (duplicateStrategy === 'update') {
+                // Find and update existing row
+                const existingRow = existingRows.find(existing =>
+                  JSON.stringify(existing.data) === rowHash
+                );
+                if (existingRow) {
+                  await supabase
+                    .from('table_data')
+                    .update({ data: row, updated_at: new Date().toISOString() })
+                    .eq('id', existingRow.id);
+                  rowsImported++;
+                }
+                continue;
+              }
+            }
+
+            rowsToInsert.push(row);
+          }
+
+          console.log('Rows to insert:', rowsToInsert.length);
+        }
+
+        // Batch insert rows (split into chunks of 100 for performance)
+        const BATCH_SIZE = 100;
+        const insertedRowIds = [];
+
+        for (let i = 0; i < rowsToInsert.length; i += BATCH_SIZE) {
+          const batch = rowsToInsert.slice(i, i + BATCH_SIZE);
+          const batchData = batch.map(row => ({
+            database_id: databaseId,
+            data: row,
+          }));
+
+          console.log(`Inserting batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(rowsToInsert.length / BATCH_SIZE)}...`);
+
+          const { data: insertedRows, error: insertError } = await supabase
             .from('table_data')
-            .insert({
-              database_id: databaseId,
-              data: row,
-            })
-            .select()
-            .single();
+            .insert(batchData)
+            .select('id');
 
           if (insertError) {
-            rowsSkipped++;
+            console.error('Batch insert error:', insertError);
+            rowsSkipped += batch.length;
             continue;
           }
 
-          rowsImported++;
-
-          // Create cell metadata for tracking (batch insert for performance)
-          const cellMetadata = Object.keys(row).map(columnName => ({
-            database_id: databaseId,
-            row_id: insertedRow.id,
-            column_name: columnName,
-            source_file_id: fileData.id,
-            source_row_number: rowIndex + 2, // +2 because: +1 for header row, +1 for 1-based indexing
-            imported_by: user.id,
-          }));
-
-          if (cellMetadata.length > 0) {
-            await supabase.from('cell_metadata').insert(cellMetadata);
+          if (insertedRows) {
+            rowsImported += insertedRows.length;
+            insertedRowIds.push(...insertedRows.map(r => r.id));
           }
         }
 
+        console.log('Data inserted:', rowsImported);
+
+        // Create cell metadata for all inserted rows (batch insert)
+        if (insertedRowIds.length > 0) {
+          console.log('Creating cell metadata...');
+          const allCellMetadata = [];
+
+          for (let i = 0; i < insertedRowIds.length; i++) {
+            const rowId = insertedRowIds[i];
+            const row = rowsToInsert[i];
+
+            const metadata = Object.keys(row).map(columnName => ({
+              database_id: databaseId,
+              row_id: rowId,
+              column_name: columnName,
+              source_file_id: fileData.id,
+              source_row_number: i + 2,
+              imported_by: user.id,
+            }));
+
+            allCellMetadata.push(...metadata);
+          }
+
+          // Insert cell metadata in batches
+          for (let i = 0; i < allCellMetadata.length; i += 500) {
+            const metadataBatch = allCellMetadata.slice(i, i + 500);
+            const { error: metadataError } = await supabase
+              .from('cell_metadata')
+              .insert(metadataBatch);
+
+            if (metadataError) {
+              console.error('Cell metadata insert error:', metadataError);
+            }
+          }
+
+          console.log('Cell metadata created');
+        }
+
         // Update file metadata with results
-        await supabase
+        console.log('Updating file metadata...');
+        const { error: updateError } = await supabase
           .from('database_files')
           .update({
             rows_imported: rowsImported,
@@ -250,18 +328,39 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
           })
           .eq('id', fileData.id);
 
+        if (updateError) {
+          console.error('Error updating file metadata:', updateError);
+        }
+
+        console.log('Import completed successfully!', {
+          rowsImported,
+          rowsSkipped,
+          duplicatesFound,
+        });
+
         toast({
-          title: 'Данные импортированы',
-          description: `Импортировано: ${rowsImported}, Пропущено: ${rowsSkipped}, Дубликатов: ${duplicatesFound}`,
+          title: 'Данные успешно импортированы!',
+          description: `Импортировано: ${rowsImported} строк${rowsSkipped > 0 ? `, Пропущено: ${rowsSkipped}` : ''}${duplicatesFound > 0 ? `, Дубликатов: ${duplicatesFound}` : ''}`,
         });
       }
 
+      // Clear state and close dialog
       setFile(null);
-      onSuccess();
+      onSuccess(); // This triggers UI refresh
       onOpenChange(false);
+
+      console.log('Upload process completed');
     } catch (err) {
       console.error('Upload error:', err);
-      setError(err instanceof Error ? err.message : 'Ошибка загрузки файла');
+      const errorMessage = err instanceof Error ? err.message : 'Ошибка загрузки файла';
+      console.error('Error details:', errorMessage);
+      setError(errorMessage);
+
+      toast({
+        title: 'Ошибка импорта',
+        description: errorMessage,
+        variant: 'destructive',
+      });
     } finally {
       setUploading(false);
     }

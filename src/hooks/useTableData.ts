@@ -23,29 +23,38 @@ export function useTableData({ databaseId, page, pageSize, filters, sort }: UseT
 
   const loadData = async () => {
     try {
+      console.log('useTableData: Starting loadData for database:', databaseId);
       setLoading(true);
 
       // Convert filters to JSONB format for RPC
       const filterObj: Record<string, any> = {};
       filters.forEach(filter => {
         if (!filter.value) return;
-        
+
         let filterType = 'text';
         let filterOperator: string = filter.operator;
-        
+
         // Determine filter type and operator
         if (['gt', 'lt', 'gte', 'lte'].includes(filter.operator)) {
           filterType = 'number';
-          filterOperator = filter.operator === 'gt' ? '>' : 
+          filterOperator = filter.operator === 'gt' ? '>' :
                     filter.operator === 'lt' ? '<' :
                     filter.operator === 'gte' ? '>=' : '<=';
         }
-        
+
         filterObj[filter.column] = {
           type: filterType,
           operator: filterOperator,
           value: filter.value
         };
+      });
+
+      console.log('useTableData: Fetching data with params:', {
+        databaseId,
+        page,
+        pageSize,
+        sort,
+        filterCount: Object.keys(filterObj).length
       });
 
       const { data: rows, error } = await supabase.rpc('get_table_data', {
@@ -62,10 +71,15 @@ export function useTableData({ databaseId, page, pageSize, filters, sort }: UseT
       const dataRows = rows || [];
       const total = dataRows.length > 0 ? dataRows[0].total_count : 0;
 
+      console.log('useTableData: Data fetched successfully:', {
+        rowCount: dataRows.length,
+        totalCount: total
+      });
+
       setData(dataRows);
       setTotalCount(Number(total));
     } catch (error: any) {
-      console.error('Error loading table data:', error);
+      console.error('useTableData: Error loading table data:', error);
       toast.error('Failed to load data');
     } finally {
       setLoading(false);

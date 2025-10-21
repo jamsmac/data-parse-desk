@@ -39,7 +39,29 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { user_id, notification_type, data } = await req.json();
+    const body = await req.json();
+
+    const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
+    if (!botToken) {
+      throw new Error('TELEGRAM_BOT_TOKEN not configured');
+    }
+
+    // Support two formats:
+    // 1. Direct format: { telegram_id, message }
+    // 2. Legacy format: { user_id, notification_type, data }
+
+    if (body.telegram_id && body.message) {
+      // Direct format - used by database triggers
+      await sendTelegramMessage(body.telegram_id, body.message, botToken);
+
+      return new Response(
+        JSON.stringify({ success: true }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Legacy format - for backward compatibility
+    const { user_id, notification_type, data } = body;
 
     if (!user_id || !notification_type) {
       throw new Error('Missing required fields');
@@ -67,7 +89,7 @@ serve(async (req) => {
       .single();
 
     // Check if this notification type is enabled
-    const isEnabled = preferences?.telegram_enabled && 
+    const isEnabled = preferences?.telegram_enabled &&
       ((notification_type === 'mention' && preferences.mentions_enabled) ||
        (notification_type === 'comment' && preferences.comments_enabled) ||
        (notification_type === 'data_change' && preferences.email_enabled));
@@ -81,7 +103,7 @@ serve(async (req) => {
 
     // Format message based on notification type
     let message = '';
-    
+
     switch (notification_type) {
       case 'mention':
         message = `🔔 <b>Вас упомянули</b>\n\n` +
@@ -89,28 +111,23 @@ serve(async (req) => {
                   `"${data.comment_text}"\n\n` +
                   `База данных: ${data.database_name}`;
         break;
-        
+
       case 'comment':
         message = `💬 <b>Новый комментарий</b>\n\n` +
                   `${data.author} оставил комментарий:\n` +
                   `"${data.comment_text}"\n\n` +
                   `База данных: ${data.database_name}`;
         break;
-        
+
       case 'data_change':
         message = `📝 <b>Данные изменены</b>\n\n` +
                   `${data.changed_by} изменил данные в базе "${data.database_name}"\n` +
                   `Колонка: ${data.column_name}\n` +
                   `Строка: #${data.row_number}`;
         break;
-        
+
       default:
         message = `📬 <b>Уведомление</b>\n\n${JSON.stringify(data)}`;
-    }
-
-    const botToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
-    if (!botToken) {
-      throw new Error('TELEGRAM_BOT_TOKEN not configured');
     }
 
     await sendTelegramMessage(telegramAccount.telegram_id, message, botToken);

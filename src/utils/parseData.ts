@@ -44,18 +44,40 @@ const DATE_FORMATS = [
   'MM/DD/YYYY h:mm:ss A',
 ];
 
+/**
+ * Represents a normalized data row with parsed date and amount fields
+ */
 export interface NormalizedRow {
+  /** Dynamic properties from the original data */
   [key: string]: any;
+  /** ISO 8601 formatted date string */
   date_iso?: string;
+  /** Date-only string (YYYY-MM-DD) */
   date_only?: string;
+  /** Unix epoch timestamp in milliseconds */
   epoch_ms?: number;
+  /** Normalized numeric amount */
   amount_num?: number;
+  /** Hash for duplicate detection */
   row_hash?: string;
+  /** Original raw data before normalization */
   _rawData: any;
+  /** Source file name */
   _fileName: string;
 }
 
-// Create hash from row data for duplicate detection
+/**
+ * Creates a deterministic hash from row data for duplicate detection
+ *
+ * @param row - The data row to hash
+ * @returns A base-36 encoded hash string
+ *
+ * @example
+ * ```ts
+ * const hash = createRowHash({ name: 'John', age: 30 });
+ * // Returns something like "1a2b3c4d"
+ * ```
+ */
 export function createRowHash(row: any): string {
   const sortedKeys = Object.keys(row).sort();
   const values = sortedKeys.map(key => String(row[key] ?? ''));
@@ -71,6 +93,23 @@ export function createRowHash(row: any): string {
   return hash.toString(36);
 }
 
+/**
+ * Automatically detects date and amount columns from headers
+ *
+ * Uses predefined synonyms in multiple languages (English, Russian, Uzbek)
+ * to identify relevant columns.
+ *
+ * @param headers - Array of column header names
+ * @returns Object containing detected date and amount column names
+ *
+ * @example
+ * ```ts
+ * const headers = ['Order Date', 'Customer', 'Total Amount'];
+ * const { dateColumns, amountColumns } = detectColumns(headers);
+ * // dateColumns: ['Order Date']
+ * // amountColumns: ['Total Amount']
+ * ```
+ */
 export function detectColumns(headers: string[]): {
   dateColumns: string[];
   amountColumns: string[];
@@ -93,6 +132,25 @@ export function detectColumns(headers: string[]): {
   return { dateColumns, amountColumns };
 }
 
+/**
+ * Normalizes a date value into multiple formats
+ *
+ * Attempts to parse the input using various date formats and converts
+ * to Asia/Tashkent timezone. Supports multiple date format patterns.
+ *
+ * @param value - The date value to normalize (string, number, or Date)
+ * @returns Object containing normalized date formats or null values if parsing fails
+ *
+ * @example
+ * ```ts
+ * const result = normalizeDate('2024-01-15 10:30:00');
+ * // {
+ * //   date_iso: '2024-01-15T10:30:00+05:00',
+ * //   date_only: '2024-01-15',
+ * //   epoch_ms: 1705304400000
+ * // }
+ * ```
+ */
 export function normalizeDate(value: any): {
   date_iso: string | null;
   date_only: string | null;

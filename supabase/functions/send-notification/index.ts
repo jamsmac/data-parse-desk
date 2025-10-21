@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
+import { getEmailTemplate } from './email-templates.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -78,11 +79,78 @@ serve(async (req) => {
       }
     }
 
-    // Email notification (placeholder - would need email service configured)
+    // Email notification via Resend
     if (prefs.email_enabled) {
-      // TODO: Implement email sending via Resend or similar
-      console.log('Email notifications not yet implemented');
-      results.push({ channel: 'email', success: false, reason: 'Not implemented' });
+      try {
+        const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
+
+        if (!RESEND_API_KEY) {
+          console.log('Resend API key not configured');
+          results.push({ channel: 'email', success: false, reason: 'API key not configured' });
+        } else {
+          // Get user email
+          const { data: userData } = await supabaseClient.auth.admin.getUserById(notification.user_id);
+
+          if (!userData?.user?.email) {
+            console.log('User email not found');
+            results.push({ channel: 'email', success: false, reason: 'Email not found' });
+          } else {
+            // Get user name
+            const { data: profile } = await supabaseClient
+              .from('profiles')
+              .select('full_name')
+              .eq('id', notification.user_id)
+              .single();
+
+            const userName = profile?.full_name || userData.user.email.split('@')[0];
+
+            // Generate HTML email from template
+            const htmlContent = getEmailTemplate(notification.type, {
+              userName,
+              title: notification.title,
+              message: notification.message,
+              actionUrl: notification.metadata?.actionUrl,
+              actionText: notification.metadata?.actionText,
+              metadata: {
+                ...notification.metadata,
+                unsubscribeUrl: `${Deno.env.get('SUPABASE_URL')}/settings?tab=notifications`,
+              },
+            });
+
+            // Send email via Resend API
+            const emailResponse = await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${RESEND_API_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                from: 'Data Parse Desk <notifications@dataparsedesk.com>',
+                to: [userData.user.email],
+                subject: notification.title,
+                html: htmlContent,
+              }),
+            });
+
+            const emailResult = await emailResponse.json();
+
+            if (emailResponse.ok) {
+              console.log('Email sent successfully:', emailResult);
+              results.push({ channel: 'email', success: true, id: emailResult.id });
+            } else {
+              console.error('Email send failed:', emailResult);
+              results.push({ channel: 'email', success: false, error: emailResult.message });
+            }
+          }
+        }
+      } catch (emailError) {
+        console.error('Email sending error:', emailError);
+        results.push({
+          channel: 'email',
+          success: false,
+          error: emailError instanceof Error ? emailError.message : 'Unknown error'
+        });
+      }
     }
 
     return new Response(

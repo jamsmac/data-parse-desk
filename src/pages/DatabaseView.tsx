@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Trash2, Plus, Filter as FilterIcon, Sparkles, MessageSquare, History, FileText } from 'lucide-react';
+import { ArrowLeft, Upload, Trash2, Plus, Filter as FilterIcon, Sparkles, MessageSquare, History, FileText, Lightbulb } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -15,7 +15,10 @@ import { FilterBuilder, type Filter } from '@/components/database/FilterBuilder'
 import { SortControls, type SortConfig } from '@/components/database/SortControls';
 import { useTableData } from '@/hooks/useTableData';
 import { useViewPreferences } from '@/hooks/useViewPreferences';
+import { useComments } from '@/hooks/useComments';
 import { ConversationAIPanel } from '@/components/ai/ConversationAIPanel';
+import { AIChatPanel } from '@/components/ai/AIChatPanel';
+import { InsightsPanel } from '@/components/insights/InsightsPanel';
 import { CommentsPanel } from '@/components/collaboration/CommentsPanel';
 import { ActivityFeed } from '@/components/collaboration/ActivityFeed';
 import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
@@ -37,7 +40,18 @@ export default function DatabaseView() {
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
+  const [showAIChat, setShowAIChat] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
   const [showCollabPanel, setShowCollabPanel] = useState(false);
+
+  // Load comments for the database (not tied to specific row)
+  const {
+    comments,
+    loading: commentsLoading,
+    addComment,
+    updateComment,
+    deleteComment
+  } = useComments(databaseId || '');
 
   // Load view preferences (filters, sort, pageSize are auto-restored)
   const { 
@@ -193,12 +207,66 @@ export default function DatabaseView() {
 
   const handleUpdateRow = async (rowId: string, updates: any) => {
     try {
+      // Get current data before update
+      const { data: currentRow } = await supabase
+        .from('table_data')
+        .select('data')
+        .eq('id', rowId)
+        .single();
+
+      // Update the row
       const { error } = await supabase.rpc('update_table_row', {
         p_id: rowId,
         p_data: updates,
       });
 
       if (error) throw error;
+
+      // Track history for changed columns
+      if (currentRow?.data && databaseId) {
+        const changedColumns = Object.keys(updates).filter(
+          key => JSON.stringify(currentRow.data[key]) !== JSON.stringify(updates[key])
+        );
+
+        for (const columnName of changedColumns) {
+          // Get or create cell metadata
+          const { data: cellMeta, error: metaError } = await supabase
+            .from('cell_metadata')
+            .select('id')
+            .eq('row_id', rowId)
+            .eq('column_name', columnName)
+            .maybeSingle();
+
+          let metadataId = cellMeta?.id;
+
+          // Create metadata if doesn't exist
+          if (!metadataId) {
+            const { data: newMeta } = await supabase
+              .from('cell_metadata')
+              .insert({
+                database_id: databaseId,
+                row_id: rowId,
+                column_name: columnName,
+                imported_by: user?.id,
+              })
+              .select('id')
+              .single();
+
+            metadataId = newMeta?.id;
+          }
+
+          // Create history record
+          if (metadataId) {
+            await supabase.from('cell_history').insert({
+              cell_metadata_id: metadataId,
+              old_value: currentRow.data[columnName],
+              new_value: updates[columnName],
+              change_type: 'updated',
+              changed_by: user?.id,
+            });
+          }
+        }
+      }
 
       toast({
         title: 'Запись обновлена',
@@ -280,7 +348,7 @@ export default function DatabaseView() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowAIAssistant(true)}
+                onClick={() => setShowAIChat(true)}
               >
                 <Sparkles className="mr-2 h-4 w-4" />
                 AI Помощник
@@ -288,10 +356,18 @@ export default function DatabaseView() {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => setShowInsights(true)}
+              >
+                <Lightbulb className="mr-2 h-4 w-4" />
+                Рекомендации
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setShowCollabPanel(true)}
               >
                 <MessageSquare className="mr-2 h-4 w-4" />
-                Активность
+                Активность {comments.length > 0 && `(${comments.length})`}
               </Button>
               <Button
                 variant="outline"
@@ -388,26 +464,27 @@ export default function DatabaseView() {
 
         {/* Data Table */}
         <div className="mt-6">
-          <DataTable 
+          <DataTable
             data={tableData.map((row: any) => ({
               id: row.id,
               ...row.data,
               created_at: row.created_at,
               updated_at: row.updated_at,
-            }))} 
+            }))}
             headers={schemas.map(s => s.column_name)}
             isGrouped={false}
+            databaseId={databaseId}
             onCellUpdate={async (rowId, column, value) => {
               // Find the row
               const row = tableData.find((r: any) => r.id === rowId);
               if (!row) return;
-              
+
               // Update the row data
               const updatedData = {
                 ...row.data,
                 [column]: value,
               };
-              
+
               await handleUpdateRow(rowId, updatedData);
             }}
             columnTypes={schemas.reduce((acc, s) => {
@@ -460,21 +537,48 @@ export default function DatabaseView() {
           <UploadFileDialog
             open={isUploadDialogOpen}
             onOpenChange={setIsUploadDialogOpen}
-            onSuccess={() => {
+            onSuccess={async () => {
+              console.log('UploadFileDialog onSuccess called - refreshing data...');
               setIsUploadDialogOpen(false);
+
+              // Small delay to ensure DB transaction is committed
+              await new Promise(resolve => setTimeout(resolve, 500));
+
+              console.log('Calling refresh() and loadSchemas()...');
               refresh();
               loadSchemas();
+
+              console.log('Refresh triggered successfully');
             }}
             databaseId={databaseId}
           />
         )}
 
-        {/* AI Assistant Panel */}
+        {/* AI Assistant Panel (Old) */}
         {projectId && (
           <ConversationAIPanel
             open={showAIAssistant}
             onOpenChange={setShowAIAssistant}
             projectId={projectId}
+          />
+        )}
+
+        {/* AI Chat Panel (New with SSE Streaming) */}
+        {projectId && databaseId && (
+          <AIChatPanel
+            open={showAIChat}
+            onOpenChange={setShowAIChat}
+            databaseId={databaseId}
+            projectId={projectId}
+          />
+        )}
+
+        {/* Insights Panel */}
+        {databaseId && (
+          <InsightsPanel
+            open={showInsights}
+            onOpenChange={setShowInsights}
+            databaseId={databaseId}
           />
         )}
 
@@ -503,9 +607,21 @@ export default function DatabaseView() {
                   <ActivityFeed activities={[]} limit={20} />
                 </TabsContent>
                 <TabsContent value="comments" className="mt-4">
-                  <p className="text-sm text-muted-foreground">
-                    Выберите запись для просмотра комментариев
-                  </p>
+                  {user && databaseId ? (
+                    <CommentsPanel
+                      comments={comments}
+                      currentUser={user}
+                      rowId=""
+                      databaseId={databaseId}
+                      onAddComment={addComment}
+                      onUpdateComment={updateComment}
+                      onDeleteComment={deleteComment}
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Загрузка комментариев...
+                    </p>
+                  )}
                 </TabsContent>
               </Tabs>
             </div>
