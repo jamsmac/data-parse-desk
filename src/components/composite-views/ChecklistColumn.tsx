@@ -4,6 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { CheckCircle2, Circle, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
+import { AttachmentButton } from './AttachmentButton';
+import { AttachmentList } from './AttachmentList';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ChecklistItem {
   text: string;
@@ -18,6 +21,9 @@ interface ChecklistColumnProps {
     completed?: number;
     total?: number;
   };
+  compositeViewId: string;
+  rowIdentifier: string;
+  columnName: string;
   onToggle: (itemIndex: number) => Promise<void>;
   onCompleteAll?: () => Promise<void>;
   onReset?: () => Promise<void>;
@@ -26,12 +32,16 @@ interface ChecklistColumnProps {
 
 export function ChecklistColumn({
   data,
+  compositeViewId,
+  rowIdentifier,
+  columnName,
   onToggle,
   onCompleteAll,
   onReset,
   readOnly = false,
 }: ChecklistColumnProps) {
   const [toggling, setToggling] = useState<number | null>(null);
+  const queryClient = useQueryClient();
 
   const items = data.items || [];
   const completed = items.filter((item) => item.checked).length;
@@ -88,27 +98,55 @@ export function ChecklistColumn({
       {/* Checklist items */}
       <div className="space-y-1.5">
         {items.map((item, index) => (
-          <div
-            key={index}
-            className={`flex items-start gap-2 p-1.5 rounded transition-colors ${
-              item.checked ? 'bg-muted/50' : 'hover:bg-muted/30'
-            }`}
-          >
-            <Checkbox
-              checked={item.checked}
-              onCheckedChange={() => handleToggle(index)}
-              disabled={readOnly || toggling === index}
-              className="mt-0.5"
-            />
-            <span
-              className={`flex-1 text-sm ${
-                item.checked ? 'line-through text-muted-foreground' : ''
+          <div key={index} className="space-y-1">
+            <div
+              className={`flex items-start gap-2 p-1.5 rounded transition-colors ${
+                item.checked ? 'bg-muted/50' : 'hover:bg-muted/30'
               }`}
             >
-              {item.text}
-            </span>
-            {item.checked && <CheckCircle2 className="h-4 w-4 text-green-500 mt-0.5" />}
-            {!item.checked && <Circle className="h-4 w-4 text-muted-foreground mt-0.5" />}
+              <Checkbox
+                checked={item.checked}
+                onCheckedChange={() => handleToggle(index)}
+                disabled={readOnly || toggling === index}
+                className="mt-0.5"
+              />
+              <span
+                className={`flex-1 text-sm ${
+                  item.checked ? 'line-through text-muted-foreground' : ''
+                }`}
+              >
+                {item.text}
+              </span>
+              <div className="flex items-center gap-1">
+                {!readOnly && (
+                  <AttachmentButton
+                    compositeViewId={compositeViewId}
+                    rowIdentifier={rowIdentifier}
+                    columnName={columnName}
+                    itemIndex={index}
+                    onUploadComplete={() => {
+                      queryClient.invalidateQueries({
+                        queryKey: [
+                          'item-attachments',
+                          compositeViewId,
+                          rowIdentifier,
+                          columnName,
+                          index,
+                        ],
+                      });
+                    }}
+                  />
+                )}
+                {item.checked && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                {!item.checked && <Circle className="h-4 w-4 text-muted-foreground" />}
+              </div>
+            </div>
+            <AttachmentList
+              compositeViewId={compositeViewId}
+              rowIdentifier={rowIdentifier}
+              columnName={columnName}
+              itemIndex={index}
+            />
           </div>
         ))}
       </div>

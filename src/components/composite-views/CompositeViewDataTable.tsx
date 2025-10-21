@@ -206,6 +206,9 @@ export function CompositeViewDataTable({ compositeViewId }: CompositeViewDataTab
                             completed: row[col.name]?.completed,
                             total: row[col.name]?.total,
                           }}
+                          compositeViewId={compositeViewId}
+                          rowIdentifier={row.row_num.toString()}
+                          columnName={col.name}
                           onToggle={async (itemIndex) => {
                             const updatedItems = [...(row[col.name]?.items || [])];
                             updatedItems[itemIndex] = {
