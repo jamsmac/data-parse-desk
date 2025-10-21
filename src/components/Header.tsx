@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import {
@@ -21,6 +23,7 @@ import {
   Settings,
   Sparkles,
   Package,
+  Shield,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Badge } from './ui/badge';
@@ -31,6 +34,22 @@ export function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const [isAIPanelOpen, setIsAIPanelOpen] = useState(false);
+
+  // Check if user is admin
+  const { data: isAdmin } = useQuery({
+    queryKey: ['user-is-admin', user?.id],
+    queryFn: async () => {
+      if (!user) return false;
+      const { data, error } = await supabase.rpc('has_role', {
+        _user_id: user.id,
+        _project_id: null as any,
+        _role: 'admin' as any
+      });
+      if (error) return false;
+      return data;
+    },
+    enabled: !!user,
+  });
 
   const handleLogout = async () => {
     await logout();
@@ -192,6 +211,15 @@ export function Header() {
                 <Settings className="mr-2 h-4 w-4" />
                 Настройки
               </DropdownMenuItem>
+              {isAdmin && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/admin')}>
+                    <Shield className="mr-2 h-4 w-4" />
+                    Админ-панель
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleLogout}

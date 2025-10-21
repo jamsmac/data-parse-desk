@@ -1432,6 +1432,52 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_adjust_credits: {
+        Args: {
+          p_description?: string
+          p_free_credits_delta?: number
+          p_paid_credits_delta?: number
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      admin_assign_role: {
+        Args: {
+          p_role: Database["public"]["Enums"]["app_role"]
+          p_user_id: string
+        }
+        Returns: boolean
+      }
+      admin_get_stats: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          active_users_30d: number
+          active_users_7d: number
+          ai_requests_today: number
+          avg_credits_per_user: number
+          credits_used_today: number
+          total_ai_requests: number
+          total_credits_used: number
+          total_databases: number
+          total_projects: number
+          total_users: number
+        }[]
+      }
+      admin_get_users: {
+        Args: { p_limit?: number; p_offset?: number }
+        Returns: {
+          created_at: string
+          databases_count: number
+          email: string
+          free_credits: number
+          id: string
+          last_sign_in_at: string
+          paid_credits: number
+          projects_count: number
+          role: Database["public"]["Enums"]["app_role"]
+          total_credits_used: number
+        }[]
+      }
       bulk_delete_table_rows: {
         Args: { p_ids: string[] }
         Returns: boolean

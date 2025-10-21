@@ -26,6 +26,7 @@ const AdvancedAnalytics = lazy(() => import("./pages/AdvancedAnalytics"));
 const InstallPWA = lazy(() => import("./pages/InstallPWA"));
 const ImportHistory = lazy(() => import("./pages/ImportHistory"));
 const TemplateMarketplace = lazy(() => import("./pages/TemplateMarketplace"));
+const Admin = lazy(() => import("./pages/Admin"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading component for lazy-loaded pages
@@ -194,6 +195,21 @@ const App = () => (
                     element={
                       <Suspense fallback={<PageLoader />}>
                         <TemplateMarketplace />
+                      </Suspense>
+                    }
+                  />
+                }
+              />
+
+              {/* Admin route - Requires admin role */}
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute
+                    requireRole="admin"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <Admin />
                       </Suspense>
                     }
                   />
