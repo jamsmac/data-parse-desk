@@ -186,6 +186,14 @@ serve(async (req) => {
     let data = null;
     let message = result.response;
 
+    // Helper function для форматирования записи
+    const formatRecord = (data: any): string => {
+      return Object.entries(data)
+        .slice(0, 4) // Первые 4 поля
+        .map(([key, value]) => `  • ${key}: ${value}`)
+        .join('\n');
+    };
+
     if (result.action === 'list_databases' && project_id) {
       const { data: dbList } = await supabase
         .from('databases')
@@ -197,9 +205,9 @@ serve(async (req) => {
       
       if (dbList && dbList.length > 0) {
         message = `📊 Найдено ${dbList.length} баз данных:\n\n` +
-          dbList.map((db, i) => `${i + 1}. ${db.name}${db.description ? ` - ${db.description}` : ''}`).join('\n');
+          dbList.map((db, i) => `${i + 1}. *${db.name}*${db.description ? `\n   ${db.description}` : ''}`).join('\n\n');
       } else {
-        message = 'У вас пока нет баз данных в этом проекте.';
+        message = '📭 У вас пока нет баз данных в этом проекте.';
       }
     } 
     
@@ -231,26 +239,172 @@ serve(async (req) => {
         composite_view_count: compositeViews?.length || 0
       };
       
-      message = `📈 Статистика проекта:\n\n` +
-        `📊 Баз данных: ${data.database_count}\n` +
-        `📝 Записей: ${data.record_count}\n` +
-        `🔗 Composite Views: ${data.composite_view_count}`;
+      message = `📈 *Статистика проекта*\n\n` +
+        `📊 Баз данных: *${data.database_count}*\n` +
+        `📝 Записей: *${data.record_count}*\n` +
+        `🔗 Composite Views: *${data.composite_view_count}*`;
     }
     
-    else if (result.action === 'aggregate_data' && result.params?.column && result.params?.operation) {
-      message = `📊 Для выполнения агрегации "${result.params.operation}" по колонке "${result.params.column}" используйте веб-интерфейс или укажите базу данных.`;
+    else if (result.action === 'query_data' && result.params?.database_name) {
+      // Найти database по имени
+      const { data: database } = await supabase
+        .from('databases')
+        .select('id, name')
+        .eq('project_id', project_id)
+        .ilike('name', `%${result.params.database_name}%`)
+        .maybeSingle();
+
+      if (!database) {
+        message = `❌ База данных "${result.params.database_name}" не найдена.\n\n💡 Используйте команду для просмотра списка: "покажи мои базы"`;
+      } else {
+        // Получить данные с учетом фильтров и лимита
+        const limit = result.params.limit || 10;
+        const { data: tableDataRows, error } = await supabase.rpc('get_table_data', {
+          p_database_id: database.id,
+          p_limit: limit,
+          p_offset: 0,
+          p_filters: result.params.filters || null
+        });
+
+        if (error) {
+          message = `❌ Ошибка при получении данных: ${error.message}`;
+          console.error('Query data error:', error);
+        } else if (!tableDataRows || tableDataRows.length === 0) {
+          message = `📭 База "${database.name}" пуста.\n\nДобавьте данные через веб-интерфейс.`;
+        } else {
+          data = tableDataRows;
+          message = `📊 *${database.name}*\n\nНайдено записей: *${tableDataRows.length}*\n\n`;
+          
+          // Форматируем первые 5 записей
+          tableDataRows.slice(0, 5).forEach((record: any, i: number) => {
+            message += `*${i + 1}.*\n${formatRecord(record.data)}\n\n`;
+          });
+          
+          if (tableDataRows.length > 5) {
+            message += `_... и ещё ${tableDataRows.length - 5} записей_`;
+          }
+        }
+      }
+    }
+    
+    else if (result.action === 'create_record' && result.params?.database_name) {
+      const { data: database } = await supabase
+        .from('databases')
+        .select('id, name')
+        .eq('project_id', project_id)
+        .ilike('name', `%${result.params.database_name}%`)
+        .maybeSingle();
+
+      if (!database || !result.params.record_data) {
+        message = `❌ Не удалось создать запись.\n\n` +
+          `Убедитесь что:\n` +
+          `• База данных существует\n` +
+          `• Указаны все необходимые поля`;
+      } else {
+        const { data: newRecord, error } = await supabase.rpc('insert_table_row', {
+          p_database_id: database.id,
+          p_data: result.params.record_data
+        });
+
+        if (error) {
+          message = `❌ Ошибка создания: ${error.message}`;
+          console.error('Create record error:', error);
+        } else {
+          data = newRecord;
+          message = `✅ *Запись создана!*\n\n📊 База: ${database.name}\n\n${formatRecord(result.params.record_data)}`;
+        }
+      }
+    }
+    
+    else if (result.action === 'update_record' && result.params?.record_id) {
+      const { data: updated, error } = await supabase.rpc('update_table_row', {
+        p_id: result.params.record_id,
+        p_data: result.params.updates
+      });
+
+      if (error) {
+        message = `❌ Ошибка обновления: ${error.message}`;
+        console.error('Update record error:', error);
+      } else {
+        data = updated;
+        const updatedFields = Object.keys(result.params.updates).join(', ');
+        message = `✅ *Запись обновлена!*\n\n📝 Изменённые поля:\n${updatedFields}`;
+      }
+    }
+    
+    else if (result.action === 'aggregate_data' && result.params?.database_name && result.params?.column && result.params?.operation) {
+      const { data: database } = await supabase
+        .from('databases')
+        .select('id, name')
+        .eq('project_id', project_id)
+        .ilike('name', `%${result.params.database_name}%`)
+        .maybeSingle();
+
+      if (!database) {
+        message = `❌ База данных не найдена.`;
+      } else {
+        // Получить все записи и посчитать агрегацию
+        const { data: tableDataRows, error } = await supabase.rpc('get_table_data', {
+          p_database_id: database.id,
+          p_limit: 10000,
+          p_offset: 0
+        });
+
+        if (error) {
+          message = `❌ Ошибка: ${error.message}`;
+          console.error('Aggregate error:', error);
+        } else if (!tableDataRows || tableDataRows.length === 0) {
+          message = `📭 Нет данных для агрегации.`;
+        } else {
+          const column = result.params.column;
+          const operation = result.params.operation;
+          const values = tableDataRows
+            .map((r: any) => r.data[column])
+            .filter((v: any) => v !== null && v !== undefined && !isNaN(Number(v)))
+            .map(Number);
+
+          if (values.length === 0) {
+            message = `❌ Колонка "${column}" не содержит числовых значений.`;
+          } else {
+            let resultValue;
+            switch (operation) {
+              case 'SUM':
+                resultValue = values.reduce((a: number, b: number) => a + b, 0);
+                break;
+              case 'AVG':
+                resultValue = values.reduce((a: number, b: number) => a + b, 0) / values.length;
+                break;
+              case 'COUNT':
+                resultValue = values.length;
+                break;
+              case 'MIN':
+                resultValue = Math.min(...values);
+                break;
+              case 'MAX':
+                resultValue = Math.max(...values);
+                break;
+              default:
+                resultValue = 0;
+            }
+
+            data = { operation, column, value: resultValue };
+            message = `📊 *${operation}*(_${column}_)\n\n` +
+              `Результат: *${resultValue.toFixed(2)}*\n` +
+              `Записей обработано: ${values.length}`;
+          }
+        }
+      }
     }
     
     else if (result.action === 'create_chart') {
-      message = `📈 Для создания графика используйте веб-интерфейс в разделе Analytics.\n\n` +
-        `Тип графика: ${result.params?.chart_type || 'bar'}\n` +
-        `Период: ${result.params?.time_period || 'текущий месяц'}`;
+      message = `📈 *Создание графика*\n\n` +
+        `Тип: ${result.params?.chart_type || 'bar'}\n` +
+        `Период: ${result.params?.time_period || 'текущий месяц'}\n\n` +
+        `💡 Для создания графиков используйте веб-интерфейс в разделе Analytics.`;
     }
     
-    else if (result.action === 'query_data') {
-      if (result.requires_database) {
-        message = `🔍 ${result.response}\n\nДля выполнения запроса укажите базу данных или используйте веб-интерфейс.`;
-      }
+    else if (result.action === 'query_data' && result.requires_database) {
+      message = `🔍 ${result.response}\n\n💡 Укажите название базы данных или используйте команду:\n"покажи мои базы"`;
     }
 
     return new Response(

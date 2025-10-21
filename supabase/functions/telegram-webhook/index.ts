@@ -660,19 +660,67 @@ serve(async (req) => {
         );
       } else if (text.startsWith('/help')) {
         await sendTelegramMessage(BOT_TOKEN, chatId,
-          `ℹ️ Помощь:\n\n` +
+          `ℹ️ <b>Помощь DATA PARSE DESK</b>\n\n` +
+          `<b>📌 Команды:</b>\n` +
           `/projects - список проектов\n` +
           `/checklist - мои чеклисты\n` +
           `/view - просмотр данных\n` +
           `/stats - показать статистику\n` +
           `/import - импортировать данные\n` +
           `/help - показать эту справку\n\n` +
-          `Для полного доступа откройте веб-приложение.`
+          `<b>💬 Natural Language запросы:</b>\n` +
+          `• "покажи мои базы данных"\n` +
+          `• "статистика проекта"\n` +
+          `• "последние 10 заказов"\n` +
+          `• "какая средняя сумма заказа?"\n` +
+          `• "сколько всего заказов?"\n` +
+          `• "создай заказ на 5000 рублей"\n\n` +
+          `Просто напишите что хотите сделать обычным языком!`
         );
       } else {
-        await sendTelegramMessage(BOT_TOKEN, chatId,
-          `Команда не распознана. Используйте /help для списка команд.`
-        );
+        // Обработка через natural language для всех остальных сообщений
+        try {
+          await sendTelegramMessage(BOT_TOKEN, chatId, '🤔 Обрабатываю запрос...');
+          
+          // Получить первый проект пользователя для контекста
+          const { data: projects } = await supabaseClient
+            .from('projects')
+            .select('id')
+            .eq('user_id', account.user_id)
+            .limit(1);
+
+          const projectId = projects && projects.length > 0 ? projects[0].id : null;
+
+          const { data: nlResult, error: nlError } = await supabaseClient.functions.invoke(
+            'telegram-natural-language',
+            {
+              body: {
+                query: text,
+                user_id: account.user_id,
+                project_id: projectId
+              }
+            }
+          );
+
+          if (nlError) {
+            console.error('NL processing error:', nlError);
+            await sendTelegramMessage(BOT_TOKEN, chatId,
+              '❌ Не удалось обработать запрос. Используйте /help для списка команд.'
+            );
+          } else {
+            const responseText = nlResult.response || 'Команда выполнена.';
+            await sendTelegramMessage(BOT_TOKEN, chatId, responseText);
+          }
+        } catch (error) {
+          console.error('Natural language error:', error);
+          await sendTelegramMessage(BOT_TOKEN, chatId,
+            `Команда не распознана. Используйте /help для списка команд.\n\n` +
+            `💡 Примеры запросов:\n` +
+            `• "покажи мои базы данных"\n` +
+            `• "статистика проекта"\n` +
+            `• "последние 10 заказов"`
+          );
+        }
       }
     }
 
