@@ -33,6 +33,14 @@ node_modules/
 .env.*.local
 .vscode
 # OS specific
+Icon?
+.DS_Store
+
+# Claude Code
+.claude/
+
+# Test results
+test-results/
 
 # Task files
 # tasks.json
