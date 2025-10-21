@@ -189,6 +189,44 @@ serve(async (req) => {
 
     console.log(`Successfully created ${createdDatabases.length} databases and ${createdRelations.length} relationships`);
 
+    // Save schema version for version control
+    try {
+      const versionResponse = await fetch(
+        `${Deno.env.get('SUPABASE_URL')}/functions/v1/schema-version-create`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': authHeader,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            projectId,
+            schemaData: {
+              entities: schema.entities,
+              relationships: schema.relationships,
+              metadata: {
+                created_databases: createdDatabases,
+                created_relationships: createdRelations,
+              },
+            },
+            description: `AI-generated schema: ${createdDatabases.length} tables, ${createdRelations.length} relations`,
+            tagName: 'ai-generated',
+            tagDescription: 'Automatically created by AI Schema Generator',
+          }),
+        }
+      );
+
+      if (versionResponse.ok) {
+        const versionResult = await versionResponse.json();
+        console.log('[AI Create Schema] Schema version saved:', versionResult.version?.version_number);
+      } else {
+        console.warn('[AI Create Schema] Failed to save schema version:', await versionResponse.text());
+      }
+    } catch (versionError) {
+      console.warn('[AI Create Schema] Error saving schema version:', versionError);
+      // Don't fail the whole request if version saving fails
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

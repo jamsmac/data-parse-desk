@@ -14,6 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { CompositeViewList } from '@/components/composite-views/CompositeViewList';
 import { SchemaGeneratorDialog } from '@/components/schema-generator/SchemaGeneratorDialog';
+import { SchemaVersionHistory } from '@/components/schema-generator/SchemaVersionHistory';
 import { Sparkles } from 'lucide-react';
 
 export default function ProjectView() {
@@ -205,6 +206,7 @@ export default function ProjectView() {
           <TabsList>
             <TabsTrigger value="databases">Базы данных</TabsTrigger>
             <TabsTrigger value="composite">Составные представления</TabsTrigger>
+            <TabsTrigger value="versions">Версии схем</TabsTrigger>
             <TabsTrigger value="graph">График связей</TabsTrigger>
           </TabsList>
 
@@ -255,6 +257,10 @@ export default function ProjectView() {
 
           <TabsContent value="composite" className="mt-6">
             {projectId && <CompositeViewList projectId={projectId} />}
+          </TabsContent>
+
+          <TabsContent value="versions" className="mt-6">
+            {projectId && <SchemaVersionHistory projectId={projectId} />}
           </TabsContent>
 
           <TabsContent value="graph" className="mt-6">
