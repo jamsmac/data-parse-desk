@@ -7,7 +7,9 @@ import { Input } from '@/components/ui/input';
 import { ChevronLeft, ChevronRight, Download, RefreshCw } from 'lucide-react';
 import { ChecklistColumn } from './ChecklistColumn';
 import { StatusColumn } from './StatusColumn';
+import { StatusCombobox } from './StatusCombobox';
 import { ProgressBarColumn } from './ProgressBarColumn';
+import { FormulaColumn } from './FormulaColumn';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -235,17 +237,51 @@ export function CompositeViewDataTable({ compositeViewId }: CompositeViewDataTab
                         />
                       )}
                       {col.type === 'status' && (
-                        <StatusColumn
-                          data={{
-                            value: row[col.name]?.value || 'pending',
-                            color: row[col.name]?.color,
-                            label: row[col.name]?.label,
-                          }}
+                        <StatusCombobox
+                          value={row[col.name]?.value || 'pending'}
                           options={col.config?.options || []}
+                          columnId={col.id || col.name}
                           onChange={async (newStatus) => {
                             await handleCustomDataUpdate(row.row_num.toString(), col.name, 'status', {
                               value: newStatus,
                             });
+                          }}
+                          onCreateNew={async (newLabel, newColor) => {
+                            // Add new status to column config
+                            const newOption = {
+                              value: newLabel.toLowerCase().replace(/\s+/g, '_'),
+                              label: newLabel,
+                              color: newColor
+                            };
+
+                            const updatedOptions = [...(col.config?.options || []), newOption];
+
+                            // Update composite view config
+                            const updatedCustomColumns = customColumns.map((c: any) =>
+                              c.name === col.name
+                                ? { ...c, config: { ...c.config, options: updatedOptions } }
+                                : c
+                            );
+
+                            const { error } = await supabase
+                              .from('composite_views')
+                              .update({
+                                config: {
+                                  ...config,
+                                  custom_columns: updatedCustomColumns
+                                }
+                              })
+                              .eq('id', compositeViewId);
+
+                            if (error) throw error;
+
+                            // Apply new status to current row
+                            await handleCustomDataUpdate(row.row_num.toString(), col.name, 'status', {
+                              value: newOption.value,
+                            });
+
+                            // Refetch to update UI
+                            refetch();
                           }}
                         />
                       )}
@@ -259,6 +295,27 @@ export function CompositeViewDataTable({ compositeViewId }: CompositeViewDataTab
                           onChange={async (newValue) => {
                             await handleCustomDataUpdate(row.row_num.toString(), col.name, 'progress', {
                               value: newValue,
+                            });
+                          }}
+                        />
+                      )}
+                      {col.type === 'formula' && (
+                        <FormulaColumn
+                          data={{
+                            expression: col.config?.expression || row[col.name]?.expression || '',
+                            result: row[col.name]?.result,
+                            return_type: col.config?.return_type || row[col.name]?.return_type || 'text',
+                            dependencies: col.config?.dependencies || row[col.name]?.dependencies || [],
+                            calculated_at: row[col.name]?.calculated_at,
+                          }}
+                          compositeViewId={compositeViewId}
+                          rowIdentifier={row.row_num.toString()}
+                          columnName={col.name}
+                          onRecalculate={async () => {
+                            await handleCustomDataUpdate(row.row_num.toString(), col.name, 'formula', {
+                              expression: col.config?.expression,
+                              return_type: col.config?.return_type,
+                              dependencies: col.config?.dependencies,
                             });
                           }}
                         />

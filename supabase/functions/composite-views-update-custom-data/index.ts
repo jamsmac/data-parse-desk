@@ -66,8 +66,65 @@ serve(async (req) => {
 
     // Validate data based on column type
     let validatedData = data;
-    
+
     switch (column_type) {
+      case 'formula':
+        // For formula columns, we need to evaluate the expression
+        if (!data.expression) {
+          throw new Error('Formula data must have expression');
+        }
+
+        // Get the full row data for formula evaluation
+        const { data: viewConfig } = await supabase
+          .from('composite_views')
+          .select('view_definition, custom_columns')
+          .eq('id', composite_view_id)
+          .single();
+
+        if (!viewConfig) {
+          throw new Error('Could not load view configuration');
+        }
+
+        // Query the actual row data from the composite view
+        const { data: queryResult } = await supabase.functions.invoke('composite-views-query', {
+          body: {
+            composite_view_id,
+            filters: [
+              { column: 'row_num', operator: 'equals', value: row_identifier }
+            ],
+            page: 1,
+            page_size: 1
+          }
+        });
+
+        if (!queryResult?.rows?.[0]) {
+          throw new Error('Row not found in composite view');
+        }
+
+        const rowData = queryResult.rows[0];
+
+        // Evaluate formula using the evaluate-formula edge function
+        const { data: formulaResult, error: formulaError } = await supabase.functions.invoke('evaluate-formula', {
+          body: {
+            expression: data.expression,
+            rowData: rowData,
+            returnType: data.return_type || 'text'
+          }
+        });
+
+        if (formulaError) {
+          throw new Error(`Formula evaluation failed: ${formulaError.message}`);
+        }
+
+        validatedData = {
+          expression: data.expression,
+          result: formulaResult.result,
+          return_type: data.return_type || 'text',
+          dependencies: data.dependencies || [],
+          calculated_at: new Date().toISOString()
+        };
+        break;
+
       case 'checklist':
         if (!Array.isArray(data.items)) {
           throw new Error('Checklist data must have items array');

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,13 +8,25 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, Upload, Clipboard, Sparkles, Database, Loader2, CheckCircle, AlertTriangle, CreditCard, Clock } from 'lucide-react';
+import { FileText, Upload, Clipboard, Sparkles, Database, Loader2, CheckCircle, AlertTriangle, CreditCard, Clock, Edit2, Link2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
+import { SchemaEditor } from './SchemaEditor';
+import { SchemaStepper } from './SchemaStepper';
+import { RelationshipPreview } from './RelationshipPreview';
+import { useSchemaAutoSave } from './useSchemaAutoSave';
+import {
+  validateInputStep,
+  validatePreviewStep,
+  validateEditStep,
+  validateCredits,
+  ValidationResult
+} from './validation';
+import { GeneratedSchema, StepId } from './types';
 
 interface SchemaGeneratorDialogProps {
   open: boolean;
@@ -22,46 +34,24 @@ interface SchemaGeneratorDialogProps {
   projectId: string;
 }
 
-interface SchemaEntity {
-  name: string;
-  confidence: number;
-  reasoning?: string;
-  columns: Array<{
-    name: string;
-    type: string;
-    primary_key?: boolean;
-    nullable?: boolean;
-    unique?: boolean;
-    default?: string;
-    references?: string;
-  }>;
-}
-
-interface GeneratedSchema {
-  entities: SchemaEntity[];
-  relationships: Array<{
-    from: string;
-    to: string;
-    type: string;
-    on: string;
-    confidence: number;
-  }>;
-  indexes?: Array<{
-    table: string;
-    columns: string[];
-    reason: string;
-  }>;
-  warnings?: string[];
-}
+const STEPS = [
+  { id: 'input' as StepId, title: 'Ввод данных', description: 'Опишите схему' },
+  { id: 'preview' as StepId, title: 'Просмотр', description: 'Проверьте результат' },
+  { id: 'edit' as StepId, title: 'Редактирование', description: 'Настройте детали' },
+  { id: 'creating' as StepId, title: 'Создание', description: 'Финальный шаг' },
+];
 
 export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGeneratorDialogProps) {
   const { user } = useAuth();
-  const [step, setStep] = useState<'input' | 'preview' | 'creating'>('input');
+  const [step, setStep] = useState<StepId>('input');
+  const [completedSteps, setCompletedSteps] = useState<StepId[]>([]);
   const [inputType, setInputType] = useState<'text' | 'json' | 'csv'>('text');
   const [textInput, setTextInput] = useState('');
   const [fileInput, setFileInput] = useState<File | null>(null);
   const [generatedSchema, setGeneratedSchema] = useState<GeneratedSchema | null>(null);
   const [errorDetails, setErrorDetails] = useState<{type: string; message: string} | null>(null);
+  const [validationResult, setValidationResult] = useState<ValidationResult | null>(null);
+  const [showRelationships, setShowRelationships] = useState(false);
 
   // Load user credits
   const { data: credits } = useQuery({
@@ -79,6 +69,61 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
     },
     enabled: !!user?.id && open,
   });
+
+  // Auto-save functionality
+  const { loadData, clearData } = useSchemaAutoSave({
+    projectId,
+    step,
+    inputType,
+    textInput,
+    generatedSchema,
+    enabled: open,
+  });
+
+  // Load saved data on dialog open
+  useEffect(() => {
+    if (open) {
+      const savedData = loadData();
+      if (savedData) {
+        setStep(savedData.step);
+        setInputType(savedData.inputType);
+        setTextInput(savedData.textInput);
+        setGeneratedSchema(savedData.generatedSchema);
+
+        toast.success('Восстановлен сохраненный прогресс', {
+          description: 'Продолжайте с того места, где остановились',
+          action: {
+            label: 'Начать заново',
+            onClick: () => {
+              clearData();
+              handleClose();
+            },
+          },
+        });
+      }
+    }
+  }, [open]);
+
+  // Validate current step
+  useEffect(() => {
+    let result: ValidationResult | null = null;
+
+    switch (step) {
+      case 'input':
+        result = validateInputStep(inputType, textInput, fileInput);
+        break;
+      case 'preview':
+        result = validatePreviewStep(generatedSchema);
+        break;
+      case 'edit':
+        result = validateEditStep(generatedSchema);
+        break;
+      default:
+        result = null;
+    }
+
+    setValidationResult(result);
+  }, [step, inputType, textInput, fileInput, generatedSchema]);
 
   // Temporarily disable templates until table is created
   const templates: any[] = [];
@@ -100,6 +145,7 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
     onSuccess: (schema) => {
       setGeneratedSchema(schema);
       setStep('preview');
+      setCompletedSteps(prev => [...new Set([...prev, 'input'])]);
       setErrorDetails(null);
       toast.success('Схема сгенерирована AI');
     },
@@ -171,11 +217,38 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
 
   const handleClose = () => {
     setStep('input');
+    setCompletedSteps([]);
     setTextInput('');
     setFileInput(null);
     setGeneratedSchema(null);
     setErrorDetails(null);
+    setValidationResult(null);
+    setShowRelationships(false);
+    clearData();
     onClose();
+  };
+
+  const handleNextStep = () => {
+    // Validate before moving to next step
+    if (validationResult && !validationResult.isValid) {
+      toast.error('Исправьте ошибки перед продолжением', {
+        description: validationResult.errors[0],
+      });
+      return;
+    }
+
+    // Mark current step as completed
+    setCompletedSteps(prev => [...new Set([...prev, step])]);
+
+    // Move to next step
+    const stepMap: Record<StepId, StepId> = {
+      input: 'preview',
+      preview: 'edit',
+      edit: 'creating',
+      creating: 'creating', // Stay on creating
+    };
+
+    setStep(stepMap[step]);
   };
 
   const handleAnalyze = async () => {
@@ -206,13 +279,50 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-primary" />
             Умный генератор схем
           </DialogTitle>
         </DialogHeader>
+
+        {/* Stepper */}
+        {step !== 'creating' && (
+          <SchemaStepper steps={STEPS} currentStep={step} completedSteps={completedSteps} />
+        )}
+
+        {/* Validation Messages */}
+        {validationResult && (validationResult.errors.length > 0 || validationResult.warnings.length > 0) && (
+          <div className="space-y-2">
+            {validationResult.errors.length > 0 && (
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertTitle>Ошибки валидации</AlertTitle>
+                <AlertDescription>
+                  <ul className="list-disc list-inside space-y-1">
+                    {validationResult.errors.map((error, idx) => (
+                      <li key={idx}>{error}</li>
+                    ))}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
+            {validationResult.warnings.length > 0 && (
+              <Alert variant="default" className="border-yellow-500/50 bg-yellow-50 dark:bg-yellow-950/20">
+                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                <AlertTitle className="text-yellow-700 dark:text-yellow-500">Предупреждения</AlertTitle>
+                <AlertDescription>
+                  <ul className="list-disc list-inside space-y-1">
+                    {validationResult.warnings.map((warning, idx) => (
+                      <li key={idx} className="text-yellow-700 dark:text-yellow-400">{warning}</li>
+                    ))}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
+        )}
 
         {step === 'input' && (
           <div className="space-y-6">
@@ -360,24 +470,38 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
 
         {step === 'preview' && generatedSchema && (
           <div className="space-y-4">
-            {/* Overall Confidence Score */}
-            <Card className="bg-muted/30">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Общая уверенность AI</span>
-                  <span className="text-sm font-bold">
-                    {Math.round(generatedSchema.entities.reduce((sum, e) => sum + e.confidence, 0) / generatedSchema.entities.length)}%
-                  </span>
-                </div>
-                <Progress 
-                  value={generatedSchema.entities.reduce((sum, e) => sum + e.confidence, 0) / generatedSchema.entities.length} 
-                  className="h-2"
-                />
-                <p className="text-xs text-muted-foreground mt-2">
-                  {generatedSchema.entities.length} таблиц, {generatedSchema.relationships.length} связей
-                </p>
-              </CardContent>
-            </Card>
+            {/* View Tabs */}
+            <Tabs defaultValue="entities" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="entities">
+                  <Database className="h-4 w-4 mr-2" />
+                  Таблицы ({generatedSchema.entities.length})
+                </TabsTrigger>
+                <TabsTrigger value="relationships">
+                  <Link2 className="h-4 w-4 mr-2" />
+                  Связи ({generatedSchema.relationships.length})
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="entities" className="space-y-4 mt-4">
+                {/* Overall Confidence Score */}
+                <Card className="bg-muted/30">
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium">Общая уверенность AI</span>
+                      <span className="text-sm font-bold">
+                        {Math.round(generatedSchema.entities.reduce((sum, e) => sum + e.confidence, 0) / generatedSchema.entities.length)}%
+                      </span>
+                    </div>
+                    <Progress
+                      value={generatedSchema.entities.reduce((sum, e) => sum + e.confidence, 0) / generatedSchema.entities.length}
+                      className="h-2"
+                    />
+                    <p className="text-xs text-muted-foreground mt-2">
+                      {generatedSchema.entities.length} таблиц, {generatedSchema.relationships.length} связей
+                    </p>
+                  </CardContent>
+                </Card>
 
             {/* Warnings - Show at top if present */}
             {generatedSchema.warnings && generatedSchema.warnings.length > 0 && (
@@ -447,38 +571,30 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
                   </Card>
                 ))}
 
-                {/* Relationships */}
-                {generatedSchema.relationships.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base">Связи</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2">
-                        {generatedSchema.relationships.map((rel, idx) => (
-                          <div key={idx} className="flex items-center gap-2 text-sm">
-                            <Badge variant="outline" className="text-xs">{rel.type}</Badge>
-                            <span className="font-mono text-xs">
-                              {rel.from} → {rel.to}
-                            </span>
-                            {rel.confidence < 70 ? (
-                              <Badge variant="destructive" className="text-xs">
-                                <AlertTriangle className="h-3 w-3 mr-1" />
-                                {rel.confidence}%
-                              </Badge>
-                            ) : rel.confidence < 85 ? (
-                              <Badge variant="secondary" className="text-xs">
-                                {rel.confidence}%
-                              </Badge>
-                            ) : null}
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
               </div>
             </ScrollArea>
+          </TabsContent>
+
+          <TabsContent value="relationships" className="space-y-4 mt-4">
+            <RelationshipPreview schema={generatedSchema} />
+          </TabsContent>
+        </Tabs>
+      </div>
+    )}
+
+        {step === 'edit' && generatedSchema && (
+          <div className="space-y-4">
+            <Alert>
+              <AlertTitle>Редактирование схемы</AlertTitle>
+              <AlertDescription>
+                Вы можете изменить названия таблиц и колонок, типы данных, добавить или удалить колонки.
+              </AlertDescription>
+            </Alert>
+
+            <SchemaEditor
+              schema={generatedSchema}
+              onChange={setGeneratedSchema}
+            />
           </div>
         )}
 
@@ -521,6 +637,31 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
             <>
               <Button variant="outline" onClick={() => setStep('input')}>
                 Назад
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setStep('edit')}
+              >
+                <Edit2 className="h-4 w-4 mr-2" />
+                Редактировать
+              </Button>
+              <Button
+                onClick={() => {
+                  setStep('creating');
+                  createMutation.mutate();
+                }}
+                disabled={createMutation.isPending}
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Создать таблицы
+              </Button>
+            </>
+          )}
+
+          {step === 'edit' && (
+            <>
+              <Button variant="outline" onClick={() => setStep('preview')}>
+                Назад к просмотру
               </Button>
               <Button
                 onClick={() => {
