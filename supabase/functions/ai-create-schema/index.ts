@@ -119,16 +119,82 @@ serve(async (req) => {
       });
     }
 
-    // TODO: Create relationships between databases
-    // This would require a separate database_relations table setup
+    // Create relationships between databases
+    const createdRelations = [];
+    if (schema.relationships && Array.isArray(schema.relationships)) {
+      // Create mapping of entity names to database IDs
+      const entityToDatabaseId = new Map();
+      for (const db of createdDatabases) {
+        entityToDatabaseId.set(db.name, db.id);
+      }
 
-    console.log(`Successfully created ${createdDatabases.length} databases`);
+      for (const relationship of schema.relationships) {
+        try {
+          const sourceDatabaseId = entityToDatabaseId.get(relationship.from);
+          const targetDatabaseId = entityToDatabaseId.get(relationship.to);
+
+          if (!sourceDatabaseId || !targetDatabaseId) {
+            console.warn(`Skipping relationship: ${relationship.from} -> ${relationship.to} (database not found)`);
+            continue;
+          }
+
+          // Parse the ON clause to get column names
+          // Expected format: "orders.customer_id = customers.id"
+          const onMatch = relationship.on?.match(/(\w+)\.(\w+)\s*=\s*(\w+)\.(\w+)/);
+          if (!onMatch) {
+            console.warn(`Skipping relationship: invalid ON clause format: ${relationship.on}`);
+            continue;
+          }
+
+          const sourceColumn = onMatch[2];
+          const targetColumn = onMatch[4];
+
+          // Map relationship type
+          let relationType = relationship.type;
+          if (relationship.type === 'many-to-one') {
+            relationType = 'many_to_one';
+          } else if (relationship.type === 'one-to-many') {
+            relationType = 'one_to_many';
+          } else if (relationship.type === 'many-to-many') {
+            relationType = 'many_to_many';
+          } else if (relationship.type === 'one-to-one') {
+            relationType = 'one_to_many'; // Store as one_to_many with unique constraint
+          }
+
+          const { data: relation, error: relationError } = await supabaseClient.rpc('create_database_relation', {
+            p_source_database_id: sourceDatabaseId,
+            p_target_database_id: targetDatabaseId,
+            p_relation_type: relationType,
+            p_source_column: sourceColumn,
+            p_target_column: targetColumn,
+            p_cascade_delete: false,
+          });
+
+          if (relationError) {
+            console.error('Error creating relation:', relationError);
+            // Continue with other relations
+          } else {
+            createdRelations.push({
+              from: relationship.from,
+              to: relationship.to,
+              type: relationship.type,
+            });
+          }
+        } catch (err) {
+          console.error('Error processing relationship:', err);
+          // Continue with other relations
+        }
+      }
+    }
+
+    console.log(`Successfully created ${createdDatabases.length} databases and ${createdRelations.length} relationships`);
 
     return new Response(
       JSON.stringify({
         success: true,
         databases: createdDatabases,
-        message: `Created ${createdDatabases.length} tables successfully`,
+        relationships: createdRelations,
+        message: `Created ${createdDatabases.length} tables and ${createdRelations.length} relationships successfully`,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
