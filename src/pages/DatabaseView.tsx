@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Upload, Trash2, Plus, Filter as FilterIcon, Sparkles, MessageSquare, History, FileText, Lightbulb } from 'lucide-react';
+import { ArrowLeft, Upload, Trash2, Plus, Filter as FilterIcon, Sparkles, MessageSquare, History, FileText, Lightbulb, Table, Calendar, Columns, Image } from 'lucide-react';
+import { CalendarView } from '@/components/views/CalendarView';
+import { KanbanView } from '@/components/views/KanbanView';
+import { GalleryView } from '@/components/views/GalleryView';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -43,6 +46,7 @@ export default function DatabaseView() {
   const [showAIChat, setShowAIChat] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
   const [showCollabPanel, setShowCollabPanel] = useState(false);
+  const [viewType, setViewType] = useState<'table' | 'calendar' | 'kanban' | 'gallery'>('table');
 
   // Load comments for the database (not tied to specific row)
   const {
@@ -304,6 +308,64 @@ export default function DatabaseView() {
     }
   };
 
+  // Helper function for Kanban columns
+  const getKanbanColumns = (rows: any[]) => {
+    // Find status column
+    const statusColumn = schemas.find(col =>
+      col.column_type === 'status' ||
+      col.column_name.toLowerCase().includes('status')
+    );
+
+    if (!statusColumn) {
+      // If no status column, create default columns
+      return [
+        {
+          id: 'todo',
+          title: 'To Do',
+          cards: rows.slice(0, Math.ceil(rows.length / 3)).map(r => ({
+            id: r.id,
+            title: r.name || r.title || 'Без названия',
+            description: r.description,
+          })),
+        },
+        {
+          id: 'in-progress',
+          title: 'In Progress',
+          cards: rows.slice(Math.ceil(rows.length / 3), Math.ceil(rows.length * 2 / 3)).map(r => ({
+            id: r.id,
+            title: r.name || r.title || 'Без названия',
+            description: r.description,
+          })),
+        },
+        {
+          id: 'done',
+          title: 'Done',
+          cards: rows.slice(Math.ceil(rows.length * 2 / 3)).map(r => ({
+            id: r.id,
+            title: r.name || r.title || 'Без названия',
+            description: r.description,
+          })),
+        },
+      ];
+    }
+
+    // Get unique statuses
+    const statuses = [...new Set(rows.map(r => r[statusColumn.column_name]))].filter(Boolean);
+
+    return statuses.map(status => ({
+      id: status,
+      title: status,
+      cards: rows
+        .filter(r => r[statusColumn.column_name] === status)
+        .map(r => ({
+          id: r.id,
+          title: r.name || r.title || 'Без названия',
+          description: r.description,
+          status: r[statusColumn.column_name],
+        })),
+    }));
+  };
+
   if (loading || dataLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -462,9 +524,32 @@ export default function DatabaseView() {
           </Collapsible>
         </div>
 
-        {/* Data Table */}
+        {/* View Type Selector */}
+        <Tabs value={viewType} onValueChange={(v: any) => setViewType(v)} className="mb-4">
+          <TabsList>
+            <TabsTrigger value="table">
+              <Table className="h-4 w-4 mr-2" />
+              Таблица
+            </TabsTrigger>
+            <TabsTrigger value="calendar">
+              <Calendar className="h-4 w-4 mr-2" />
+              Календарь
+            </TabsTrigger>
+            <TabsTrigger value="kanban">
+              <Columns className="h-4 w-4 mr-2" />
+              Kanban
+            </TabsTrigger>
+            <TabsTrigger value="gallery">
+              <Image className="h-4 w-4 mr-2" />
+              Галерея
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {/* Conditional View Rendering */}
         <div className="mt-6">
-          <DataTable
+          {viewType === 'table' && (
+            <DataTable
             data={tableData.map((row: any) => ({
               id: row.id,
               ...row.data,
@@ -492,6 +577,94 @@ export default function DatabaseView() {
               return acc;
             }, {} as Record<string, string>)}
           />
+          )}
+
+          {viewType === 'calendar' && (
+            <CalendarView
+              data={tableData.map((row: any) => ({
+                id: row.id,
+                ...row.data,
+                created_at: row.created_at,
+              }))}
+              dateColumn={
+                schemas.find(col =>
+                  col.column_type === 'date' ||
+                  col.column_name.toLowerCase().includes('date') ||
+                  col.column_name.toLowerCase().includes('created')
+                )?.column_name || 'created_at'
+              }
+              titleColumn={
+                schemas.find(col =>
+                  col.column_name.toLowerCase().includes('title') ||
+                  col.column_name.toLowerCase().includes('name')
+                )?.column_name
+              }
+              statusColumn={
+                schemas.find(col =>
+                  col.column_type === 'status' ||
+                  col.column_name.toLowerCase().includes('status')
+                )?.column_name
+              }
+              onEventClick={(event) => {
+                console.log('Event clicked:', event);
+              }}
+              onAddEvent={(date) => {
+                console.log('Add event on:', date);
+              }}
+            />
+          )}
+
+          {viewType === 'kanban' && (
+            <KanbanView
+              columns={getKanbanColumns(tableData.map((row: any) => ({
+                id: row.id,
+                ...row.data,
+              })))}
+              onCardMove={(cardId, fromColumnId, toColumnId) => {
+                console.log('Card moved:', cardId, 'from', fromColumnId, 'to', toColumnId);
+
+                // Find the status column
+                const statusColumn = schemas.find(col =>
+                  col.column_type === 'status' ||
+                  col.column_name.toLowerCase().includes('status')
+                );
+
+                if (statusColumn) {
+                  // Find the row
+                  const row = tableData.find((r: any) => r.id === cardId);
+                  if (row) {
+                    // Update the status
+                    const updatedData = {
+                      ...row.data,
+                      [statusColumn.column_name]: toColumnId,
+                    };
+                    handleUpdateRow(cardId, updatedData);
+                  }
+                }
+              }}
+              onCardClick={(card) => {
+                console.log('Card clicked:', card);
+              }}
+            />
+          )}
+
+          {viewType === 'gallery' && (
+            <GalleryView
+              items={tableData.map((row: any) => ({
+                id: row.id,
+                title: row.data?.name || row.data?.title || 'Без названия',
+                description: row.data?.description || '',
+                imageUrl: row.data?.image || row.data?.photo || row.data?.avatar,
+                metadata: {
+                  created_at: row.created_at,
+                  ...row.data,
+                },
+              }))}
+              onItemClick={(item) => {
+                console.log('Item clicked:', item);
+              }}
+            />
+          )}
         </div>
 
         {/* Clear Data Dialog */}
