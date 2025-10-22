@@ -275,6 +275,203 @@ export class MLMapper {
 
     return improvedMapping;
   }
+
+  /**
+   * Soundex algorithm for phonetic matching
+   * Supports both English and Russian (transliterated)
+   */
+  soundex(str: string): string {
+    if (!str) return '0000';
+
+    // Clean and uppercase
+    const cleaned = str.toUpperCase().replace(/[^A-ZА-Я]/g, '');
+    if (cleaned.length === 0) return '0000';
+
+    // Soundex mapping for English letters
+    const soundexMap: Record<string, string> = {
+      'B': '1', 'F': '1', 'P': '1', 'V': '1',
+      'C': '2', 'G': '2', 'J': '2', 'K': '2', 'Q': '2', 'S': '2', 'X': '2', 'Z': '2',
+      'D': '3', 'T': '3',
+      'L': '4',
+      'M': '5', 'N': '5',
+      'R': '6',
+      // Russian transliteration
+      'Б': '1', 'В': '1', 'Ф': '1', 'П': '1',
+      'Г': '2', 'К': '2', 'Х': '2', 'Ж': '2', 'Ш': '2', 'Щ': '2', 'З': '2', 'С': '2', 'Ц': '2',
+      'Д': '3', 'Т': '3',
+      'Л': '4',
+      'М': '5', 'Н': '5',
+      'Р': '6',
+    };
+
+    // Start with first letter
+    let code = cleaned[0];
+
+    // Process remaining letters
+    for (let i = 1; i < cleaned.length && code.length < 4; i++) {
+      const char = cleaned[i];
+      const digit = soundexMap[char];
+
+      // Add digit if:
+      // 1. It exists in the map
+      // 2. It's different from the last digit added
+      if (digit && digit !== code[code.length - 1]) {
+        code += digit;
+      }
+    }
+
+    // Pad with zeros to make it 4 characters
+    return (code + '0000').slice(0, 4);
+  }
+
+  /**
+   * Time-based matching for date fields
+   * Returns similarity score based on time difference
+   */
+  matchByTime(
+    date1: Date | string | null,
+    date2: Date | string | null,
+    thresholdMs: number = 86400000 // 1 day in milliseconds
+  ): number {
+    if (!date1 || !date2) return 0;
+
+    try {
+      const d1 = date1 instanceof Date ? date1 : new Date(date1);
+      const d2 = date2 instanceof Date ? date2 : new Date(date2);
+
+      if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return 0;
+
+      const diff = Math.abs(d1.getTime() - d2.getTime());
+
+      // Perfect match
+      if (diff === 0) return 1.0;
+
+      // Outside threshold
+      if (diff > thresholdMs) return 0.0;
+
+      // Linear decay within threshold
+      return 1 - (diff / thresholdMs);
+    } catch (error) {
+      console.error('Time matching error:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Composite scoring with configurable weights
+   * Combines multiple matching strategies
+   */
+  compositeScore(
+    values: {
+      exact?: number;
+      fuzzy?: number;
+      soundex?: number;
+      time?: number;
+      pattern?: number;
+    },
+    weights: {
+      exact?: number;
+      fuzzy?: number;
+      soundex?: number;
+      time?: number;
+      pattern?: number;
+    } = {
+      exact: 0.4,
+      fuzzy: 0.3,
+      soundex: 0.15,
+      time: 0.1,
+      pattern: 0.05,
+    }
+  ): number {
+    let totalScore = 0;
+    let totalWeight = 0;
+
+    // Calculate weighted sum
+    Object.entries(values).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        const weight = weights[key as keyof typeof weights] || 0;
+        totalScore += value * weight;
+        totalWeight += weight;
+      }
+    });
+
+    // Normalize by total weight (in case not all values provided)
+    return totalWeight > 0 ? totalScore / totalWeight : 0;
+  }
+
+  /**
+   * Advanced matching with all strategies combined
+   */
+  advancedMatch(
+    source: {
+      name: string;
+      value: any;
+      type: string;
+    },
+    target: {
+      name: string;
+      value: any;
+      type: string;
+    },
+    options?: {
+      weights?: {
+        exact?: number;
+        fuzzy?: number;
+        soundex?: number;
+        time?: number;
+        pattern?: number;
+      };
+      timeThreshold?: number;
+    }
+  ): {
+    score: number;
+    breakdown: Record<string, number>;
+    confidence: 'high' | 'medium' | 'low';
+  } {
+    const scores: Record<string, number> = {};
+
+    // Exact name match
+    scores.exact = source.name.toLowerCase() === target.name.toLowerCase() ? 1.0 : 0.0;
+
+    // Fuzzy name match
+    scores.fuzzy = this.calculateNameSimilarity(source.name, target.name);
+
+    // Soundex phonetic match
+    const sourceSoundex = this.soundex(source.name);
+    const targetSoundex = this.soundex(target.name);
+    scores.soundex = sourceSoundex === targetSoundex ? 1.0 : 0.0;
+
+    // Time-based match (if both are dates)
+    if (source.type === 'date' && target.type === 'date') {
+      scores.time = this.matchByTime(
+        source.value,
+        target.value,
+        options?.timeThreshold
+      );
+    }
+
+    // Pattern match (type compatibility)
+    scores.pattern = source.type === target.type ? 1.0 : 0.0;
+
+    // Calculate composite score
+    const finalScore = this.compositeScore(scores, options?.weights);
+
+    // Determine confidence level
+    let confidence: 'high' | 'medium' | 'low';
+    if (finalScore >= 0.8) {
+      confidence = 'high';
+    } else if (finalScore >= 0.5) {
+      confidence = 'medium';
+    } else {
+      confidence = 'low';
+    }
+
+    return {
+      score: finalScore,
+      breakdown: scores,
+      confidence,
+    };
+  }
 }
 
 // Singleton instance
