@@ -1,5 +1,5 @@
 // Типы данных для колонок
-export type ColumnType = 
+export type ColumnType =
   | 'text'
   | 'number'
   | 'date'
@@ -13,7 +13,14 @@ export type ColumnType =
   | 'relation'
   | 'rollup'
   | 'formula'
-  | 'lookup';
+  | 'lookup'
+  | 'button'      // Кнопка действия
+  | 'user'        // Пользователь
+  | 'rating'      // Рейтинг (1-5 звезд)
+  | 'duration'    // Длительность (HH:MM:SS)
+  | 'percent'     // Процент (с форматированием)
+  | 'barcode'     // Штрихкод
+  | 'qr';         // QR код
 
 // Основная таблица баз данных
 export interface Database {
@@ -43,6 +50,13 @@ export interface TableSchema {
   relation_config?: RelationConfig;
   rollup_config?: RollupConfig;
   formula_config?: FormulaConfig;
+  lookup_config?: LookupConfig;
+  button_config?: ButtonConfig;
+  rating_config?: RatingConfig;
+  percent_config?: PercentConfig;
+  duration_config?: DurationConfig;
+  barcode_config?: BarcodeConfig;
+  qr_config?: QRConfig;
 }
 
 // Алиас для схемы колонки (совместимость)
@@ -79,6 +93,52 @@ export interface FormulaConfig {
 export interface LookupConfig {
   relation_column_id: string;
   target_column: string;
+}
+
+// Конфигурация кнопки
+export interface ButtonConfig {
+  label: string;
+  action: 'open_url' | 'run_formula' | 'send_email' | 'custom';
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  url?: string;
+  formula?: string;
+  email_template?: string;
+}
+
+// Конфигурация рейтинга
+export interface RatingConfig {
+  max_stars: number;  // по умолчанию 5
+  allow_half: boolean;  // разрешить половинные звезды
+  color?: string;
+}
+
+// Конфигурация процента
+export interface PercentConfig {
+  show_progress_bar: boolean;
+  color_scheme?: 'default' | 'success' | 'warning' | 'danger';
+  min?: number;  // по умолчанию 0
+  max?: number;  // по умолчанию 100
+}
+
+// Конфигурация длительности
+export interface DurationConfig {
+  format: 'hh:mm:ss' | 'hh:mm' | 'mm:ss';
+  auto_calculate?: boolean;
+}
+
+// Конфигурация штрихкода
+export interface BarcodeConfig {
+  format: 'CODE128' | 'EAN13' | 'UPC' | 'CODE39';
+  display_value: boolean;
+  width?: number;
+  height?: number;
+}
+
+// Конфигурация QR кода
+export interface QRConfig {
+  size?: number;  // по умолчанию 128
+  error_correction?: 'L' | 'M' | 'Q' | 'H';  // Low, Medium, Quartile, High
+  include_margin?: boolean;
 }
 
 // Связи между базами данных
