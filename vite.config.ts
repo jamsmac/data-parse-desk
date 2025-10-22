@@ -118,16 +118,91 @@ export default defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
       output: {
-        manualChunks: {
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'ui-vendor': ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu', '@radix-ui/react-select', '@radix-ui/react-tabs'],
-          'chart-vendor': ['recharts', 'd3-scale', 'd3-shape'],
-          'utils-vendor': ['date-fns', 'clsx', 'tailwind-merge'],
-          'query-vendor': ['@tanstack/react-query'],
-          'supabase-vendor': ['@supabase/supabase-js'],
+        manualChunks: (id) => {
+          // React ecosystem - keep together
+          if (id.includes('node_modules/react') ||
+              id.includes('node_modules/react-dom') ||
+              id.includes('node_modules/react-router-dom') ||
+              id.includes('node_modules/scheduler')) {
+            return 'react-vendor';
+          }
+
+          // Radix UI components - split into smaller chunks
+          if (id.includes('@radix-ui')) {
+            if (id.includes('dialog') || id.includes('dropdown') || id.includes('popover')) {
+              return 'radix-overlay';
+            }
+            if (id.includes('select') || id.includes('tabs') || id.includes('accordion')) {
+              return 'radix-controls';
+            }
+            return 'radix-core';
+          }
+
+          // Charts - separate chunk (heavy)
+          if (id.includes('recharts') || id.includes('d3-')) {
+            return 'chart-vendor';
+          }
+
+          // File parsing libraries - lazy load (CRITICAL: 961KB)
+          if (id.includes('xlsx') ||
+              id.includes('papaparse') ||
+              id.includes('file-saver') ||
+              id.includes('jszip')) {
+            return 'file-parser';
+          }
+
+          // Date utilities
+          if (id.includes('date-fns')) {
+            return 'date-vendor';
+          }
+
+          // Utility libraries
+          if (id.includes('clsx') ||
+              id.includes('tailwind-merge') ||
+              id.includes('class-variance-authority')) {
+            return 'utils-vendor';
+          }
+
+          // React Query
+          if (id.includes('@tanstack/react-query')) {
+            return 'query-vendor';
+          }
+
+          // Supabase
+          if (id.includes('@supabase/supabase-js') ||
+              id.includes('@supabase/postgrest-js') ||
+              id.includes('@supabase/realtime-js')) {
+            return 'supabase-vendor';
+          }
+
+          // Lucide icons - separate chunk
+          if (id.includes('lucide-react')) {
+            return 'icons-vendor';
+          }
+
+          // Form libraries
+          if (id.includes('react-hook-form') || id.includes('zod')) {
+            return 'form-vendor';
+          }
         },
       },
     },
-    chunkSizeWarningLimit: 500,
+    chunkSizeWarningLimit: 600,
+    // Enable minification and compression
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console.log in production
+        drop_debugger: true,
+        pure_funcs: ['console.log', 'console.info'], // Remove specific console methods
+      },
+      mangle: {
+        safari10: true, // Safari 10 compatibility
+      },
+    },
+    // CSS code splitting
+    cssCodeSplit: true,
+    // Source maps only in dev
+    sourcemap: mode === 'development',
   },
 }));
