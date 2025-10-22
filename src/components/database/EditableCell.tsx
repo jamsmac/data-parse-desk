@@ -8,14 +8,25 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
+// Import new cell components
+import { ButtonCell } from '@/components/cells/ButtonCell';
+import { UserCell } from '@/components/cells/UserCell';
+import { RatingCell } from '@/components/cells/RatingCell';
+import { DurationCell } from '@/components/cells/DurationCell';
+import { PercentCell } from '@/components/cells/PercentCell';
+import { BarcodeCell } from '@/components/cells/BarcodeCell';
+import { QRCell } from '@/components/cells/QRCell';
+
 interface EditableCellProps {
   value: any;
   columnType: string;
   onSave: (value: any) => void;
   onCancel: () => void;
+  columnConfig?: any;  // Config for special column types
+  rowData?: Record<string, any>;  // Full row data for button actions
 }
 
-export function EditableCell({ value, columnType, onSave, onCancel }: EditableCellProps) {
+export function EditableCell({ value, columnType, onSave, onCancel, columnConfig, rowData }: EditableCellProps) {
   const [editValue, setEditValue] = useState(value);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -115,6 +126,104 @@ export function EditableCell({ value, columnType, onSave, onCancel }: EditableCe
           />
         </PopoverContent>
       </Popover>
+    );
+  }
+
+  // Button cell (readonly - buttons don't need editing)
+  if (columnType === 'button') {
+    return (
+      <ButtonCell
+        value={value}
+        config={columnConfig || { label: 'Action', action: 'custom' }}
+        rowData={rowData}
+        onAction={(action, data) => {
+          console.log('Button action:', action, data);
+        }}
+      />
+    );
+  }
+
+  // User cell
+  if (columnType === 'user') {
+    return (
+      <UserCell
+        value={value}
+        users={[]} // TODO: Pass actual users list from props
+        onChange={(userId) => {
+          setEditValue(userId);
+          onSave(userId);
+        }}
+      />
+    );
+  }
+
+  // Rating cell
+  if (columnType === 'rating') {
+    return (
+      <RatingCell
+        value={value}
+        config={columnConfig || { max_stars: 5, allow_half: false }}
+        onChange={(rating) => {
+          setEditValue(rating);
+          onSave(rating);
+        }}
+      />
+    );
+  }
+
+  // Duration cell
+  if (columnType === 'duration') {
+    return (
+      <DurationCell
+        value={value}
+        config={columnConfig || { format: 'hh:mm:ss' }}
+        onChange={(seconds) => {
+          setEditValue(seconds);
+          onSave(seconds);
+        }}
+      />
+    );
+  }
+
+  // Percent cell
+  if (columnType === 'percent') {
+    return (
+      <PercentCell
+        value={value}
+        config={columnConfig || { show_progress_bar: true, min: 0, max: 100 }}
+        onChange={(percent) => {
+          setEditValue(percent);
+          onSave(percent);
+        }}
+      />
+    );
+  }
+
+  // Barcode cell
+  if (columnType === 'barcode') {
+    return (
+      <BarcodeCell
+        value={value}
+        config={columnConfig || { format: 'CODE128', display_value: true }}
+        onChange={(barcodeValue) => {
+          setEditValue(barcodeValue);
+          onSave(barcodeValue);
+        }}
+      />
+    );
+  }
+
+  // QR code cell
+  if (columnType === 'qr') {
+    return (
+      <QRCell
+        value={value}
+        config={columnConfig || { size: 128, error_correction: 'M' }}
+        onChange={(qrValue) => {
+          setEditValue(qrValue);
+          onSave(qrValue);
+        }}
+      />
     );
   }
 
