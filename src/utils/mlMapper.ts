@@ -154,9 +154,12 @@ export class MLMapper {
   }
 
   /**
-   * Расстояние Левенштейна
+   * Расстояние Левенштейна (public для тестирования)
    */
-  private levenshteinDistance(str1: string, str2: string): number {
+  levenshteinDistance(str1: string, str2: string): number {
+    // Приводим к нижнему регистру для case-insensitive сравнения
+    str1 = str1.toLowerCase();
+    str2 = str2.toLowerCase();
     const matrix: number[][] = [];
 
     for (let i = 0; i <= str2.length; i++) {
