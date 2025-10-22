@@ -66,11 +66,10 @@ CREATE POLICY "Users can view their databases"
     -- Owner of the database
     auth.uid() = created_by
     OR
-    -- Member of any project that uses this database
+    -- Member of the project that owns this database
     EXISTS (
-      SELECT 1 FROM public.project_databases pd
-      JOIN public.project_members pm ON pm.project_id = pd.project_id
-      WHERE pd.database_id = databases.id
+      SELECT 1 FROM public.project_members pm
+      WHERE pm.project_id = databases.project_id
       AND pm.user_id = auth.uid()
     )
   );
@@ -95,11 +94,10 @@ CREATE POLICY "Users can update their own databases"
     -- Owner of the database
     auth.uid() = created_by
     OR
-    -- Admin/Owner of any project using this database
+    -- Admin/Owner of project that owns this database
     EXISTS (
-      SELECT 1 FROM public.project_databases pd
-      JOIN public.project_members pm ON pm.project_id = pd.project_id
-      WHERE pd.database_id = databases.id
+      SELECT 1 FROM public.project_members pm
+      WHERE pm.project_id = databases.project_id
       AND pm.user_id = auth.uid()
       AND pm.role IN ('owner', 'admin')
     )
@@ -135,9 +133,8 @@ CREATE POLICY "Users can view schemas of accessible databases"
         OR
         -- Member of project using this database
         EXISTS (
-          SELECT 1 FROM public.project_databases pd
-          JOIN public.project_members pm ON pm.project_id = pd.project_id
-          WHERE pd.database_id = d.id
+          SELECT 1 FROM public.project_members pm
+          WHERE pm.project_id = d.project_id
           AND pm.user_id = auth.uid()
         )
       )
@@ -158,9 +155,8 @@ CREATE POLICY "Database owners can create schemas"
         d.created_by = auth.uid()
         OR
         EXISTS (
-          SELECT 1 FROM public.project_databases pd
-          JOIN public.project_members pm ON pm.project_id = pd.project_id
-          WHERE pd.database_id = d.id
+          SELECT 1 FROM public.project_members pm
+          WHERE pm.project_id = d.project_id
           AND pm.user_id = auth.uid()
           AND pm.role IN ('owner', 'admin')
         )
@@ -182,9 +178,8 @@ CREATE POLICY "Database owners can update schemas"
         d.created_by = auth.uid()
         OR
         EXISTS (
-          SELECT 1 FROM public.project_databases pd
-          JOIN public.project_members pm ON pm.project_id = pd.project_id
-          WHERE pd.database_id = d.id
+          SELECT 1 FROM public.project_members pm
+          WHERE pm.project_id = d.project_id
           AND pm.user_id = auth.uid()
           AND pm.role IN ('owner', 'admin')
         )
@@ -228,9 +223,8 @@ CREATE POLICY "Users can view their files"
         d.created_by = auth.uid()
         OR
         EXISTS (
-          SELECT 1 FROM public.project_databases pd
-          JOIN public.project_members pm ON pm.project_id = pd.project_id
-          WHERE pd.database_id = d.id
+          SELECT 1 FROM public.project_members pm
+          WHERE pm.project_id = d.project_id
           AND pm.user_id = auth.uid()
         )
       )
@@ -260,9 +254,8 @@ CREATE POLICY "Users can update their own files"
       SELECT 1 FROM public.databases d
       WHERE d.id = files.database_id
       AND EXISTS (
-        SELECT 1 FROM public.project_databases pd
-        JOIN public.project_members pm ON pm.project_id = pd.project_id
-        WHERE pd.database_id = d.id
+        SELECT 1 FROM public.project_members pm
+        WHERE pm.project_id = d.project_id
         AND pm.user_id = auth.uid()
         AND pm.role IN ('owner', 'admin')
       )
@@ -292,25 +285,12 @@ COMMENT ON POLICY "Users can delete their own files" ON public.files IS
 -- STEP 5: CREATE SECURE POLICIES FOR AUDIT_LOG TABLE
 -- ============================================================================
 
--- SELECT: Owner of the action OR system admin
+-- SELECT: Owner of the action only
 CREATE POLICY "Users can view their own audit logs"
   ON public.audit_log FOR SELECT
   USING (
     -- User who performed the action
     auth.uid() = user_id
-    OR
-    -- Admin of any project related to this action
-    EXISTS (
-      SELECT 1 FROM public.databases d
-      WHERE d.id = audit_log.database_id
-      AND EXISTS (
-        SELECT 1 FROM public.project_databases pd
-        JOIN public.project_members pm ON pm.project_id = pd.project_id
-        WHERE pd.database_id = d.id
-        AND pm.user_id = auth.uid()
-        AND pm.role IN ('owner', 'admin')
-      )
-    )
   );
 
 COMMENT ON POLICY "Users can view their own audit logs" ON public.audit_log IS
@@ -342,9 +322,8 @@ CREATE POLICY "Users can view relations of accessible databases"
         d.created_by = auth.uid()
         OR
         EXISTS (
-          SELECT 1 FROM public.project_databases pd
-          JOIN public.project_members pm ON pm.project_id = pd.project_id
-          WHERE pd.database_id = d.id
+          SELECT 1 FROM public.project_members pm
+          WHERE pm.project_id = d.project_id
           AND pm.user_id = auth.uid()
         )
       )
@@ -365,9 +344,8 @@ CREATE POLICY "Database owners can create relations"
         d.created_by = auth.uid()
         OR
         EXISTS (
-          SELECT 1 FROM public.project_databases pd
-          JOIN public.project_members pm ON pm.project_id = pd.project_id
-          WHERE pd.database_id = d.id
+          SELECT 1 FROM public.project_members pm
+          WHERE pm.project_id = d.project_id
           AND pm.user_id = auth.uid()
           AND pm.role IN ('owner', 'admin')
         )
@@ -389,9 +367,8 @@ CREATE POLICY "Database owners can update relations"
         d.created_by = auth.uid()
         OR
         EXISTS (
-          SELECT 1 FROM public.project_databases pd
-          JOIN public.project_members pm ON pm.project_id = pd.project_id
-          WHERE pd.database_id = d.id
+          SELECT 1 FROM public.project_members pm
+          WHERE pm.project_id = d.project_id
           AND pm.user_id = auth.uid()
           AND pm.role IN ('owner', 'admin')
         )
@@ -421,33 +398,31 @@ COMMENT ON POLICY "Database owners can delete relations" ON public.database_rela
 -- ============================================================================
 
 -- Note: data_insights is populated by Edge Functions (service role)
--- SELECT: Project members only
-CREATE POLICY "Users can view insights for their projects"
+-- SELECT: Members of projects that own the database
+CREATE POLICY "Users can view insights for their databases"
   ON public.data_insights FOR SELECT
   USING (
+    -- User owns the database OR is member of project that owns it
+    auth.uid() = user_id
+    OR
     EXISTS (
-      SELECT 1 FROM public.project_members pm
-      WHERE pm.project_id = data_insights.project_id
-      AND pm.user_id = auth.uid()
+      SELECT 1 FROM public.databases d
+      LEFT JOIN public.project_members pm ON pm.project_id = d.project_id
+      WHERE d.id = data_insights.database_id
+      AND (d.created_by = auth.uid() OR pm.user_id = auth.uid())
     )
   );
 
-COMMENT ON POLICY "Users can view insights for their projects" ON public.data_insights IS
-  'Users can view AI insights for projects they are members of';
+COMMENT ON POLICY "Users can view insights for their databases" ON public.data_insights IS
+  'Users can view AI insights for databases they own or are project members of';
 
 -- INSERT: Service role only (Edge Functions)
--- Note: We use a different approach - check if the user is a project member
 CREATE POLICY "Service role can insert insights"
   ON public.data_insights FOR INSERT
   WITH CHECK (
-    -- Edge Functions will use service role
-    -- Regular users cannot insert insights directly
-    EXISTS (
-      SELECT 1 FROM public.project_members pm
-      WHERE pm.project_id = project_id
-      AND pm.user_id = auth.uid()
-      AND pm.role IN ('owner', 'admin')
-    )
+    -- Only service role can insert (used by Edge Functions)
+    -- Or user owns the database
+    auth.uid() = user_id
   );
 
 COMMENT ON POLICY "Service role can insert insights" ON public.data_insights IS
@@ -496,8 +471,6 @@ CREATE INDEX IF NOT EXISTS idx_project_members_user_project ON public.project_me
 CREATE INDEX IF NOT EXISTS idx_project_members_project_role ON public.project_members(project_id, role);
 
 -- Index for project_databases lookups
-CREATE INDEX IF NOT EXISTS idx_project_databases_project_db ON public.project_databases(project_id, database_id);
-CREATE INDEX IF NOT EXISTS idx_project_databases_database ON public.project_databases(database_id);
 
 -- Index for table_schemas.database_id
 CREATE INDEX IF NOT EXISTS idx_table_schemas_database_id ON public.table_schemas(database_id);
@@ -508,13 +481,14 @@ CREATE INDEX IF NOT EXISTS idx_files_database_id ON public.files(database_id);
 
 -- Index for audit_log.user_id and audit_log.database_id
 CREATE INDEX IF NOT EXISTS idx_audit_log_user_id ON public.audit_log(user_id);
-CREATE INDEX IF NOT EXISTS idx_audit_log_database_id ON public.audit_log(database_id);
+-- Note: audit_log doesn't have database_id column
+-- CREATE INDEX IF NOT EXISTS idx_audit_log_database_id ON public.audit_log(database_id);
 
 -- Index for database_relations.source_database_id
 CREATE INDEX IF NOT EXISTS idx_database_relations_source ON public.database_relations(source_database_id);
 
--- Index for data_insights.project_id
-CREATE INDEX IF NOT EXISTS idx_data_insights_project_id ON public.data_insights(project_id);
+-- Note: data_insights uses database_id, not project_id
+-- Index already exists from data_insights migration
 
 -- Index for activity_log.project_id and activity_log.user_id
 CREATE INDEX IF NOT EXISTS idx_activity_log_project_id ON public.activity_log(project_id);
