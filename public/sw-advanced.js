@@ -90,6 +90,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
+  // Handle share target
+  if (url.pathname === '/share-target' && request.method === 'POST') {
+    event.respondWith(handleShareTarget(request));
+    return;
+  }
+
   // API requests - Network First with Background Sync fallback
   if (url.pathname.includes('/rest/v1/') || url.pathname.includes('/auth/v1/')) {
     event.respondWith(handleAPIRequest(request));
@@ -198,12 +204,6 @@ async function handleStaticAsset(request) {
  */
 async function handleDocumentRequest(request) {
   try {
-    // Try navigation preload first
-    const preloadResponse = await event.preloadResponse;
-    if (preloadResponse) {
-      return preloadResponse;
-    }
-
     const response = await fetch(request);
     if (response.ok) {
       const cache = await caches.open(CACHE_NAMES.DYNAMIC);
@@ -500,32 +500,39 @@ self.addEventListener('message', (event) => {
 // SHARE TARGET API
 // ============================================================================
 
-self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
+/**
+ * Handle Share Target API requests
+ */
+async function handleShareTarget(request) {
+  try {
+    const formData = await request.formData();
+    const title = formData.get('title');
+    const text = formData.get('text');
+    const sharedUrl = formData.get('url');
+    const files = formData.getAll('files');
 
-  // Handle share target
-  if (url.pathname === '/share-target' && event.request.method === 'POST') {
-    event.respondWith(
-      (async () => {
-        const formData = await event.request.formData();
-        const title = formData.get('title');
-        const text = formData.get('text');
-        const url = formData.get('url');
+    // Store shared data
+    const clients = await self.clients.matchAll();
+    clients.forEach((client) => {
+      client.postMessage({
+        type: 'SHARE_TARGET',
+        data: {
+          title,
+          text,
+          url: sharedUrl,
+          files: files.length > 0 ? files : undefined,
+        },
+      });
+    });
 
-        // Store shared data
-        const clients = await self.clients.matchAll();
-        clients.forEach((client) => {
-          client.postMessage({
-            type: 'SHARE_TARGET',
-            data: { title, text, url },
-          });
-        });
+    console.log('[SW] Share target data received:', { title, text, url: sharedUrl, filesCount: files.length });
 
-        // Redirect to app
-        return Response.redirect('/', 303);
-      })()
-    );
+    // Redirect to app
+    return Response.redirect('/?shared=true', 303);
+  } catch (error) {
+    console.error('[SW] Share target error:', error);
+    return Response.redirect('/', 303);
   }
-});
+}
 
 console.log('[SW] Advanced Service Worker loaded');
