@@ -1,0 +1,666 @@
+---
+description: Testing patterns and best practices for DataParseDesk (Vitest + Playwright)
+globs: src/**/*.test.ts, src/**/*.test.tsx, src/**/*.spec.ts, tests/**/*
+alwaysApply: false
+---
+
+- **Testing Stack:**
+  - **Unit/Integration:** Vitest
+  - **E2E:** Playwright
+  - **Coverage:** Vitest coverage
+  - From [package.json](mdc:package.json): `vitest`, `@playwright/test`
+
+- **Unit Testing with Vitest:**
+
+  **1. Component Tests**
+  ```typescript
+  // src/components/ProjectCard.test.tsx
+  import { describe, it, expect, vi } from 'vitest';
+  import { render, screen } from '@testing-library/react';
+  import userEvent from '@testing-library/user-event';
+  import { ProjectCard } from './ProjectCard';
+
+  describe('ProjectCard', () => {
+    const mockProject = {
+      id: '1',
+      name: 'Test Project',
+      description: 'Test Description',
+      created_at: '2024-01-01',
+      user_id: 'user-1',
+    };
+
+    it('renders project name and description', () => {
+      render(<ProjectCard project={mockProject} />);
+
+      expect(screen.getByText('Test Project')).toBeInTheDocument();
+      expect(screen.getByText('Test Description')).toBeInTheDocument();
+    });
+
+    it('calls onEdit when edit button clicked', async () => {
+      const onEdit = vi.fn();
+      const user = userEvent.setup();
+
+      render(<ProjectCard project={mockProject} onEdit={onEdit} />);
+
+      const editButton = screen.getByRole('button', { name: /edit/i });
+      await user.click(editButton);
+
+      expect(onEdit).toHaveBeenCalledWith(mockProject.id);
+      expect(onEdit).toHaveBeenCalledTimes(1);
+    });
+
+    it('displays empty state when no description', () => {
+      const projectWithoutDesc = { ...mockProject, description: null };
+      render(<ProjectCard project={projectWithoutDesc} />);
+
+      expect(screen.queryByText('Test Description')).not.toBeInTheDocument();
+    });
+  });
+  ```
+
+  **2. Hook Tests**
+  ```typescript
+  // src/hooks/useProjects.test.ts
+  import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+  import { renderHook, waitFor } from '@testing-library/react';
+  import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+  import { useProjects } from './useProjects';
+  import { supabase } from '@/integrations/supabase/client';
+
+  vi.mock('@/integrations/supabase/client');
+
+  describe('useProjects', () => {
+    let queryClient: QueryClient;
+
+    beforeEach(() => {
+      queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false },
+        },
+      });
+    });
+
+    afterEach(() => {
+      queryClient.clear();
+    });
+
+    it('fetches projects successfully', async () => {
+      const mockProjects = [
+        { id: '1', name: 'Project 1' },
+        { id: '2', name: 'Project 2' },
+      ];
+
+      vi.mocked(supabase.from).mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({
+            data: mockProjects,
+            error: null,
+          }),
+        }),
+      } as any);
+
+      const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
+      );
+
+      const { result } = renderHook(() => useProjects('user-1'), { wrapper });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+      expect(result.current.data).toEqual(mockProjects);
+    });
+
+    it('handles fetch error', async () => {
+      vi.mocked(supabase.from).mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({
+            data: null,
+            error: { message: 'Database error' },
+          }),
+        }),
+      } as any);
+
+      const wrapper = ({ children }: { children: React.ReactNode }) => (
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
+      );
+
+      const { result } = renderHook(() => useProjects('user-1'), { wrapper });
+
+      await waitFor(() => expect(result.current.isError).toBe(true));
+
+      expect(result.current.error).toBeTruthy();
+    });
+  });
+  ```
+
+  **3. Utility Function Tests**
+  ```typescript
+  // src/lib/utils.test.ts
+  import { describe, it, expect } from 'vitest';
+  import { cn, formatDate, isValidEmail } from './utils';
+
+  describe('cn (className utility)', () => {
+    it('merges class names correctly', () => {
+      expect(cn('foo', 'bar')).toBe('foo bar');
+      expect(cn('foo', false && 'bar', 'baz')).toBe('foo baz');
+      expect(cn({ foo: true, bar: false })).toBe('foo');
+    });
+  });
+
+  describe('formatDate', () => {
+    it('formats ISO date correctly', () => {
+      const date = '2024-01-15T10:30:00Z';
+      expect(formatDate(date)).toBe('15.01.2024');
+    });
+
+    it('handles invalid date', () => {
+      expect(formatDate('invalid')).toBe('Invalid Date');
+    });
+  });
+
+  describe('isValidEmail', () => {
+    it('validates correct emails', () => {
+      expect(isValidEmail('test@example.com')).toBe(true);
+      expect(isValidEmail('user+tag@domain.co.uk')).toBe(true);
+    });
+
+    it('rejects invalid emails', () => {
+      expect(isValidEmail('notanemail')).toBe(false);
+      expect(isValidEmail('@example.com')).toBe(false);
+      expect(isValidEmail('test@')).toBe(false);
+    });
+  });
+  ```
+
+  **4. Form Validation Tests (Zod)**
+  ```typescript
+  // src/schemas/project.test.ts
+  import { describe, it, expect } from 'vitest';
+  import { projectSchema } from './project.schema';
+
+  describe('projectSchema', () => {
+    it('validates correct project data', () => {
+      const validData = {
+        name: 'My Project',
+        description: 'A test project',
+        is_public: false,
+      };
+
+      const result = projectSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+
+    it('rejects empty name', () => {
+      const invalidData = {
+        name: '',
+        description: 'Test',
+      };
+
+      const result = projectSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].message).toContain('название');
+      }
+    });
+
+    it('rejects name longer than 100 characters', () => {
+      const invalidData = {
+        name: 'a'.repeat(101),
+      };
+
+      const result = projectSchema.safeParse(invalidData);
+      expect(result.success).toBe(false);
+    });
+
+    it('allows optional description', () => {
+      const validData = {
+        name: 'Project',
+      };
+
+      const result = projectSchema.safeParse(validData);
+      expect(result.success).toBe(true);
+    });
+  });
+  ```
+
+- **Integration Tests:**
+
+  ```typescript
+  // src/features/projects/ProjectList.integration.test.tsx
+  import { describe, it, expect, beforeEach, vi } from 'vitest';
+  import { render, screen, waitFor } from '@testing-library/react';
+  import userEvent from '@testing-library/user-event';
+  import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+  import { BrowserRouter } from 'react-router-dom';
+  import { ProjectList } from './ProjectList';
+  import { supabase } from '@/integrations/supabase/client';
+
+  vi.mock('@/integrations/supabase/client');
+
+  describe('ProjectList Integration', () => {
+    let queryClient: QueryClient;
+
+    beforeEach(() => {
+      queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false },
+        },
+      });
+    });
+
+    const renderWithProviders = (component: React.ReactElement) => {
+      return render(
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
+            {component}
+          </BrowserRouter>
+        </QueryClientProvider>
+      );
+    };
+
+    it('loads and displays projects', async () => {
+      const mockProjects = [
+        { id: '1', name: 'Project 1', description: 'Desc 1' },
+        { id: '2', name: 'Project 2', description: 'Desc 2' },
+      ];
+
+      vi.mocked(supabase.from).mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          order: vi.fn().mockResolvedValue({
+            data: mockProjects,
+            error: null,
+          }),
+        }),
+      } as any);
+
+      renderWithProviders(<ProjectList />);
+
+      // Loading state
+      expect(screen.getByText(/загрузка/i)).toBeInTheDocument();
+
+      // Wait for data
+      await waitFor(() => {
+        expect(screen.getByText('Project 1')).toBeInTheDocument();
+        expect(screen.getByText('Project 2')).toBeInTheDocument();
+      });
+    });
+
+    it('creates new project and updates list', async () => {
+      const user = userEvent.setup();
+      const mockProjects = [
+        { id: '1', name: 'Existing Project', description: 'Desc' },
+      ];
+
+      vi.mocked(supabase.from).mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          order: vi.fn().mockResolvedValue({
+            data: mockProjects,
+            error: null,
+          }),
+        }),
+        insert: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({
+              data: { id: '2', name: 'New Project', description: 'New' },
+              error: null,
+            }),
+          }),
+        }),
+      } as any);
+
+      renderWithProviders(<ProjectList />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Existing Project')).toBeInTheDocument();
+      });
+
+      // Open create dialog
+      const createButton = screen.getByRole('button', { name: /создать/i });
+      await user.click(createButton);
+
+      // Fill form
+      const nameInput = screen.getByLabelText(/название/i);
+      await user.type(nameInput, 'New Project');
+
+      // Submit
+      const submitButton = screen.getByRole('button', { name: /сохранить/i });
+      await user.click(submitButton);
+
+      // Verify new project appears
+      await waitFor(() => {
+        expect(screen.getByText('New Project')).toBeInTheDocument();
+      });
+    });
+  });
+  ```
+
+- **E2E Tests with Playwright:**
+
+  **1. Basic E2E Test**
+  ```typescript
+  // tests/e2e/projects.spec.ts
+  import { test, expect } from '@playwright/test';
+
+  test.describe('Project Management', () => {
+    test.beforeEach(async ({ page }) => {
+      // Login before each test
+      await page.goto('/login');
+      await page.fill('input[name="email"]', 'test@example.com');
+      await page.fill('input[name="password"]', 'password123');
+      await page.click('button[type="submit"]');
+      await page.waitForURL('/projects');
+    });
+
+    test('should create a new project', async ({ page }) => {
+      // Click create project button
+      await page.click('button:has-text("Создать проект")');
+
+      // Fill form
+      await page.fill('input[name="name"]', 'E2E Test Project');
+      await page.fill('textarea[name="description"]', 'Created by E2E test');
+
+      // Submit
+      await page.click('button:has-text("Создать")');
+
+      // Verify project appears
+      await expect(page.locator('text=E2E Test Project')).toBeVisible();
+      await expect(page.locator('text=Created by E2E test')).toBeVisible();
+    });
+
+    test('should edit project', async ({ page }) => {
+      // Click on first project
+      await page.click('.project-card:first-child');
+
+      // Click edit button
+      await page.click('button[aria-label*="Редактировать"]');
+
+      // Update name
+      await page.fill('input[name="name"]', 'Updated Project Name');
+      await page.click('button:has-text("Сохранить")');
+
+      // Verify update
+      await expect(page.locator('text=Updated Project Name')).toBeVisible();
+    });
+
+    test('should delete project', async ({ page }) => {
+      const projectName = 'Project to Delete';
+
+      // Create project first
+      await page.click('button:has-text("Создать проект")');
+      await page.fill('input[name="name"]', projectName);
+      await page.click('button:has-text("Создать")');
+
+      // Delete it
+      await page.click(`text=${projectName}`);
+      await page.click('button[aria-label*="Удалить"]');
+
+      // Confirm deletion
+      await page.click('button:has-text("Подтвердить")');
+
+      // Verify deletion
+      await expect(page.locator(`text=${projectName}`)).not.toBeVisible();
+    });
+  });
+  ```
+
+  **2. Authentication E2E**
+  ```typescript
+  // tests/e2e/auth.spec.ts
+  import { test, expect } from '@playwright/test';
+
+  test.describe('Authentication', () => {
+    test('should register new user', async ({ page }) => {
+      await page.goto('/register');
+
+      await page.fill('input[name="email"]', `test${Date.now()}@example.com`);
+      await page.fill('input[name="password"]', 'SecurePass123!');
+      await page.fill('input[name="confirmPassword"]', 'SecurePass123!');
+      await page.click('button[type="submit"]');
+
+      // Should redirect to projects
+      await page.waitForURL('/projects');
+      await expect(page).toHaveURL('/projects');
+    });
+
+    test('should login existing user', async ({ page }) => {
+      await page.goto('/login');
+
+      await page.fill('input[name="email"]', 'test@example.com');
+      await page.fill('input[name="password"]', 'password123');
+      await page.click('button[type="submit"]');
+
+      await page.waitForURL('/projects');
+      await expect(page).toHaveURL('/projects');
+    });
+
+    test('should logout', async ({ page, context }) => {
+      // Login first
+      await page.goto('/login');
+      await page.fill('input[name="email"]', 'test@example.com');
+      await page.fill('input[name="password"]', 'password123');
+      await page.click('button[type="submit"]');
+      await page.waitForURL('/projects');
+
+      // Logout
+      await page.click('button[aria-label*="Профиль"]');
+      await page.click('text=Выйти');
+
+      // Should redirect to login
+      await page.waitForURL('/login');
+      await expect(page).toHaveURL('/login');
+    });
+
+    test('should protect routes when not authenticated', async ({ page }) => {
+      await page.goto('/projects');
+
+      // Should redirect to login
+      await page.waitForURL('/login');
+      await expect(page).toHaveURL('/login');
+    });
+  });
+  ```
+
+- **Test Utilities:**
+
+  **1. Test Helpers**
+  ```typescript
+  // src/test/utils.tsx
+  import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+  import { BrowserRouter } from 'react-router-dom';
+  import { render, RenderOptions } from '@testing-library/react';
+
+  export function createTestQueryClient() {
+    return new QueryClient({
+      defaultOptions: {
+        queries: {
+          retry: false,
+          cacheTime: 0,
+        },
+        mutations: {
+          retry: false,
+        },
+      },
+    });
+  }
+
+  interface AllProvidersProps {
+    children: React.ReactNode;
+  }
+
+  export function AllProviders({ children }: AllProvidersProps) {
+    const queryClient = createTestQueryClient();
+
+    return (
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          {children}
+        </BrowserRouter>
+      </QueryClientProvider>
+    );
+  }
+
+  export function renderWithProviders(
+    ui: React.ReactElement,
+    options?: Omit<RenderOptions, 'wrapper'>
+  ) {
+    return render(ui, { wrapper: AllProviders, ...options });
+  }
+  ```
+
+  **2. Mock Data Generators**
+  ```typescript
+  // src/test/factories.ts
+  import { Project, Database, Column } from '@/types';
+
+  export function createMockProject(overrides?: Partial<Project>): Project {
+    return {
+      id: crypto.randomUUID(),
+      user_id: 'test-user',
+      name: 'Test Project',
+      description: 'Test Description',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      is_archived: false,
+      ...overrides,
+    };
+  }
+
+  export function createMockDatabase(overrides?: Partial<Database>): Database {
+    return {
+      id: crypto.randomUUID(),
+      project_id: crypto.randomUUID(),
+      name: 'Test Database',
+      description: null,
+      created_at: new Date().toISOString(),
+      ...overrides,
+    };
+  }
+
+  export function createMockColumn(overrides?: Partial<Column>): Column {
+    return {
+      id: crypto.randomUUID(),
+      database_id: crypto.randomUUID(),
+      name: 'Test Column',
+      type: 'text',
+      position: 0,
+      is_required: false,
+      ...overrides,
+    };
+  }
+  ```
+
+- **Coverage Configuration:**
+
+  ```typescript
+  // vitest.config.ts
+  import { defineConfig } from 'vitest/config';
+
+  export default defineConfig({
+    test: {
+      globals: true,
+      environment: 'jsdom',
+      setupFiles: ['./src/test/setup.ts'],
+      coverage: {
+        provider: 'v8',
+        reporter: ['text', 'json', 'html'],
+        exclude: [
+          'node_modules/',
+          'src/test/',
+          '**/*.d.ts',
+          '**/*.config.*',
+          '**/mockData',
+          'dist/',
+        ],
+        thresholds: {
+          lines: 70,
+          functions: 70,
+          branches: 70,
+          statements: 70,
+        },
+      },
+    },
+  });
+  ```
+
+- **Testing Best Practices:**
+
+  **1. Arrange-Act-Assert Pattern**
+  ```typescript
+  it('should calculate total correctly', () => {
+    // Arrange - Set up test data
+    const items = [
+      { price: 100, quantity: 2 },
+      { price: 50, quantity: 3 },
+    ];
+
+    // Act - Execute the function
+    const total = calculateTotal(items);
+
+    // Assert - Verify the result
+    expect(total).toBe(350);
+  });
+  ```
+
+  **2. Test One Thing**
+  ```typescript
+  // ✅ DO: One assertion per test
+  it('displays project name', () => {
+    render(<ProjectCard project={mockProject} />);
+    expect(screen.getByText('Test Project')).toBeInTheDocument();
+  });
+
+  it('displays project description', () => {
+    render(<ProjectCard project={mockProject} />);
+    expect(screen.getByText('Test Description')).toBeInTheDocument();
+  });
+
+  // ❌ DON'T: Multiple unrelated assertions
+  it('renders project card', () => {
+    render(<ProjectCard project={mockProject} />);
+    expect(screen.getByText('Test Project')).toBeInTheDocument();
+    expect(screen.getByText('Test Description')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /edit/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /delete/i })).toBeInTheDocument();
+    // Too many things in one test!
+  });
+  ```
+
+  **3. Descriptive Test Names**
+  ```typescript
+  // ✅ DO: Clear, descriptive names
+  it('displays error message when form validation fails', () => {});
+  it('calls onSubmit with form data when form is valid', () => {});
+  it('disables submit button while request is pending', () => {});
+
+  // ❌ DON'T: Vague names
+  it('works', () => {});
+  it('test form', () => {});
+  it('should work correctly', () => {});
+  ```
+
+- **Running Tests:**
+
+  ```bash
+  # ✅ DO: Run tests regularly
+  npm test                    # Run all tests
+  npm run test:ui             # Run with UI
+  npm run test:coverage       # Generate coverage report
+
+  # E2E tests
+  npx playwright test         # Run E2E tests
+  npx playwright test --ui    # Run with UI
+  npx playwright test --debug # Debug mode
+
+  # Watch mode for development
+  npm test -- --watch
+
+  # Run specific test file
+  npm test -- ProjectCard.test.tsx
+  ```
+
+Follow [react_components.mdc](mdc:.cursor/rules/react_components.mdc) for component patterns.
+Follow [typescript.mdc](mdc:.cursor/rules/typescript.mdc) for type safety in tests.

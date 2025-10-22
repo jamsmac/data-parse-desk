@@ -1,0 +1,812 @@
+---
+description: Error handling patterns and best practices for DataParseDesk
+globs: src/**/*.ts, src/**/*.tsx
+alwaysApply: false
+---
+
+- **Error Types:**
+
+  **1. Custom Error Classes**
+  ```typescript
+  // src/lib/errors.ts
+
+  // ✅ DO: Define custom error types
+  export class ApiError extends Error {
+    constructor(
+      public status: number,
+      public message: string,
+      public code?: string,
+      public details?: Record<string, unknown>
+    ) {
+      super(message);
+      this.name = 'ApiError';
+      Object.setPrototypeOf(this, ApiError.prototype);
+    }
+  }
+
+  export class ValidationError extends Error {
+    constructor(
+      public message: string,
+      public errors: Record<string, string[]>
+    ) {
+      super(message);
+      this.name = 'ValidationError';
+      Object.setPrototypeOf(this, ValidationError.prototype);
+    }
+  }
+
+  export class AuthenticationError extends Error {
+    constructor(message: string = 'Пользователь не авторизован') {
+      super(message);
+      this.name = 'AuthenticationError';
+      Object.setPrototypeOf(this, AuthenticationError.prototype);
+    }
+  }
+
+  export class AuthorizationError extends Error {
+    constructor(message: string = 'Недостаточно прав') {
+      super(message);
+      this.name = 'AuthorizationError';
+      Object.setPrototypeOf(this, AuthorizationError.prototype);
+    }
+  }
+
+  export class NetworkError extends Error {
+    constructor(message: string = 'Ошибка сети') {
+      super(message);
+      this.name = 'NetworkError';
+      Object.setPrototypeOf(this, NetworkError.prototype);
+    }
+  }
+
+  // Type guards
+  export function isApiError(error: unknown): error is ApiError {
+    return error instanceof ApiError;
+  }
+
+  export function isValidationError(error: unknown): error is ValidationError {
+    return error instanceof ValidationError;
+  }
+  ```
+
+- **Error Handling in API Calls:**
+
+  **1. Supabase Error Handling**
+  ```typescript
+  // ✅ DO: Always check for errors
+  import { PostgrestError } from '@supabase/supabase-js';
+
+  const { data, error } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('id', projectId)
+    .single();
+
+  if (error) {
+    // Log for debugging
+    console.error('Supabase error:', error);
+
+    // Map Postgres error codes to user-friendly messages
+    const errorMessage = getSupabaseErrorMessage(error);
+
+    throw new ApiError(
+      error.code === 'PGRST116' ? 404 : 500,
+      errorMessage,
+      error.code
+    );
+  }
+
+  return data;
+
+  // Error message mapper
+  function getSupabaseErrorMessage(error: PostgrestError): string {
+    const errorMap: Record<string, string> = {
+      'PGRST116': 'Ресурс не найден',
+      '23505': 'Запись с такими данными уже существует',
+      '23503': 'Связанная запись не найдена',
+      '42501': 'Недостаточно прав для выполнения операции',
+    };
+
+    return errorMap[error.code] || error.message || 'Произошла ошибка';
+  }
+
+  // ❌ DON'T: Ignore errors
+  const { data } = await supabase.from('projects').select('*');
+  return data; // What if error occurred?
+
+  // ❌ DON'T: Generic error messages
+  if (error) {
+    throw new Error('Error'); // Not helpful!
+  }
+  ```
+
+  **2. React Query Error Handling**
+  ```typescript
+  // ✅ DO: Handle errors in queries
+  import { useQuery } from '@tanstack/react-query';
+  import { toast } from 'sonner';
+
+  const { data, error, isError } = useQuery({
+    queryKey: ['projects', projectId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('id', projectId)
+        .single();
+
+      if (error) {
+        throw new ApiError(
+          error.code === 'PGRST116' ? 404 : 500,
+          getSupabaseErrorMessage(error),
+          error.code
+        );
+      }
+
+      return data;
+    },
+    retry: (failureCount, error) => {
+      // Don't retry on 404 or auth errors
+      if (isApiError(error) && [404, 401, 403].includes(error.status)) {
+        return false;
+      }
+      // Retry up to 2 times for other errors
+      return failureCount < 2;
+    },
+    onError: (error) => {
+      // Log to error tracking service
+      console.error('Query error:', error);
+
+      // Show user-friendly toast (optional - can be handled in component)
+      if (import.meta.env.DEV) {
+        toast.error(error instanceof Error ? error.message : 'Ошибка загрузки');
+      }
+    },
+  });
+
+  // ✅ DO: Handle errors in mutations
+  const createProject = useMutation({
+    mutationFn: async (data: ProjectInput) => {
+      const { data: project, error } = await supabase
+        .from('projects')
+        .insert(data)
+        .select()
+        .single();
+
+      if (error) {
+        throw new ApiError(500, getSupabaseErrorMessage(error), error.code);
+      }
+
+      return project;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      toast.success('Проект создан');
+    },
+    onError: (error) => {
+      console.error('Create project error:', error);
+
+      if (isApiError(error)) {
+        toast.error(error.message);
+      } else {
+        toast.error('Не удалось создать проект');
+      }
+    },
+  });
+  ```
+
+- **Component Error Handling:**
+
+  **1. Error Boundaries**
+  ```typescript
+  // src/components/ErrorBoundary.tsx
+  import { Component, ReactNode } from 'react';
+  import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+  import { Button } from '@/components/ui/button';
+  import { AlertCircle } from 'lucide-react';
+
+  interface Props {
+    children: ReactNode;
+    fallback?: ReactNode;
+  }
+
+  interface State {
+    hasError: boolean;
+    error: Error | null;
+  }
+
+  export class ErrorBoundary extends Component<Props, State> {
+    constructor(props: Props) {
+      super(props);
+      this.state = { hasError: false, error: null };
+    }
+
+    static getDerivedStateFromError(error: Error): State {
+      return { hasError: true, error };
+    }
+
+    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+      // Log to error tracking service (Sentry, etc.)
+      console.error('Error boundary caught:', error, errorInfo);
+
+      // Send to Sentry (if configured)
+      if (window.Sentry) {
+        window.Sentry.captureException(error, {
+          contexts: {
+            react: {
+              componentStack: errorInfo.componentStack,
+            },
+          },
+        });
+      }
+    }
+
+    render() {
+      if (this.state.hasError) {
+        if (this.props.fallback) {
+          return this.props.fallback;
+        }
+
+        return (
+          <div className="min-h-screen flex items-center justify-center p-4">
+            <Alert variant="destructive" className="max-w-lg">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Произошла ошибка</AlertTitle>
+              <AlertDescription>
+                {this.state.error?.message || 'Что-то пошло не так'}
+              </AlertDescription>
+              <Button
+                variant="outline"
+                onClick={() => window.location.reload()}
+                className="mt-4"
+              >
+                Перезагрузить страницу
+              </Button>
+            </Alert>
+          </div>
+        );
+      }
+
+      return this.props.children;
+    }
+  }
+
+  // Usage
+  <ErrorBoundary>
+    <App />
+  </ErrorBoundary>
+  ```
+
+  **2. Component-Level Error Handling**
+  ```typescript
+  // ✅ DO: Handle errors gracefully in components
+  import { EmptyState } from '@/components/common/EmptyState';
+
+  function ProjectList() {
+    const { data: projects, isLoading, error } = useProjects();
+
+    // Loading state
+    if (isLoading) {
+      return <LoadingSpinner />;
+    }
+
+    // Error state
+    if (error) {
+      return (
+        <EmptyState
+          icon={AlertCircle}
+          title="Ошибка загрузки проектов"
+          message={
+            isApiError(error)
+              ? error.message
+              : 'Не удалось загрузить проекты. Попробуйте позже.'
+          }
+          action={{
+            label: 'Попробовать снова',
+            onClick: () => queryClient.invalidateQueries({ queryKey: ['projects'] }),
+          }}
+        />
+      );
+    }
+
+    // Empty state
+    if (!projects || projects.length === 0) {
+      return (
+        <EmptyState
+          title="Нет проектов"
+          message="Создайте свой первый проект"
+          action={{
+            label: 'Создать проект',
+            onClick: () => setIsCreateDialogOpen(true),
+          }}
+        />
+      );
+    }
+
+    // Success state
+    return <ProjectGrid projects={projects} />;
+  }
+  ```
+
+- **Form Error Handling:**
+
+  **1. Validation Errors**
+  ```typescript
+  // ✅ DO: Show field-level validation errors
+  import { useForm } from 'react-hook-form';
+  import { zodResolver } from '@hookform/resolvers/zod';
+
+  function ProjectForm() {
+    const {
+      register,
+      handleSubmit,
+      formState: { errors },
+      setError,
+    } = useForm({
+      resolver: zodResolver(projectSchema),
+    });
+
+    const createProject = useCreateProject();
+
+    const onSubmit = async (data: ProjectFormData) => {
+      try {
+        await createProject.mutateAsync(data);
+        toast.success('Проект создан');
+      } catch (error) {
+        // Handle API errors
+        if (isApiError(error)) {
+          // Map API error to field error
+          if (error.code === 'duplicate_name') {
+            setError('name', {
+              type: 'manual',
+              message: 'Проект с таким именем уже существует',
+            });
+            return;
+          }
+        }
+
+        // Generic error
+        toast.error('Не удалось создать проект');
+      }
+    };
+
+    return (
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div>
+          <label htmlFor="name">Название</label>
+          <input {...register('name')} />
+          {errors.name && (
+            <p className="text-sm text-destructive">
+              {errors.name.message}
+            </p>
+          )}
+        </div>
+
+        {/* More fields... */}
+
+        <button type="submit" disabled={createProject.isLoading}>
+          {createProject.isLoading ? 'Создание...' : 'Создать'}
+        </button>
+      </form>
+    );
+  }
+  ```
+
+  **2. Global Form Errors**
+  ```typescript
+  // ✅ DO: Show form-level errors
+  const {
+    formState: { errors },
+    setError,
+  } = useForm();
+
+  // Set root error
+  setError('root', {
+    type: 'manual',
+    message: 'Не удалось сохранить данные. Проверьте подключение к интернету.',
+  });
+
+  // Display root error
+  {errors.root && (
+    <Alert variant="destructive" className="mb-4">
+      <AlertCircle className="h-4 w-4" />
+      <AlertDescription>{errors.root.message}</AlertDescription>
+    </Alert>
+  )}
+  ```
+
+- **Async Error Handling:**
+
+  **1. Try-Catch Patterns**
+  ```typescript
+  // ✅ DO: Wrap async operations in try-catch
+  async function deleteProject(projectId: string) {
+    try {
+      const { error } = await supabase
+        .from('projects')
+        .delete()
+        .eq('id', projectId);
+
+      if (error) {
+        throw new ApiError(500, getSupabaseErrorMessage(error), error.code);
+      }
+
+      toast.success('Проект удален');
+      return true;
+    } catch (error) {
+      console.error('Delete project error:', error);
+
+      if (isApiError(error)) {
+        toast.error(error.message);
+      } else if (error instanceof Error) {
+        toast.error(error.message);
+      } else {
+        toast.error('Не удалось удалить проект');
+      }
+
+      return false;
+    }
+  }
+
+  // ❌ DON'T: Unhandled async errors
+  async function deleteProject(projectId: string) {
+    const { error } = await supabase
+      .from('projects')
+      .delete()
+      .eq('id', projectId);
+    // No error handling!
+  }
+  ```
+
+  **2. Promise.all Error Handling**
+  ```typescript
+  // ✅ DO: Handle errors in parallel operations
+  async function loadDashboardData() {
+    try {
+      const [projects, databases, stats] = await Promise.all([
+        fetchProjects(),
+        fetchDatabases(),
+        fetchStats(),
+      ]);
+
+      return { projects, databases, stats };
+    } catch (error) {
+      console.error('Dashboard load error:', error);
+
+      // Determine which operation failed
+      if (error instanceof Error) {
+        toast.error(`Ошибка загрузки: ${error.message}`);
+      }
+
+      throw error;
+    }
+  }
+
+  // ✅ DO: Use Promise.allSettled for partial failures
+  async function loadDashboardDataPartial() {
+    const results = await Promise.allSettled([
+      fetchProjects(),
+      fetchDatabases(),
+      fetchStats(),
+    ]);
+
+    const projects = results[0].status === 'fulfilled' ? results[0].value : [];
+    const databases = results[1].status === 'fulfilled' ? results[1].value : [];
+    const stats = results[2].status === 'fulfilled' ? results[2].value : null;
+
+    // Show warnings for failed requests
+    results.forEach((result, index) => {
+      if (result.status === 'rejected') {
+        const names = ['проекты', 'базы данных', 'статистика'];
+        toast.warning(`Не удалось загрузить ${names[index]}`);
+      }
+    });
+
+    return { projects, databases, stats };
+  }
+  ```
+
+- **User Feedback:**
+
+  **1. Toast Notifications**
+  ```typescript
+  // ✅ DO: Use toast for user feedback
+  import { toast } from 'sonner';
+
+  // Success
+  toast.success('Проект создан');
+
+  // Error
+  toast.error('Не удалось сохранить изменения');
+
+  // Warning
+  toast.warning('Проверьте введенные данные');
+
+  // Info
+  toast.info('Загрузка может занять несколько секунд');
+
+  // Loading toast
+  const toastId = toast.loading('Загрузка...');
+  try {
+    await longOperation();
+    toast.success('Готово!', { id: toastId });
+  } catch {
+    toast.error('Ошибка', { id: toastId });
+  }
+
+  // Custom duration
+  toast.success('Сохранено', { duration: 2000 });
+
+  // With action
+  toast.error('Ошибка сохранения', {
+    action: {
+      label: 'Повторить',
+      onClick: () => retry(),
+    },
+  });
+  ```
+
+  **2. Alert Components**
+  ```typescript
+  // ✅ DO: Use Alert for important messages
+  import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+
+  // Error alert
+  <Alert variant="destructive">
+    <AlertCircle className="h-4 w-4" />
+    <AlertTitle>Ошибка</AlertTitle>
+    <AlertDescription>
+      Не удалось загрузить данные. Проверьте подключение к интернету.
+    </AlertDescription>
+  </Alert>
+
+  // Warning alert
+  <Alert variant="warning">
+    <AlertTriangle className="h-4 w-4" />
+    <AlertTitle>Внимание</AlertTitle>
+    <AlertDescription>
+      У вас есть несохраненные изменения
+    </AlertDescription>
+  </Alert>
+
+  // Info alert
+  <Alert>
+    <Info className="h-4 w-4" />
+    <AlertTitle>Информация</AlertTitle>
+    <AlertDescription>
+      Эта операция может занять несколько минут
+    </AlertDescription>
+  </Alert>
+  ```
+
+- **Error Logging:**
+
+  **1. Console Logging**
+  ```typescript
+  // ✅ DO: Log errors for debugging
+  try {
+    await riskyOperation();
+  } catch (error) {
+    // Log full error in development
+    if (import.meta.env.DEV) {
+      console.error('Operation failed:', error);
+    }
+
+    // Log structured error
+    console.error('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      stack: error instanceof Error ? error.stack : undefined,
+      context: {
+        userId: user?.id,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  }
+
+  // ❌ DON'T: Console.log in production
+  console.log(error); // Not helpful, clutters console
+  ```
+
+  **2. Error Tracking (Sentry)**
+  ```typescript
+  // ✅ DO: Use Sentry for production error tracking
+  import * as Sentry from '@sentry/react';
+
+  // Initialize Sentry (in main.tsx)
+  Sentry.init({
+    dsn: import.meta.env.VITE_SENTRY_DSN,
+    environment: import.meta.env.MODE,
+    enabled: import.meta.env.PROD,
+    integrations: [
+      new Sentry.BrowserTracing(),
+      new Sentry.Replay(),
+    ],
+    tracesSampleRate: 0.1,
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1.0,
+  });
+
+  // Capture exceptions
+  try {
+    await operation();
+  } catch (error) {
+    Sentry.captureException(error, {
+      tags: {
+        feature: 'projects',
+        action: 'create',
+      },
+      contexts: {
+        user: {
+          id: user?.id,
+          email: user?.email,
+        },
+      },
+      extra: {
+        projectData: data,
+      },
+    });
+
+    throw error;
+  }
+
+  // Set user context
+  Sentry.setUser({
+    id: user.id,
+    email: user.email,
+    username: user.name,
+  });
+
+  // Add breadcrumb
+  Sentry.addBreadcrumb({
+    category: 'ui',
+    message: 'User clicked create project',
+    level: 'info',
+  });
+  ```
+
+- **Network Error Handling:**
+
+  **1. Offline Detection**
+  ```typescript
+  // ✅ DO: Detect and handle offline state
+  import { useState, useEffect } from 'react';
+
+  function useOnlineStatus() {
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+    useEffect(() => {
+      const handleOnline = () => {
+        setIsOnline(true);
+        toast.success('Подключение восстановлено');
+      };
+
+      const handleOffline = () => {
+        setIsOnline(false);
+        toast.error('Нет подключения к интернету', { duration: Infinity });
+      };
+
+      window.addEventListener('online', handleOnline);
+      window.addEventListener('offline', handleOffline);
+
+      return () => {
+        window.removeEventListener('online', handleOnline);
+        window.removeEventListener('offline', handleOffline);
+      };
+    }, []);
+
+    return isOnline;
+  }
+
+  // Usage
+  function App() {
+    const isOnline = useOnlineStatus();
+
+    if (!isOnline) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <Alert variant="destructive">
+            <WifiOff className="h-4 w-4" />
+            <AlertTitle>Нет подключения</AlertTitle>
+            <AlertDescription>
+              Проверьте подключение к интернету
+            </AlertDescription>
+          </Alert>
+        </div>
+      );
+    }
+
+    return <MainApp />;
+  }
+  ```
+
+  **2. Timeout Handling**
+  ```typescript
+  // ✅ DO: Implement request timeouts
+  async function fetchWithTimeout<T>(
+    promise: Promise<T>,
+    timeoutMs: number = 30000
+  ): Promise<T> {
+    const timeout = new Promise<never>((_, reject) => {
+      setTimeout(() => {
+        reject(new NetworkError('Превышено время ожидания'));
+      }, timeoutMs);
+    });
+
+    return Promise.race([promise, timeout]);
+  }
+
+  // Usage
+  try {
+    const data = await fetchWithTimeout(
+      supabase.from('projects').select('*'),
+      10000 // 10 seconds
+    );
+  } catch (error) {
+    if (error instanceof NetworkError) {
+      toast.error('Сервер не отвечает. Попробуйте позже.');
+    }
+  }
+  ```
+
+- **Error Recovery:**
+
+  **1. Retry Logic**
+  ```typescript
+  // ✅ DO: Implement exponential backoff retry
+  async function retryWithBackoff<T>(
+    fn: () => Promise<T>,
+    maxRetries: number = 3,
+    baseDelay: number = 1000
+  ): Promise<T> {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (error) {
+        if (attempt === maxRetries - 1) {
+          throw error;
+        }
+
+        // Exponential backoff: 1s, 2s, 4s, 8s...
+        const delay = baseDelay * Math.pow(2, attempt);
+        await new Promise(resolve => setTimeout(resolve, delay));
+
+        console.log(`Retry attempt ${attempt + 1}/${maxRetries}`);
+      }
+    }
+
+    throw new Error('Max retries exceeded');
+  }
+
+  // Usage
+  const data = await retryWithBackoff(
+    () => supabase.from('projects').select('*'),
+    3
+  );
+  ```
+
+  **2. Fallback Data**
+  ```typescript
+  // ✅ DO: Provide fallback data on error
+  function useProjectsWithFallback() {
+    const { data, error } = useQuery({
+      queryKey: ['projects'],
+      queryFn: fetchProjects,
+    });
+
+    // Return cached data or empty array on error
+    if (error) {
+      const cachedData = queryClient.getQueryData<Project[]>(['projects']);
+      return {
+        data: cachedData || [],
+        error,
+        isFromCache: !!cachedData,
+      };
+    }
+
+    return { data: data || [], error: null, isFromCache: false };
+  }
+  ```
+
+Follow [react_components.mdc](mdc:.cursor/rules/react_components.mdc) for component error handling.
+Follow [supabase.mdc](mdc:.cursor/rules/supabase.mdc) for database error handling.
+Follow [forms.mdc](mdc:.cursor/rules/forms.mdc) for form error handling.

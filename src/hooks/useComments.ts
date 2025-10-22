@@ -133,6 +133,95 @@ export function useComments(databaseId: string, rowId?: string) {
     await loadComments();
   };
 
+  const resolveComment = async (commentId: string) => {
+    if (!user) throw new Error('User not authenticated');
+
+    const { error } = await supabase
+      .from('comments')
+      .update({
+        resolved: true,
+        resolved_by: user.id,
+        resolved_at: new Date().toISOString(),
+      })
+      .eq('id', commentId);
+
+    if (error) throw error;
+    await loadComments();
+  };
+
+  const unresolveComment = async (commentId: string) => {
+    const { error } = await supabase
+      .from('comments')
+      .update({
+        resolved: false,
+        resolved_by: null,
+        resolved_at: null,
+      })
+      .eq('id', commentId);
+
+    if (error) throw error;
+    await loadComments();
+  };
+
+  const addReaction = async (commentId: string, emoji: string) => {
+    if (!user) throw new Error('User not authenticated');
+
+    // Get current comment
+    const { data: comment } = await supabase
+      .from('comments')
+      .select('reactions')
+      .eq('id', commentId)
+      .single();
+
+    if (!comment) return;
+
+    const reactions = { ...(comment.reactions || {}) };
+    if (!reactions[emoji]) {
+      reactions[emoji] = [];
+    }
+
+    if (!reactions[emoji].includes(user.id)) {
+      reactions[emoji].push(user.id);
+    }
+
+    const { error } = await supabase
+      .from('comments')
+      .update({ reactions })
+      .eq('id', commentId);
+
+    if (error) throw error;
+    await loadComments();
+  };
+
+  const removeReaction = async (commentId: string, emoji: string) => {
+    if (!user) throw new Error('User not authenticated');
+
+    // Get current comment
+    const { data: comment } = await supabase
+      .from('comments')
+      .select('reactions')
+      .eq('id', commentId)
+      .single();
+
+    if (!comment) return;
+
+    const reactions = { ...(comment.reactions || {}) };
+    if (reactions[emoji]) {
+      reactions[emoji] = reactions[emoji].filter((id: string) => id !== user.id);
+      if (reactions[emoji].length === 0) {
+        delete reactions[emoji];
+      }
+    }
+
+    const { error } = await supabase
+      .from('comments')
+      .update({ reactions })
+      .eq('id', commentId);
+
+    if (error) throw error;
+    await loadComments();
+  };
+
   // Flatten all comments (including replies) for total count
   const flattenComments = (comments: Comment[]): Comment[] => {
     const result: Comment[] = [];
@@ -152,6 +241,10 @@ export function useComments(databaseId: string, rowId?: string) {
     addComment,
     updateComment,
     deleteComment,
+    resolveComment,
+    unresolveComment,
+    addReaction,
+    removeReaction,
     refresh: loadComments,
   };
 }

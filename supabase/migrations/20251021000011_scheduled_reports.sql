@@ -111,7 +111,7 @@ CREATE POLICY "Users can view their own report executions"
   );
 
 -- Function to calculate next run time based on cron schedule
-CREATE OR REPLACE FUNCTION calculate_next_run(cron_expression TEXT, current_time TIMESTAMP WITH TIME ZONE, tz TEXT)
+CREATE OR REPLACE FUNCTION calculate_next_run(cron_expression TEXT, base_time TIMESTAMP WITH TIME ZONE, tz TEXT)
 RETURNS TIMESTAMP WITH TIME ZONE AS $$
 DECLARE
   next_run TIMESTAMP WITH TIME ZONE;
@@ -121,7 +121,7 @@ BEGIN
 
   -- Daily at specific hour (e.g., '0 9 * * *' = 9am daily)
   IF cron_expression ~ '^\d+ \d+ \* \* \*$' THEN
-    next_run := (current_time + INTERVAL '1 day')::date +
+    next_run := (base_time + INTERVAL '1 day')::date +
                 (split_part(cron_expression, ' ', 2)::integer || ' hours')::interval;
 
   -- Weekly on specific day (e.g., '0 9 * * 1' = Monday 9am)

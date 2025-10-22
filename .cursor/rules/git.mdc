@@ -1,0 +1,629 @@
+---
+description: Git workflow and version control best practices for DataParseDesk
+globs: .git/**, .gitignore, .github/**/*
+alwaysApply: false
+---
+
+- **Branch Strategy:**
+
+  **1. Branch Naming Convention**
+  ```bash
+  # ✅ DO: Descriptive branch names
+  feature/user-authentication
+  feature/composite-views
+  fix/rls-policies-security
+  refactor/database-queries
+  docs/api-documentation
+  chore/update-dependencies
+
+  # Feature branches
+  feature/<short-description>
+
+  # Bug fixes
+  fix/<issue-number>-<short-description>
+  fix/1234-login-redirect
+
+  # Hotfixes (critical production bugs)
+  hotfix/<short-description>
+
+  # Refactoring
+  refactor/<component-name>
+
+  # Documentation
+  docs/<topic>
+
+  # Chores (dependencies, config, etc.)
+  chore/<task>
+
+  # ❌ DON'T: Vague or unclear names
+  new-feature
+  fix
+  update
+  test-branch
+  ```
+
+  **2. Main Branches**
+  ```bash
+  # Production branch (from package.json & git config)
+  main          # Production-ready code
+
+  # Development branch (if using)
+  develop       # Integration branch (optional)
+
+  # ✅ DO: Keep main stable
+  # - All code in main should be deployable
+  # - Never push directly to main
+  # - Always use pull requests
+
+  # ✅ DO: Protect main branch
+  # GitHub > Settings > Branches > Branch protection rules:
+  # - Require pull request reviews
+  # - Require status checks to pass
+  # - Require branches to be up to date
+  ```
+
+- **Commit Messages:**
+
+  **1. Conventional Commits Format**
+  ```bash
+  # Format: <type>(<scope>): <subject>
+  #
+  # <body>
+  #
+  # <footer>
+
+  # ✅ DO: Clear, descriptive commits
+  feat(auth): add OAuth2 login support
+
+  fix(database): resolve N+1 query in project list
+
+  refactor(components): extract ProjectCard to separate file
+
+  docs(readme): update installation instructions
+
+  test(api): add integration tests for project endpoints
+
+  chore(deps): update React to v18.3.1
+
+  perf(queries): add indexes for frequently accessed columns
+
+  security(rls): fix insecure policies on projects table
+
+  # Types:
+  # feat:     New feature
+  # fix:      Bug fix
+  # docs:     Documentation only
+  # style:    Code style (formatting, missing semicolons, etc.)
+  # refactor: Code refactoring
+  # perf:     Performance improvement
+  # test:     Adding or updating tests
+  # chore:    Maintenance tasks
+  # security: Security fixes
+  # revert:   Revert previous commit
+
+  # ✅ DO: Use imperative mood ("add" not "added")
+  # ✅ DO: Keep subject line under 72 characters
+  # ✅ DO: Add body for complex changes
+
+  # Example with body:
+  feat(composite-views): implement multi-table joins
+
+  - Add CompositeViewBuilder component
+  - Support LEFT/INNER/RIGHT joins
+  - Add visual ERD diagram
+  - Include column mapping interface
+
+  Closes #123
+
+  # ❌ DON'T: Vague commit messages
+  update
+  fix bug
+  changes
+  WIP
+  asdf
+  ```
+
+  **2. Commit Message Template**
+  ```bash
+  # ✅ DO: Use git commit template
+  # Create .gitmessage file:
+
+  # <type>(<scope>): <subject>
+  # |<----  Using a Maximum Of 72 Characters  ---->|
+
+  # Explain why this change is being made
+  # |<----   Try To Limit Each Line to a Maximum Of 72 Characters   ---->|
+
+  # Provide links or keys to any relevant tickets, articles or other resources
+  # Example: Closes #123, Related to #456
+
+  # --- COMMIT END ---
+  # Type can be
+  #    feat     (new feature)
+  #    fix      (bug fix)
+  #    refactor (refactoring code)
+  #    style    (formatting, missing semi colons, etc; no code change)
+  #    docs     (changes to documentation)
+  #    test     (adding or refactoring tests; no production code change)
+  #    chore    (updating grunt tasks etc; no production code change)
+  #    perf     (performance improvement)
+  #    security (security fix)
+  # --------------------
+
+  # Set template:
+  git config commit.template .gitmessage
+  ```
+
+- **Pull Requests:**
+
+  **1. PR Title and Description**
+  ```markdown
+  # ✅ DO: Descriptive PR title (same as commit for single commits)
+  feat(composite-views): Implement multi-table joins
+
+  # Description template:
+  ## Summary
+  Brief description of what this PR does and why.
+
+  ## Changes
+  - Added CompositeViewBuilder component
+  - Implemented JOIN query builder
+  - Added visual ERD diagram
+  - Created column mapping interface
+
+  ## Type of Change
+  - [ ] Bug fix (non-breaking change which fixes an issue)
+  - [x] New feature (non-breaking change which adds functionality)
+  - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
+  - [ ] Documentation update
+
+  ## Testing
+  - [x] Unit tests added/updated
+  - [x] Integration tests added/updated
+  - [x] Manual testing performed
+  - [ ] E2E tests added/updated
+
+  ## Screenshots (if applicable)
+  [Add screenshots here]
+
+  ## Checklist
+  - [x] Code follows project style guidelines
+  - [x] Self-review performed
+  - [x] Comments added for complex logic
+  - [x] Documentation updated
+  - [x] No new warnings generated
+  - [x] Tests added that prove fix/feature works
+  - [x] All tests passing locally
+  - [x] RLS policies implemented (if database changes)
+
+  ## Related Issues
+  Closes #123
+  Related to #456
+
+  ## Breaking Changes
+  None
+
+  ## Migration Guide (if breaking)
+  N/A
+  ```
+
+  **2. PR Review Process**
+  ```bash
+  # ✅ DO: Review checklist
+  - [ ] Code quality and readability
+  - [ ] Tests added and passing
+  - [ ] Security considerations (RLS policies!)
+  - [ ] Performance implications
+  - [ ] Documentation updated
+  - [ ] No console.logs or debugging code
+  - [ ] TypeScript strict mode compliance
+  - [ ] Accessibility considerations
+  - [ ] Mobile responsiveness (if UI changes)
+  - [ ] Error handling
+
+  # ✅ DO: Request changes constructively
+  # Good:
+  "Consider extracting this logic into a separate function for better readability"
+  "This query might have performance issues with large datasets. Consider adding an index"
+
+  # Bad:
+  "This is wrong"
+  "Bad code"
+  ```
+
+- **Git Workflow:**
+
+  **1. Feature Development Flow**
+  ```bash
+  # ✅ DO: Standard feature workflow
+
+  # 1. Create feature branch from main
+  git checkout main
+  git pull origin main
+  git checkout -b feature/user-notifications
+
+  # 2. Make changes and commit frequently
+  git add src/components/Notification.tsx
+  git commit -m "feat(notifications): add Notification component"
+
+  git add src/hooks/useNotifications.ts
+  git commit -m "feat(notifications): add useNotifications hook"
+
+  # 3. Keep branch up to date with main
+  git checkout main
+  git pull origin main
+  git checkout feature/user-notifications
+  git rebase main  # or: git merge main
+
+  # 4. Push to remote
+  git push origin feature/user-notifications
+
+  # 5. Create pull request on GitHub
+
+  # 6. After PR approval and merge, delete branch
+  git checkout main
+  git pull origin main
+  git branch -d feature/user-notifications
+  git push origin --delete feature/user-notifications
+  ```
+
+  **2. Hotfix Flow**
+  ```bash
+  # ✅ DO: For critical production bugs
+
+  # 1. Create hotfix branch from main
+  git checkout main
+  git pull origin main
+  git checkout -b hotfix/critical-login-bug
+
+  # 2. Fix the issue
+  git add src/pages/LoginPage.tsx
+  git commit -m "fix(auth): resolve login redirect loop"
+
+  # 3. Push and create PR
+  git push origin hotfix/critical-login-bug
+
+  # 4. After merge, tag the release
+  git checkout main
+  git pull origin main
+  git tag -a v1.2.1 -m "Hotfix: Login redirect issue"
+  git push origin v1.2.1
+  ```
+
+- **Common Git Commands:**
+
+  **1. Essential Commands**
+  ```bash
+  # ✅ DO: Use these commands regularly
+
+  # Check status
+  git status
+
+  # View differences
+  git diff                    # Unstaged changes
+  git diff --staged           # Staged changes
+  git diff main..feature      # Compare branches
+
+  # View history
+  git log --oneline --graph --all --decorate
+  git log --author="Your Name"
+  git log --since="2 weeks ago"
+  git log -p src/file.tsx     # File history with diffs
+
+  # Stashing
+  git stash                   # Stash changes
+  git stash list              # List stashes
+  git stash pop               # Apply and remove latest stash
+  git stash apply stash@{0}   # Apply specific stash
+  git stash drop stash@{0}    # Remove specific stash
+
+  # Undoing changes
+  git restore file.tsx        # Discard unstaged changes
+  git restore --staged file.tsx  # Unstage file
+  git reset HEAD~1            # Undo last commit (keep changes)
+  git reset --hard HEAD~1     # Undo last commit (discard changes)
+  git revert abc123           # Create new commit that undoes abc123
+
+  # Cleaning
+  git clean -n                # Show what would be deleted
+  git clean -fd               # Delete untracked files and directories
+  ```
+
+  **2. Advanced Commands**
+  ```bash
+  # ✅ DO: Interactive rebase (clean up commits before PR)
+  git rebase -i HEAD~3        # Interactive rebase last 3 commits
+
+  # In editor:
+  # pick abc123 feat: add feature A
+  # squash def456 fix typo
+  # reword ghi789 feat: add feature B
+
+  # ✅ DO: Cherry-pick specific commits
+  git cherry-pick abc123
+
+  # ✅ DO: Find bugs with bisect
+  git bisect start
+  git bisect bad              # Current commit is bad
+  git bisect good abc123      # Known good commit
+  # Git checks out middle commit, test it
+  git bisect good/bad         # Repeat until found
+  git bisect reset            # Return to original state
+
+  # ✅ DO: Search codebase history
+  git log -S "searchTerm"     # Find when term was added/removed
+  git grep "searchTerm"       # Search current codebase
+
+  # ❌ DON'T: Rewrite public history
+  git push --force            # Dangerous on shared branches!
+  # ✅ DO: Use force-with-lease instead
+  git push --force-with-lease # Safer alternative
+  ```
+
+- **Git Hooks:**
+
+  **1. Pre-commit Hook**
+  ```bash
+  # .git/hooks/pre-commit
+  #!/bin/sh
+
+  # Run linter
+  npm run lint
+  if [ $? -ne 0 ]; then
+    echo "❌ Linting failed. Please fix errors before committing."
+    exit 1
+  fi
+
+  # Run type check
+  npm run type-check
+  if [ $? -ne 0 ]; then
+    echo "❌ Type check failed. Please fix errors before committing."
+    exit 1
+  fi
+
+  # Check for console.log
+  if git diff --cached | grep -E "console\.(log|debug|info)" > /dev/null; then
+    echo "⚠️  Warning: console.log found in staged files"
+    echo "Remove debugging statements or use --no-verify to bypass"
+    exit 1
+  fi
+
+  # Check for .env files
+  if git diff --cached --name-only | grep -E "\.env$" > /dev/null; then
+    echo "❌ Cannot commit .env files!"
+    exit 1
+  fi
+
+  exit 0
+  ```
+
+  **2. Commit-msg Hook**
+  ```bash
+  # .git/hooks/commit-msg
+  #!/bin/sh
+
+  # Check commit message format
+  commit_msg=$(cat "$1")
+
+  # Pattern for conventional commits
+  pattern="^(feat|fix|docs|style|refactor|perf|test|chore|security|revert)(\(.+\))?: .{1,72}"
+
+  if ! echo "$commit_msg" | grep -qE "$pattern"; then
+    echo "❌ Invalid commit message format!"
+    echo "Format: <type>(<scope>): <subject>"
+    echo "Example: feat(auth): add OAuth2 support"
+    exit 1
+  fi
+
+  exit 0
+  ```
+
+  **3. Using Husky (Recommended)**
+  ```bash
+  # Install husky
+  npm install --save-dev husky
+  npx husky install
+
+  # Add pre-commit hook
+  npx husky add .husky/pre-commit "npm run lint && npm run type-check"
+
+  # Add commit-msg hook
+  npx husky add .husky/commit-msg 'npx --no -- commitlint --edit "$1"'
+
+  # Install commitlint
+  npm install --save-dev @commitlint/cli @commitlint/config-conventional
+
+  # Create commitlint.config.js
+  module.exports = {
+    extends: ['@commitlint/config-conventional'],
+    rules: {
+      'type-enum': [
+        2,
+        'always',
+        [
+          'feat',
+          'fix',
+          'docs',
+          'style',
+          'refactor',
+          'perf',
+          'test',
+          'chore',
+          'security',
+          'revert',
+        ],
+      ],
+    },
+  };
+  ```
+
+- **.gitignore Best Practices:**
+
+  ```bash
+  # ✅ DO: Comprehensive .gitignore
+
+  # Dependencies
+  node_modules/
+  package-lock.json  # If using yarn
+  yarn.lock          # If using npm
+
+  # Environment variables
+  .env
+  .env.local
+  .env.*.local
+  .env.development.local
+  .env.test.local
+  .env.production.local
+
+  # Build outputs
+  dist/
+  build/
+  .vite/
+  .next/
+  out/
+
+  # IDE
+  .vscode/*
+  !.vscode/settings.json
+  !.vscode/tasks.json
+  !.vscode/launch.json
+  !.vscode/extensions.json
+  .idea/
+  *.swp
+  *.swo
+  *~
+  .DS_Store
+
+  # Testing
+  coverage/
+  .nyc_output/
+
+  # Logs
+  logs/
+  *.log
+  npm-debug.log*
+  yarn-debug.log*
+  yarn-error.log*
+
+  # Temporary files
+  .tmp/
+  .cache/
+  .temp/
+
+  # OS
+  Thumbs.db
+
+  # Supabase (if local dev)
+  supabase/.branches/
+  supabase/.temp/
+
+  # ❌ DON'T: Ignore files that should be committed
+  # .gitignore (this file itself!)
+  # package.json
+  # tsconfig.json
+  # vite.config.ts
+  # README.md
+  ```
+
+- **Git Best Practices:**
+
+  **1. Commit Frequency**
+  ```bash
+  # ✅ DO: Commit often
+  - After completing a logical unit of work
+  - After fixing a bug
+  - After adding a feature
+  - Before switching tasks
+  - Before leaving for the day
+
+  # ✅ DO: Keep commits atomic
+  - One commit = one logical change
+  - Should be able to revert without breaking other features
+
+  # ❌ DON'T: Giant commits
+  git add .
+  git commit -m "WIP"  # 200 files changed
+  ```
+
+  **2. Branch Management**
+  ```bash
+  # ✅ DO: Delete merged branches
+  git branch -d feature/old-feature
+  git push origin --delete feature/old-feature
+
+  # ✅ DO: Keep branches up to date
+  git fetch origin
+  git rebase origin/main  # or merge
+
+  # ✅ DO: List and clean stale branches
+  git branch -vv          # View tracking info
+  git remote prune origin # Remove stale remote-tracking branches
+  ```
+
+  **3. Security**
+  ```bash
+  # ✅ DO: Never commit secrets
+  - Use .env files (in .gitignore)
+  - Use environment variables
+  - Use secret management tools
+
+  # ❌ DON'T: Commit these
+  - API keys
+  - Database passwords
+  - Private keys
+  - OAuth secrets
+  - .env files
+
+  # ✅ DO: If you accidentally committed a secret
+  # 1. Rotate the secret immediately!
+  # 2. Remove from history:
+  git filter-branch --force --index-filter \
+    "git rm --cached --ignore-unmatch .env" \
+    --prune-empty --tag-name-filter cat -- --all
+  git push origin --force --all
+
+  # Or use BFG Repo-Cleaner (easier)
+  bfg --delete-files .env
+  git reflog expire --expire=now --all
+  git gc --prune=now --aggressive
+  git push --force
+  ```
+
+- **Troubleshooting:**
+
+  ```bash
+  # ✅ DO: Common fixes
+
+  # Accidentally committed to wrong branch
+  git reset HEAD~1              # Undo commit
+  git stash                     # Stash changes
+  git checkout correct-branch
+  git stash pop                 # Apply changes
+
+  # Merge conflict
+  git status                    # See conflicted files
+  # Edit files, resolve conflicts
+  git add resolved-file.tsx
+  git commit                    # Complete merge
+
+  # Accidentally deleted local branch
+  git reflog                    # Find commit hash
+  git checkout -b recovered-branch abc123
+
+  # Need to undo git add
+  git restore --staged file.tsx
+
+  # Changed files accidentally
+  git restore file.tsx          # Restore from last commit
+
+  # Committed on wrong branch
+  git reset --soft HEAD~1       # Undo commit, keep changes
+  git stash
+  git checkout correct-branch
+  git stash pop
+  git add .
+  git commit
+  ```
+
+Follow [security.mdc](mdc:.cursor/rules/security.mdc) for security-related git practices.
+Follow [testing.mdc](mdc:.cursor/rules/testing.mdc) for pre-commit test hooks.

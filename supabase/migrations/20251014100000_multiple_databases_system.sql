@@ -115,12 +115,20 @@ CREATE TABLE IF NOT EXISTS public.database_relations (
 -- ============================================================================
 -- INDEXES
 -- ============================================================================
+-- Basic indexes
 CREATE INDEX IF NOT EXISTS idx_databases_system_name ON public.databases(system_name);
 CREATE INDEX IF NOT EXISTS idx_databases_is_active ON public.databases(is_active);
 CREATE INDEX IF NOT EXISTS idx_table_schemas_database_id ON public.table_schemas(database_id);
 CREATE INDEX IF NOT EXISTS idx_files_database_id ON public.files(database_id);
 CREATE INDEX IF NOT EXISTS idx_files_upload_date ON public.files(upload_date);
 CREATE INDEX IF NOT EXISTS idx_audit_log_timestamp ON public.audit_log(timestamp DESC);
+
+-- RLS optimization indexes
+CREATE INDEX IF NOT EXISTS idx_databases_created_by ON public.databases(created_by);
+CREATE INDEX IF NOT EXISTS idx_files_uploaded_by ON public.files(uploaded_by);
+CREATE INDEX IF NOT EXISTS idx_audit_log_user_id ON public.audit_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_database_relations_source ON public.database_relations(source_database_id);
+CREATE INDEX IF NOT EXISTS idx_database_relations_target ON public.database_relations(target_database_id);
 
 -- ============================================================================
 -- FUNCTIONS
@@ -138,15 +146,36 @@ RETURNS TRIGGER AS $$
 BEGIN
   IF TG_OP = 'DELETE' THEN
     INSERT INTO public.audit_log (entity_type, entity_id, action_type, old_values)
-    VALUES (TG_TABLE_NAME, OLD.id, 'delete', to_jsonb(OLD));
+    VALUES (
+      CASE TG_TABLE_NAME 
+        WHEN 'databases' THEN 'database'
+        WHEN 'table_schemas' THEN 'schema'
+        WHEN 'files' THEN 'file'
+        ELSE TG_TABLE_NAME
+      END, 
+      OLD.id, 'delete', to_jsonb(OLD));
     RETURN OLD;
   ELSIF TG_OP = 'UPDATE' THEN
     INSERT INTO public.audit_log (entity_type, entity_id, action_type, old_values, new_values)
-    VALUES (TG_TABLE_NAME, NEW.id, 'update', to_jsonb(OLD), to_jsonb(NEW));
+    VALUES (
+      CASE TG_TABLE_NAME 
+        WHEN 'databases' THEN 'database'
+        WHEN 'table_schemas' THEN 'schema'
+        WHEN 'files' THEN 'file'
+        ELSE TG_TABLE_NAME
+      END, 
+      NEW.id, 'update', to_jsonb(OLD), to_jsonb(NEW));
     RETURN NEW;
   ELSIF TG_OP = 'INSERT' THEN
     INSERT INTO public.audit_log (entity_type, entity_id, action_type, new_values)
-    VALUES (TG_TABLE_NAME, NEW.id, 'create', to_jsonb(NEW));
+    VALUES (
+      CASE TG_TABLE_NAME 
+        WHEN 'databases' THEN 'database'
+        WHEN 'table_schemas' THEN 'schema'
+        WHEN 'files' THEN 'file'
+        ELSE TG_TABLE_NAME
+      END, 
+      NEW.id, 'create', to_jsonb(NEW));
     RETURN NEW;
   END IF;
   RETURN NULL;
@@ -217,7 +246,7 @@ INSERT INTO public.databases (
   'orders_2024',
   'Orders 2024',
   'All vending machine orders from 2024',
-  'orders',
+  'user_orders',
   'ShoppingCart',
   '#10B981',
   '{"type": "orders", "legacy": true}'::jsonb

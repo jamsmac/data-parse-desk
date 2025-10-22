@@ -1,0 +1,818 @@
+---
+description: Data table and grid patterns for DataParseDesk (Virtual tables, sorting, filtering, editing)
+globs: src/components/database/**/*.tsx, src/components/common/VirtualTable.tsx
+alwaysApply: false
+---
+
+- **Virtual Tables for Performance:**
+  Reference: [VirtualTable.tsx](mdc:src/components/common/VirtualTable.tsx)
+
+  **1. Basic Virtual Table Setup**
+  ```typescript
+  import { useVirtualizer } from '@tanstack/react-virtual';
+  import { useRef } from 'react';
+
+  interface VirtualTableProps<T> {
+    data: T[];
+    columns: Column<T>[];
+    rowHeight?: number;
+  }
+
+  function VirtualTable<T extends { id: string }>({
+    data,
+    columns,
+    rowHeight = 50,
+  }: VirtualTableProps<T>) {
+    const parentRef = useRef<HTMLDivElement>(null);
+
+    const rowVirtualizer = useVirtualizer({
+      count: data.length,
+      getScrollElement: () => parentRef.current,
+      estimateSize: () => rowHeight,
+      overscan: 10, // Render 10 extra rows for smooth scrolling
+    });
+
+    return (
+      <div ref={parentRef} className="h-[600px] overflow-auto">
+        <div
+          style={{
+            height: `${rowVirtualizer.getTotalSize()}px`,
+            width: '100%',
+            position: 'relative',
+          }}
+        >
+          {/* Header (sticky) */}
+          <div className="sticky top-0 z-10 bg-table-header border-b">
+            <div className="flex">
+              {columns.map(column => (
+                <div
+                  key={column.id}
+                  className="px-4 py-2 font-semibold"
+                  style={{ width: column.width }}
+                >
+                  {column.header}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Virtual rows */}
+          {rowVirtualizer.getVirtualItems().map(virtualRow => {
+            const row = data[virtualRow.index];
+
+            return (
+              <div
+                key={virtualRow.key}
+                className="absolute top-0 left-0 w-full flex hover:bg-table-row-hover"
+                style={{
+                  height: `${virtualRow.size}px`,
+                  transform: `translateY(${virtualRow.start}px)`,
+                }}
+              >
+                {columns.map(column => (
+                  <div
+                    key={column.id}
+                    className="px-4 py-2 border-b"
+                    style={{ width: column.width }}
+                  >
+                    {column.cell(row)}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // Usage
+  const columns = [
+    { id: 'name', header: 'Name', width: '200px', cell: (row) => row.name },
+    { id: 'status', header: 'Status', width: '100px', cell: (row) => row.status },
+    { id: 'date', header: 'Date', width: '150px', cell: (row) => formatDate(row.created_at) },
+  ];
+
+  <VirtualTable data={items} columns={columns} />
+  ```
+
+  **2. Editable Cells**
+  Reference: [EditableCell.tsx](mdc:src/components/database/EditableCell.tsx)
+
+  ```typescript
+  import { useState, useRef, useEffect } from 'react';
+
+  interface EditableCellProps {
+    value: string;
+    onSave: (newValue: string) => void;
+    type?: 'text' | 'number' | 'date';
+  }
+
+  export const EditableCell = ({ value, onSave, type = 'text' }: EditableCellProps) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [editValue, setEditValue] = useState(value);
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+      if (isEditing && inputRef.current) {
+        inputRef.current.focus();
+        inputRef.current.select();
+      }
+    }, [isEditing]);
+
+    const handleSave = () => {
+      if (editValue !== value) {
+        onSave(editValue);
+      }
+      setIsEditing(false);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        handleSave();
+      } else if (e.key === 'Escape') {
+        setEditValue(value);
+        setIsEditing(false);
+      }
+    };
+
+    if (isEditing) {
+      return (
+        <input
+          ref={inputRef}
+          type={type}
+          value={editValue}
+          onChange={(e) => setEditValue(e.target.value)}
+          onBlur={handleSave}
+          onKeyDown={handleKeyDown}
+          className="w-full px-2 py-1 border border-primary rounded focus:outline-none"
+        />
+      );
+    }
+
+    return (
+      <div
+        onClick={() => setIsEditing(true)}
+        className="cursor-pointer hover:bg-accent/50 px-2 py-1 rounded"
+      >
+        {value || <span className="text-muted-foreground italic">Empty</span>}
+      </div>
+    );
+  };
+  ```
+
+  **3. Cell Type Renderers**
+  Reference: [CellEditor.tsx](mdc:src/components/database/CellEditor.tsx)
+
+  ```typescript
+  interface CellRendererProps {
+    column: Column;
+    value: unknown;
+    onChange: (value: unknown) => void;
+  }
+
+  export const CellRenderer = ({ column, value, onChange }: CellRendererProps) => {
+    switch (column.type) {
+      case 'text':
+        return (
+          <EditableCell
+            value={String(value || '')}
+            onSave={onChange}
+            type="text"
+          />
+        );
+
+      case 'number':
+        return (
+          <EditableCell
+            value={String(value || '')}
+            onSave={(v) => onChange(Number(v))}
+            type="number"
+          />
+        );
+
+      case 'date':
+        return (
+          <input
+            type="date"
+            value={value ? new Date(value).toISOString().split('T')[0] : ''}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full px-2 py-1 border rounded"
+          />
+        );
+
+      case 'boolean':
+        return (
+          <input
+            type="checkbox"
+            checked={Boolean(value)}
+            onChange={(e) => onChange(e.target.checked)}
+            className="h-4 w-4"
+          />
+        );
+
+      case 'select':
+        return (
+          <select
+            value={String(value || '')}
+            onChange={(e) => onChange(e.target.value)}
+            className="w-full px-2 py-1 border rounded"
+          >
+            <option value="">Select...</option>
+            {column.options?.map(opt => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        );
+
+      case 'multiselect':
+        return (
+          <MultiSelect
+            value={Array.isArray(value) ? value : []}
+            options={column.options || []}
+            onChange={onChange}
+          />
+        );
+
+      default:
+        return <span>{String(value || '')}</span>;
+    }
+  };
+  ```
+
+- **Sorting & Filtering:**
+
+  **1. Column Sorting**
+  Reference: [SortControls.tsx](mdc:src/components/database/SortControls.tsx)
+
+  ```typescript
+  import { useState, useMemo } from 'react';
+  import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+
+  type SortDirection = 'asc' | 'desc' | null;
+
+  interface SortState {
+    columnId: string | null;
+    direction: SortDirection;
+  }
+
+  function useSorting<T>(data: T[], initialSort?: SortState) {
+    const [sort, setSort] = useState<SortState>(
+      initialSort || { columnId: null, direction: null }
+    );
+
+    const sortedData = useMemo(() => {
+      if (!sort.columnId || !sort.direction) {
+        return data;
+      }
+
+      return [...data].sort((a, b) => {
+        const aValue = a[sort.columnId as keyof T];
+        const bValue = b[sort.columnId as keyof T];
+
+        if (aValue === null || aValue === undefined) return 1;
+        if (bValue === null || bValue === undefined) return -1;
+
+        const comparison = aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
+
+        return sort.direction === 'asc' ? comparison : -comparison;
+      });
+    }, [data, sort]);
+
+    const toggleSort = (columnId: string) => {
+      setSort(prev => {
+        if (prev.columnId !== columnId) {
+          return { columnId, direction: 'asc' };
+        }
+
+        if (prev.direction === 'asc') {
+          return { columnId, direction: 'desc' };
+        }
+
+        return { columnId: null, direction: null };
+      });
+    };
+
+    return { sortedData, sort, toggleSort };
+  }
+
+  // Sort icon component
+  const SortIcon = ({ direction }: { direction: SortDirection }) => {
+    if (direction === 'asc') return <ChevronUp className="h-4 w-4" />;
+    if (direction === 'desc') return <ChevronDown className="h-4 w-4" />;
+    return <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />;
+  };
+
+  // Usage in table header
+  <th
+    onClick={() => toggleSort('name')}
+    className="cursor-pointer hover:bg-accent/50 select-none"
+  >
+    <div className="flex items-center gap-2">
+      Name
+      <SortIcon direction={sort.columnId === 'name' ? sort.direction : null} />
+    </div>
+  </th>
+  ```
+
+  **2. Advanced Filtering**
+  Reference: [FilterBar.tsx](mdc:src/components/database/FilterBar.tsx), [FilterBuilder.tsx](mdc:src/components/database/FilterBuilder.tsx)
+
+  ```typescript
+  interface Filter {
+    id: string;
+    columnId: string;
+    operator: 'eq' | 'neq' | 'contains' | 'startsWith' | 'gt' | 'lt' | 'gte' | 'lte';
+    value: unknown;
+  }
+
+  function useFiltering<T extends Record<string, unknown>>(data: T[]) {
+    const [filters, setFilters] = useState<Filter[]>([]);
+
+    const filteredData = useMemo(() => {
+      if (filters.length === 0) return data;
+
+      return data.filter(row => {
+        return filters.every(filter => {
+          const cellValue = row[filter.columnId];
+
+          switch (filter.operator) {
+            case 'eq':
+              return cellValue === filter.value;
+            case 'neq':
+              return cellValue !== filter.value;
+            case 'contains':
+              return String(cellValue).toLowerCase().includes(String(filter.value).toLowerCase());
+            case 'startsWith':
+              return String(cellValue).toLowerCase().startsWith(String(filter.value).toLowerCase());
+            case 'gt':
+              return Number(cellValue) > Number(filter.value);
+            case 'lt':
+              return Number(cellValue) < Number(filter.value);
+            case 'gte':
+              return Number(cellValue) >= Number(filter.value);
+            case 'lte':
+              return Number(cellValue) <= Number(filter.value);
+            default:
+              return true;
+          }
+        });
+      });
+    }, [data, filters]);
+
+    const addFilter = (filter: Omit<Filter, 'id'>) => {
+      setFilters(prev => [...prev, { ...filter, id: crypto.randomUUID() }]);
+    };
+
+    const removeFilter = (id: string) => {
+      setFilters(prev => prev.filter(f => f.id !== id));
+    };
+
+    const clearFilters = () => {
+      setFilters([]);
+    };
+
+    return { filteredData, filters, addFilter, removeFilter, clearFilters };
+  }
+  ```
+
+- **Column Management:**
+
+  **1. Column Reordering**
+  Reference: [ColumnReorder.tsx](mdc:src/components/database/ColumnReorder.tsx)
+
+  ```typescript
+  import { DndContext, closestCenter, DragEndEvent } from '@dnd-kit/core';
+  import { SortableContext, arrayMove, useSortable } from '@dnd-kit/sortable';
+  import { CSS } from '@dnd-kit/utilities';
+
+  interface Column {
+    id: string;
+    name: string;
+    type: string;
+    position: number;
+  }
+
+  function SortableColumn({ column }: { column: Column }) {
+    const {
+      attributes,
+      listeners,
+      setNodeRef,
+      transform,
+      transition,
+    } = useSortable({ id: column.id });
+
+    const style = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+    };
+
+    return (
+      <div
+        ref={setNodeRef}
+        style={style}
+        {...attributes}
+        {...listeners}
+        className="p-4 bg-card border rounded cursor-move hover:bg-accent"
+      >
+        {column.name}
+      </div>
+    );
+  }
+
+  function ColumnManager({ columns, onReorder }: {
+    columns: Column[];
+    onReorder: (columns: Column[]) => void;
+  }) {
+    const handleDragEnd = (event: DragEndEvent) => {
+      const { active, over } = event;
+
+      if (over && active.id !== over.id) {
+        const oldIndex = columns.findIndex(c => c.id === active.id);
+        const newIndex = columns.findIndex(c => c.id === over.id);
+
+        const reordered = arrayMove(columns, oldIndex, newIndex).map((col, index) => ({
+          ...col,
+          position: index,
+        }));
+
+        onReorder(reordered);
+      }
+    };
+
+    return (
+      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={columns.map(c => c.id)}>
+          <div className="space-y-2">
+            {columns.map(column => (
+              <SortableColumn key={column.id} column={column} />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+    );
+  }
+  ```
+
+  **2. Column Visibility Toggle**
+  ```typescript
+  import { useState } from 'react';
+  import { Checkbox } from '@/components/ui/checkbox';
+  import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+  import { Button } from '@/components/ui/button';
+  import { Columns } from 'lucide-react';
+
+  function ColumnVisibilityToggle({ columns, onToggle }: {
+    columns: Column[];
+    onToggle: (columnId: string, visible: boolean) => void;
+  }) {
+    const [visibleColumns, setVisibleColumns] = useState<Set<string>>(
+      new Set(columns.map(c => c.id))
+    );
+
+    const handleToggle = (columnId: string) => {
+      const newVisible = new Set(visibleColumns);
+      if (newVisible.has(columnId)) {
+        newVisible.delete(columnId);
+      } else {
+        newVisible.add(columnId);
+      }
+      setVisibleColumns(newVisible);
+      onToggle(columnId, newVisible.has(columnId));
+    };
+
+    return (
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="sm">
+            <Columns className="h-4 w-4 mr-2" />
+            Columns
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-56">
+          <div className="space-y-2">
+            <h4 className="font-semibold text-sm">Toggle Columns</h4>
+            {columns.map(column => (
+              <div key={column.id} className="flex items-center gap-2">
+                <Checkbox
+                  id={column.id}
+                  checked={visibleColumns.has(column.id)}
+                  onCheckedChange={() => handleToggle(column.id)}
+                />
+                <label htmlFor={column.id} className="text-sm cursor-pointer">
+                  {column.name}
+                </label>
+              </div>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
+  }
+  ```
+
+- **Pagination:**
+
+  **1. Client-Side Pagination**
+  Reference: [PaginationControls.tsx](mdc:src/components/database/PaginationControls.tsx)
+
+  ```typescript
+  import { useMemo, useState } from 'react';
+  import { ChevronLeft, ChevronRight } from 'lucide-react';
+  import { Button } from '@/components/ui/button';
+
+  function usePagination<T>(data: T[], pageSize: number = 50) {
+    const [currentPage, setCurrentPage] = useState(1);
+
+    const totalPages = Math.ceil(data.length / pageSize);
+
+    const paginatedData = useMemo(() => {
+      const start = (currentPage - 1) * pageSize;
+      const end = start + pageSize;
+      return data.slice(start, end);
+    }, [data, currentPage, pageSize]);
+
+    const goToPage = (page: number) => {
+      setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+    };
+
+    return {
+      paginatedData,
+      currentPage,
+      totalPages,
+      goToPage,
+      nextPage: () => goToPage(currentPage + 1),
+      prevPage: () => goToPage(currentPage - 1),
+      hasNext: currentPage < totalPages,
+      hasPrev: currentPage > 1,
+    };
+  }
+
+  // Pagination UI
+  function PaginationControls({ currentPage, totalPages, onPageChange }: {
+    currentPage: number;
+    totalPages: number;
+    onPageChange: (page: number) => void;
+  }) {
+    return (
+      <div className="flex items-center justify-between px-4 py-3 border-t">
+        <div className="text-sm text-muted-foreground">
+          Page {currentPage} of {totalPages}
+        </div>
+
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(currentPage - 1)}
+            disabled={currentPage === 1}
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Previous
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(currentPage + 1)}
+            disabled={currentPage === totalPages}
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  ```
+
+  **2. Server-Side Pagination (Supabase)**
+  ```typescript
+  import { useQuery } from '@tanstack/react-query';
+  import { supabase } from '@/integrations/supabase/client';
+
+  function useServerPagination(
+    databaseId: string,
+    page: number,
+    pageSize: number = 50
+  ) {
+    return useQuery({
+      queryKey: ['items', databaseId, page, pageSize],
+      queryFn: async () => {
+        const start = (page - 1) * pageSize;
+        const end = start + pageSize - 1;
+
+        const { data, error, count } = await supabase
+          .from('items')
+          .select('*', { count: 'exact' })
+          .eq('database_id', databaseId)
+          .range(start, end)
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        return {
+          data,
+          totalCount: count || 0,
+          totalPages: Math.ceil((count || 0) / pageSize),
+        };
+      },
+      keepPreviousData: true, // Show old data while loading new page
+    });
+  }
+  ```
+
+- **Bulk Operations:**
+
+  **1. Row Selection**
+  ```typescript
+  import { useState } from 'react';
+  import { Checkbox } from '@/components/ui/checkbox';
+
+  function useRowSelection<T extends { id: string }>(data: T[]) {
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+    const toggleRow = (id: string) => {
+      const newSelection = new Set(selectedIds);
+      if (newSelection.has(id)) {
+        newSelection.delete(id);
+      } else {
+        newSelection.add(id);
+      }
+      setSelectedIds(newSelection);
+    };
+
+    const toggleAll = () => {
+      if (selectedIds.size === data.length) {
+        setSelectedIds(new Set());
+      } else {
+        setSelectedIds(new Set(data.map(row => row.id)));
+      }
+    };
+
+    const clearSelection = () => {
+      setSelectedIds(new Set());
+    };
+
+    const isSelected = (id: string) => selectedIds.has(id);
+    const isAllSelected = data.length > 0 && selectedIds.size === data.length;
+
+    return {
+      selectedIds,
+      selectedRows: data.filter(row => selectedIds.has(row.id)),
+      toggleRow,
+      toggleAll,
+      clearSelection,
+      isSelected,
+      isAllSelected,
+    };
+  }
+
+  // Usage in table
+  function DataTable({ data }: { data: Item[] }) {
+    const { selectedIds, toggleRow, toggleAll, isSelected, isAllSelected } = useRowSelection(data);
+
+    return (
+      <table>
+        <thead>
+          <tr>
+            <th>
+              <Checkbox checked={isAllSelected} onCheckedChange={toggleAll} />
+            </th>
+            <th>Name</th>
+            {/* ... */}
+          </tr>
+        </thead>
+        <tbody>
+          {data.map(row => (
+            <tr key={row.id}>
+              <td>
+                <Checkbox
+                  checked={isSelected(row.id)}
+                  onCheckedChange={() => toggleRow(row.id)}
+                />
+              </td>
+              <td>{row.name}</td>
+              {/* ... */}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    );
+  }
+  ```
+
+  **2. Bulk Actions**
+  ```typescript
+  function BulkActions({ selectedIds, onDelete, onExport }: {
+    selectedIds: Set<string>;
+    onDelete: (ids: string[]) => void;
+    onExport: (ids: string[]) => void;
+  }) {
+    if (selectedIds.size === 0) return null;
+
+    return (
+      <div className="flex items-center gap-2 p-4 bg-accent border-b">
+        <span className="text-sm text-muted-foreground">
+          {selectedIds.size} rows selected
+        </span>
+
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => onDelete(Array.from(selectedIds))}
+        >
+          <Trash2 className="h-4 w-4 mr-2" />
+          Delete
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => onExport(Array.from(selectedIds))}
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Export
+        </Button>
+      </div>
+    );
+  }
+  ```
+
+- **Export Functionality:**
+
+  **1. Export to CSV**
+  ```typescript
+  import Papa from 'papaparse';
+
+  function exportToCSV<T extends Record<string, unknown>>(
+    data: T[],
+    filename: string,
+    columns?: Column<T>[]
+  ) {
+    const csv = Papa.unparse(data, {
+      columns: columns?.map(c => c.id),
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${filename}.csv`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+  ```
+
+  **2. Export to Excel**
+  Reference: [ExportButton.tsx](mdc:src/components/database/ExportButton.tsx)
+
+  ```typescript
+  import ExcelJS from 'exceljs';
+
+  async function exportToExcel<T extends Record<string, unknown>>(
+    data: T[],
+    filename: string,
+    columns: Column<T>[]
+  ) {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Data');
+
+    // Add headers
+    worksheet.columns = columns.map(col => ({
+      header: col.header,
+      key: col.id,
+      width: 20,
+    }));
+
+    // Add data
+    data.forEach(row => {
+      worksheet.addRow(row);
+    });
+
+    // Style header
+    worksheet.getRow(1).font = { bold: true };
+    worksheet.getRow(1).fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FFE0E0E0' },
+    };
+
+    // Generate file
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    });
+
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${filename}.xlsx`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+  ```
+
+Follow [performance.mdc](mdc:.cursor/rules/performance.mdc) for virtual scrolling optimization.
+Follow [react_components.mdc](mdc:.cursor/rules/react_components.mdc) for component patterns.
+Follow [supabase.mdc](mdc:.cursor/rules/supabase.mdc) for database queries.

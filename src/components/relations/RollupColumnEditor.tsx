@@ -18,21 +18,30 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Calculator, Info } from 'lucide-react';
+import { Calculator, Info, RefreshCw } from 'lucide-react';
 import { RollupConfig, TableSchema } from '@/types/database';
+import { supabase } from '@/integrations/supabase/client';
 
 interface RollupColumnEditorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   relationColumns: TableSchema[];
+  databaseId: string;
   onSave: (config: RollupConfig & { columnName: string }) => void;
   existingConfig?: RollupConfig & { columnName: string };
+}
+
+interface ComputeResult {
+  success: boolean;
+  rollup_updates: number;
+  duration_ms: number;
 }
 
 export const RollupColumnEditor: React.FC<RollupColumnEditorProps> = ({
   open,
   onOpenChange,
   relationColumns,
+  databaseId,
   onSave,
   existingConfig,
 }) => {
@@ -44,21 +53,61 @@ export const RollupColumnEditor: React.FC<RollupColumnEditorProps> = ({
   const [aggregation, setAggregation] = useState<
     'count' | 'sum' | 'avg' | 'min' | 'max' | 'median' | 'unique' | 'empty' | 'not_empty'
   >(existingConfig?.aggregation || 'count');
+  const [isRecalculating, setIsRecalculating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!columnName.trim() || !relationColumnId || !targetColumn) {
+      setError('Заполните все обязательные поля');
       return;
     }
 
-    onSave({
-      columnName: columnName.trim(),
-      relationId: relationColumnId,
-      relation_column_id: relationColumnId,
-      target_column: targetColumn,
-      aggregation,
-    });
+    setError(null);
+    setSuccessMessage(null);
 
-    onOpenChange(false);
+    try {
+      onSave({
+        columnName: columnName.trim(),
+        relationId: relationColumnId,
+        relation_column_id: relationColumnId,
+        target_column: targetColumn,
+        aggregation,
+      });
+
+      // Автоматически вычисляем значения rollup после создания
+      await handleRecalculate();
+
+      onOpenChange(false);
+    } catch (err: any) {
+      setError(err.message || 'Ошибка создания Rollup колонки');
+    }
+  };
+
+  const handleRecalculate = async () => {
+    setIsRecalculating(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      const { data, error: funcError } = await supabase.functions.invoke('compute-columns', {
+        body: {
+          databaseId,
+          columnTypes: ['rollup'],
+        },
+      });
+
+      if (funcError) throw funcError;
+
+      const result = data as ComputeResult;
+      setSuccessMessage(
+        `Обновлено ${result.rollup_updates} значений за ${Math.round(result.duration_ms)}мс`
+      );
+    } catch (err: any) {
+      setError(err.message || 'Ошибка пересчета Rollup значений');
+    } finally {
+      setIsRecalculating(false);
+    }
   };
 
   const getAggregationDescription = (agg: string) => {
@@ -100,6 +149,19 @@ export const RollupColumnEditor: React.FC<RollupColumnEditorProps> = ({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
+          {/* Error/Success Messages */}
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {successMessage && (
+            <Alert>
+              <AlertDescription>{successMessage}</AlertDescription>
+            </Alert>
+          )}
+
           {/* Column Name */}
           <div className="space-y-2">
             <Label htmlFor="columnName">Название колонки</Label>
@@ -252,16 +314,29 @@ export const RollupColumnEditor: React.FC<RollupColumnEditorProps> = ({
           </Alert>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Отмена
-          </Button>
+        <DialogFooter className="flex-col sm:flex-row gap-2">
           <Button
-            onClick={handleSave}
-            disabled={!columnName.trim() || !relationColumnId || !targetColumn}
+            variant="outline"
+            size="sm"
+            onClick={handleRecalculate}
+            disabled={isRecalculating}
+            className="flex items-center gap-2 sm:mr-auto"
           >
-            {existingConfig ? 'Обновить' : 'Создать'}
+            <RefreshCw className={`h-4 w-4 ${isRecalculating ? 'animate-spin' : ''}`} />
+            {isRecalculating ? 'Пересчет...' : 'Пересчитать значения'}
           </Button>
+
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Отмена
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={!columnName.trim() || !relationColumnId || !targetColumn}
+            >
+              {existingConfig ? 'Обновить' : 'Создать'}
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -1,0 +1,311 @@
+// Edge Function: Resolve Relations
+// Automatically resolves relation columns for table data with batching and optimization
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+interface RelationConfig {
+  columnName: string;
+  targetDatabaseId: string;
+  displayField?: string;
+  relationType: 'many_to_one' | 'one_to_many' | 'many_to_many';
+}
+
+interface ResolveRelationsRequest {
+  databaseId: string;
+  rows: any[];
+  includeRelations?: boolean;
+}
+
+serve(async (req) => {
+  // CORS headers
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      },
+    });
+  }
+
+  try {
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Missing authorization header');
+    }
+
+    // Create Supabase client
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: authHeader },
+        },
+      }
+    );
+
+    // Verify user is authenticated
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseClient.auth.getUser();
+
+    if (userError || !user) {
+      throw new Error('Unauthorized');
+    }
+
+    // Parse request body
+    const body: ResolveRelationsRequest = await req.json();
+    const { databaseId, rows, includeRelations = true } = body;
+
+    if (!databaseId || !rows) {
+      throw new Error('Missing required fields: databaseId, rows');
+    }
+
+    console.log(`Processing ${rows.length} rows for database ${databaseId}`);
+
+    // If includeRelations is false, just return the rows as-is
+    if (!includeRelations) {
+      return new Response(
+        JSON.stringify({ rows, metadata: { relationsResolved: 0 } }),
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        }
+      );
+    }
+
+    // Get all relation columns for this database
+    const { data: schemas, error: schemaError } = await supabaseClient
+      .from('table_schemas')
+      .select('column_name, column_type, relation_config')
+      .eq('database_id', databaseId)
+      .eq('column_type', 'relation');
+
+    if (schemaError) {
+      console.error('Error fetching schemas:', schemaError);
+      throw schemaError;
+    }
+
+    if (!schemas || schemas.length === 0) {
+      // No relations to resolve
+      return new Response(
+        JSON.stringify({ rows, metadata: { relationsResolved: 0 } }),
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        }
+      );
+    }
+
+    console.log(`Found ${schemas.length} relation columns to resolve`);
+
+    // Extract relation configurations
+    const relationConfigs: RelationConfig[] = schemas
+      .filter((s) => s.relation_config)
+      .map((s) => ({
+        columnName: s.column_name,
+        targetDatabaseId: s.relation_config.target_database_id,
+        displayField: s.relation_config.display_field || 'name',
+        relationType: s.relation_config.relation_type || 'many_to_one',
+      }));
+
+    // Batch resolve all relations
+    const resolvedRows = await resolveRelationsForRows(
+      supabaseClient,
+      rows,
+      relationConfigs
+    );
+
+    return new Response(
+      JSON.stringify({
+        rows: resolvedRows,
+        metadata: {
+          relationsResolved: relationConfigs.length,
+          totalRows: rows.length,
+        },
+      }),
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      }
+    );
+  } catch (error) {
+    console.error('Error in resolve-relations:', error);
+
+    return new Response(
+      JSON.stringify({
+        error: error.message || 'Internal server error',
+      }),
+      {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      }
+    );
+  }
+});
+
+/**
+ * Resolve relations for multiple rows with batching optimization
+ */
+async function resolveRelationsForRows(
+  supabaseClient: any,
+  rows: any[],
+  relationConfigs: RelationConfig[]
+): Promise<any[]> {
+  // Create a map to batch queries per target database
+  const batchMap = new Map<string, Set<string>>();
+
+  // Collect all unique foreign IDs per target database
+  for (const config of relationConfigs) {
+    if (!batchMap.has(config.targetDatabaseId)) {
+      batchMap.set(config.targetDatabaseId, new Set());
+    }
+
+    const foreignIds = batchMap.get(config.targetDatabaseId)!;
+
+    for (const row of rows) {
+      const value = row.data?.[config.columnName];
+
+      if (!value) continue;
+
+      if (Array.isArray(value)) {
+        // many_to_many or one_to_many
+        value.forEach((id) => foreignIds.add(id));
+      } else {
+        // many_to_one
+        foreignIds.add(value);
+      }
+    }
+  }
+
+  console.log(
+    `Batching queries for ${batchMap.size} target databases`
+  );
+
+  // Fetch all related records in batches
+  const relatedDataCache = new Map<string, Map<string, any>>();
+
+  for (const [targetDatabaseId, foreignIds] of batchMap.entries()) {
+    if (foreignIds.size === 0) continue;
+
+    console.log(
+      `Fetching ${foreignIds.size} records from database ${targetDatabaseId}`
+    );
+
+    try {
+      // Fetch related data using table_data
+      const { data: relatedRecords, error } = await supabaseClient
+        .from('table_data')
+        .select('id, data')
+        .eq('database_id', targetDatabaseId)
+        .in('id', Array.from(foreignIds));
+
+      if (error) {
+        console.error(`Error fetching from ${targetDatabaseId}:`, error);
+        continue;
+      }
+
+      // Build cache for fast lookup
+      const cache = new Map<string, any>();
+      (relatedRecords || []).forEach((record: any) => {
+        cache.set(record.id, record.data);
+      });
+
+      relatedDataCache.set(targetDatabaseId, cache);
+
+      console.log(
+        `Cached ${cache.size} records for database ${targetDatabaseId}`
+      );
+    } catch (err) {
+      console.error(`Exception fetching ${targetDatabaseId}:`, err);
+    }
+  }
+
+  // Now resolve relations for each row
+  const resolvedRows = rows.map((row) => {
+    const resolvedData = { ...row.data };
+
+    for (const config of relationConfigs) {
+      const value = row.data?.[config.columnName];
+
+      if (!value) continue;
+
+      const cache = relatedDataCache.get(config.targetDatabaseId);
+      if (!cache) continue;
+
+      if (Array.isArray(value)) {
+        // Resolve array of IDs (one_to_many or many_to_many)
+        const resolvedValues = value
+          .map((id) => {
+            const relatedData = cache.get(id);
+            if (!relatedData) return null;
+
+            return getDisplayValue(relatedData, config.displayField);
+          })
+          .filter((v) => v !== null);
+
+        resolvedData[`${config.columnName}_resolved`] = resolvedValues;
+        resolvedData[`${config.columnName}_data`] = value.map(id => cache.get(id)).filter(Boolean);
+      } else {
+        // Resolve single ID (many_to_one)
+        const relatedData = cache.get(value);
+
+        if (relatedData) {
+          resolvedData[`${config.columnName}_resolved`] = getDisplayValue(
+            relatedData,
+            config.displayField
+          );
+          resolvedData[`${config.columnName}_data`] = relatedData;
+        }
+      }
+    }
+
+    return {
+      ...row,
+      data: resolvedData,
+    };
+  });
+
+  return resolvedRows;
+}
+
+/**
+ * Get display value from related record
+ */
+function getDisplayValue(record: any, displayField?: string): string {
+  if (!record) return '';
+
+  if (displayField && record[displayField]) {
+    return String(record[displayField]);
+  }
+
+  // Priority fields for display
+  const priorityFields = ['name', 'title', 'label', 'email', 'id'];
+
+  for (const field of priorityFields) {
+    if (record[field]) {
+      return String(record[field]);
+    }
+  }
+
+  // Fallback: return first non-null field
+  for (const key in record) {
+    if (record[key]) {
+      return String(record[key]);
+    }
+  }
+
+  return '';
+}

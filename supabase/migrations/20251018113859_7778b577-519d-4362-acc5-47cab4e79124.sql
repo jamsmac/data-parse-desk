@@ -165,7 +165,7 @@ USING (
     SELECT 1 FROM public.databases d
     LEFT JOIN public.projects p ON d.project_id = p.id
     WHERE d.id = database_files.database_id
-    AND (d.user_id = auth.uid() OR p.user_id = auth.uid() OR EXISTS (
+    AND (d.created_by = auth.uid() OR p.user_id = auth.uid() OR EXISTS (
       SELECT 1 FROM public.project_members pm
       WHERE pm.project_id = p.id AND pm.user_id = auth.uid()
     ))
@@ -181,7 +181,7 @@ USING (
     SELECT 1 FROM public.databases d
     LEFT JOIN public.projects p ON d.project_id = p.id
     WHERE d.id = cell_metadata.database_id
-    AND (d.user_id = auth.uid() OR p.user_id = auth.uid() OR EXISTS (
+    AND (d.created_by = auth.uid() OR p.user_id = auth.uid() OR EXISTS (
       SELECT 1 FROM public.project_members pm
       WHERE pm.project_id = p.id AND pm.user_id = auth.uid()
     ))
@@ -197,7 +197,7 @@ USING (
     JOIN public.databases d ON d.id = cm.database_id
     LEFT JOIN public.projects p ON d.project_id = p.id
     WHERE cm.id = cell_history.cell_metadata_id
-    AND (d.user_id = auth.uid() OR p.user_id = auth.uid() OR EXISTS (
+    AND (d.created_by = auth.uid() OR p.user_id = auth.uid() OR EXISTS (
       SELECT 1 FROM public.project_members pm
       WHERE pm.project_id = p.id AND pm.user_id = auth.uid()
     ))

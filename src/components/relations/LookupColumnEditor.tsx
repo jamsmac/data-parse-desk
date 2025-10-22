@@ -5,8 +5,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Search, Link as LinkIcon, ArrowRight } from 'lucide-react';
+import { Search, Link as LinkIcon, ArrowRight, RefreshCw } from 'lucide-react';
 import { Database, TableSchema } from '@/types/database';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LookupColumnEditorProps {
   open: boolean;
@@ -25,6 +26,12 @@ interface LookupConfig {
   description?: string;
 }
 
+interface ComputeResult {
+  success: boolean;
+  lookup_updates: number;
+  duration_ms: number;
+}
+
 export default function LookupColumnEditor({
   open,
   onOpenChange,
@@ -41,7 +48,9 @@ export default function LookupColumnEditor({
     description: '',
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isRecalculating, setIsRecalculating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Получаем relation-колонки текущей базы
   const relationColumns = currentColumns.filter((col) => col.column_type === 'relation');
@@ -63,9 +72,14 @@ export default function LookupColumnEditor({
 
     setIsLoading(true);
     setError(null);
+    setSuccessMessage(null);
 
     try {
       await onSave(config as LookupConfig);
+
+      // Автоматически вычисляем значения lookup после создания
+      await handleRecalculate();
+
       onOpenChange(false);
       // Сброс формы
       setConfig({
@@ -78,6 +92,32 @@ export default function LookupColumnEditor({
       setError(err.message || 'Ошибка создания Lookup колонки');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRecalculate = async () => {
+    setIsRecalculating(true);
+    setError(null);
+    setSuccessMessage(null);
+
+    try {
+      const { data, error: funcError } = await supabase.functions.invoke('compute-columns', {
+        body: {
+          databaseId: currentDatabase.id,
+          columnTypes: ['lookup'],
+        },
+      });
+
+      if (funcError) throw funcError;
+
+      const result = data as ComputeResult;
+      setSuccessMessage(
+        `Обновлено ${result.lookup_updates} значений за ${Math.round(result.duration_ms)}мс`
+      );
+    } catch (err: any) {
+      setError(err.message || 'Ошибка пересчета Lookup значений');
+    } finally {
+      setIsRecalculating(false);
     }
   };
 
@@ -97,6 +137,12 @@ export default function LookupColumnEditor({
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          {successMessage && (
+            <Alert>
+              <AlertDescription>{successMessage}</AlertDescription>
             </Alert>
           )}
 
@@ -219,13 +265,26 @@ export default function LookupColumnEditor({
           </div>
 
           {/* Действия */}
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
-              Отмена
+          <div className="flex justify-between gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRecalculate}
+              disabled={isRecalculating || isLoading}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRecalculating ? 'animate-spin' : ''}`} />
+              {isRecalculating ? 'Пересчет...' : 'Пересчитать значения'}
             </Button>
-            <Button onClick={handleSave} disabled={isLoading || relationColumns.length === 0}>
-              {isLoading ? 'Создание...' : 'Создать Lookup'}
-            </Button>
+
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isLoading}>
+                Отмена
+              </Button>
+              <Button onClick={handleSave} disabled={isLoading || relationColumns.length === 0}>
+                {isLoading ? 'Создание...' : 'Создать Lookup'}
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>

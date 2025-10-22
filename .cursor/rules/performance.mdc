@@ -1,0 +1,657 @@
+---
+description: Performance optimization patterns for DataParseDesk
+globs: src/**/*.tsx, src/**/*.ts
+alwaysApply: false
+---
+
+- **React Performance Optimization:**
+
+  **1. Component Memoization**
+  ```typescript
+  // ✅ DO: Memo for expensive components
+  import { memo } from 'react';
+
+  export const ProjectCard = memo(({ project }: ProjectCardProps) => {
+    // Expensive rendering logic
+    return <Card>{/* ... */}</Card>;
+  }, (prevProps, nextProps) => {
+    // Custom comparison - only re-render if project.id or project.updated_at changed
+    return (
+      prevProps.project.id === nextProps.project.id &&
+      prevProps.project.updated_at === nextProps.project.updated_at
+    );
+  });
+
+  // ❌ DON'T: Memo everything without reason
+  export const Button = memo(({ children }) => <button>{children}</button>);
+  // Too simple to benefit from memo
+  ```
+
+  **2. useMemo for Expensive Calculations**
+  ```typescript
+  // ✅ DO: Memoize expensive operations
+  const sortedAndFilteredProjects = useMemo(() => {
+    return projects
+      .filter(p => p.status === 'active')
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map(p => ({
+        ...p,
+        displayName: `${p.name} (${p.databases.length})`,
+      }));
+  }, [projects]);
+
+  // ❌ DON'T: useMemo for simple operations
+  const count = useMemo(() => items.length, [items]); // Overkill
+  const count = items.length; // Just do this
+  ```
+
+  **3. useCallback for Stable Functions**
+  ```typescript
+  // ✅ DO: useCallback for callbacks passed to memoized children
+  const MemoizedChild = memo(ChildComponent);
+
+  const Parent = () => {
+    const handleClick = useCallback((id: string) => {
+      console.log('Clicked:', id);
+    }, []); // Stable reference
+
+    return <MemoizedChild onClick={handleClick} />;
+  };
+
+  // ❌ DON'T: useCallback everywhere
+  const handleClick = useCallback(() => {
+    console.log('Click');
+  }, []); // Not passed to memoized child, not needed
+  ```
+
+  **4. Virtual Scrolling for Large Lists**
+  ```typescript
+  // ✅ DO: Use @tanstack/react-virtual for 100+ items
+  import { useVirtualizer } from '@tanstack/react-virtual';
+  import { useRef } from 'react';
+
+  function VirtualList({ items }: { items: Item[] }) {
+    const parentRef = useRef<HTMLDivElement>(null);
+
+    const rowVirtualizer = useVirtualizer({
+      count: items.length,
+      getScrollElement: () => parentRef.current,
+      estimateSize: () => 50, // Estimate row height
+      overscan: 5, // Render 5 extra items above/below viewport
+    });
+
+    return (
+      <div ref={parentRef} className="h-[600px] overflow-auto">
+        <div
+          style={{
+            height: `${rowVirtualizer.getTotalSize()}px`,
+            width: '100%',
+            position: 'relative',
+          }}
+        >
+          {rowVirtualizer.getVirtualItems().map((virtualRow) => (
+            <div
+              key={virtualRow.key}
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: `${virtualRow.size}px`,
+                transform: `translateY(${virtualRow.start}px)`,
+              }}
+            >
+              <ItemRow item={items[virtualRow.index]} />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ❌ DON'T: Render 10,000 items directly
+  <div>
+    {items.map(item => <ItemRow key={item.id} item={item} />)}
+    {/* Browser will die */}
+  </div>
+  ```
+
+- **React Query Optimization:**
+
+  **1. Query Key Management**
+  ```typescript
+  // ✅ DO: Structured query keys
+  export const queryKeys = {
+    projects: {
+      all: ['projects'] as const,
+      lists: () => [...queryKeys.projects.all, 'list'] as const,
+      list: (filters: ProjectFilters) =>
+        [...queryKeys.projects.lists(), filters] as const,
+      details: () => [...queryKeys.projects.all, 'detail'] as const,
+      detail: (id: string) => [...queryKeys.projects.details(), id] as const,
+    },
+  };
+
+  // Invalidate all projects
+  queryClient.invalidateQueries({ queryKey: queryKeys.projects.all });
+
+  // Invalidate specific project
+  queryClient.invalidateQueries({ queryKey: queryKeys.projects.detail(id) });
+  ```
+
+  **2. Prefetching**
+  ```typescript
+  // ✅ DO: Prefetch on hover
+  const prefetchProject = (projectId: string) => {
+    queryClient.prefetchQuery({
+      queryKey: ['projects', projectId],
+      queryFn: () => fetchProject(projectId),
+      staleTime: 60000,
+    });
+  };
+
+  <Link
+    to={`/projects/${project.id}`}
+    onMouseEnter={() => prefetchProject(project.id)}
+  >
+    {project.name}
+  </Link>
+  ```
+
+  **3. Stale Time Configuration**
+  ```typescript
+  // ✅ DO: Set appropriate stale times
+  const { data } = useQuery({
+    queryKey: ['user'],
+    queryFn: fetchUser,
+    staleTime: 5 * 60 * 1000, // 5 minutes - user data rarely changes
+  });
+
+  const { data } = useQuery({
+    queryKey: ['realtimeStats'],
+    queryFn: fetchStats,
+    staleTime: 0, // Always fresh
+    refetchInterval: 30000, // Refetch every 30s
+  });
+  ```
+
+  **4. Pagination & Infinite Scroll**
+  ```typescript
+  // ✅ DO: Keep previous data while loading next page
+  const { data, isLoading, isPreviousData } = useQuery({
+    queryKey: ['projects', page],
+    queryFn: () => fetchProjects(page),
+    keepPreviousData: true, // Show old data while fetching new
+  });
+
+  // ✅ DO: Infinite scroll
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['projects'],
+    queryFn: ({ pageParam = 1 }) => fetchProjects(pageParam),
+    getNextPageParam: (lastPage) => lastPage.nextPage ?? undefined,
+  });
+  ```
+
+- **Supabase Query Optimization:**
+
+  **1. Select Only Needed Columns**
+  ```typescript
+  // ✅ DO: Specific column selection
+  const { data } = await supabase
+    .from('projects')
+    .select('id, name, created_at') // Only what you need
+    .eq('user_id', userId);
+
+  // ❌ DON'T: Select everything
+  const { data } = await supabase
+    .from('projects')
+    .select('*') // Fetches all columns including large text fields
+    .eq('user_id', userId);
+  ```
+
+  **2. Use Indexes**
+  ```sql
+  -- ✅ DO: Create indexes for frequently queried columns
+  CREATE INDEX idx_projects_user_id ON projects(user_id);
+  CREATE INDEX idx_projects_status ON projects(status);
+  CREATE INDEX idx_projects_created_at ON projects(created_at DESC);
+  CREATE INDEX idx_items_database_id ON items(database_id);
+
+  -- Composite indexes for common filter combinations
+  CREATE INDEX idx_projects_user_status
+    ON projects(user_id, status);
+  ```
+
+  **3. Batch Operations**
+  ```typescript
+  // ✅ DO: Batch inserts
+  const { data, error } = await supabase
+    .from('items')
+    .insert(items) // Array of items
+    .select();
+
+  // ❌ DON'T: Individual inserts
+  for (const item of items) {
+    await supabase.from('items').insert(item); // N queries!
+  }
+  ```
+
+  **4. Use RPC for Complex Queries**
+  ```sql
+  -- ✅ DO: Server-side aggregation
+  CREATE OR REPLACE FUNCTION get_project_stats(project_id_param UUID)
+  RETURNS TABLE(
+    total_databases INTEGER,
+    total_items BIGINT,
+    total_columns INTEGER
+  ) AS $$
+  BEGIN
+    RETURN QUERY
+    SELECT
+      COUNT(DISTINCT d.id)::INTEGER,
+      (SELECT COUNT(*) FROM items i
+       JOIN databases db ON db.id = i.database_id
+       WHERE db.project_id = project_id_param)::BIGINT,
+      (SELECT COUNT(*) FROM columns c
+       JOIN databases db ON db.id = c.database_id
+       WHERE db.project_id = project_id_param)::INTEGER
+    FROM databases d
+    WHERE d.project_id = project_id_param;
+  END;
+  $$ LANGUAGE plpgsql;
+
+  // Client
+  const { data } = await supabase.rpc('get_project_stats', {
+    project_id_param: projectId,
+  });
+
+  // ❌ DON'T: Multiple client-side queries
+  const databases = await supabase.from('databases').select('*');
+  const items = await supabase.from('items').select('*');
+  const columns = await supabase.from('columns').select('*');
+  // Then aggregate on client
+  ```
+
+- **Image & Asset Optimization:**
+
+  **1. Lazy Load Images**
+  ```typescript
+  // ✅ DO: Native lazy loading
+  <img
+    src={project.thumbnail}
+    alt={project.name}
+    loading="lazy"
+    className="w-full h-48 object-cover"
+  />
+
+  // ✅ DO: Intersection Observer for custom loading
+  import { useEffect, useRef, useState } from 'react';
+
+  function LazyImage({ src, alt }: { src: string; alt: string }) {
+    const [isLoaded, setIsLoaded] = useState(false);
+    const imgRef = useRef<HTMLImageElement>(null);
+
+    useEffect(() => {
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            setIsLoaded(true);
+            observer.disconnect();
+          }
+        },
+        { rootMargin: '100px' }
+      );
+
+      if (imgRef.current) {
+        observer.observe(imgRef.current);
+      }
+
+      return () => observer.disconnect();
+    }, []);
+
+    return (
+      <img
+        ref={imgRef}
+        src={isLoaded ? src : undefined}
+        alt={alt}
+        className="w-full"
+      />
+    );
+  }
+  ```
+
+  **2. Optimize Supabase Storage Images**
+  ```typescript
+  // ✅ DO: Use image transformations
+  const getOptimizedImageUrl = (path: string, width: number) => {
+    const { data } = supabase.storage
+      .from('attachments')
+      .getPublicUrl(path, {
+        transform: {
+          width,
+          height: width,
+          resize: 'cover',
+        },
+      });
+    return data.publicUrl;
+  };
+
+  // Usage
+  <img
+    src={getOptimizedImageUrl(project.image, 400)}
+    srcSet={`
+      ${getOptimizedImageUrl(project.image, 400)} 400w,
+      ${getOptimizedImageUrl(project.image, 800)} 800w,
+      ${getOptimizedImageUrl(project.image, 1200)} 1200w
+    `}
+    sizes="(max-width: 768px) 100vw, 400px"
+    alt={project.name}
+  />
+  ```
+
+- **Bundle Size Optimization:**
+
+  **1. Code Splitting**
+  ```typescript
+  // ✅ DO: Lazy load routes (already in App.tsx)
+  const Analytics = lazy(() => import('./pages/Analytics'));
+  const Reports = lazy(() => import('./pages/Reports'));
+
+  // ✅ DO: Lazy load heavy components
+  const ChartBuilder = lazy(() => import('@/components/charts/ChartBuilder'));
+
+  function Dashboard() {
+    const [showCharts, setShowCharts] = useState(false);
+
+    return (
+      <div>
+        <button onClick={() => setShowCharts(true)}>
+          Show Charts
+        </button>
+        {showCharts && (
+          <Suspense fallback={<Loader />}>
+            <ChartBuilder />
+          </Suspense>
+        )}
+      </div>
+    );
+  }
+  ```
+
+  **2. Tree Shaking**
+  ```typescript
+  // ✅ DO: Import specific components
+  import { Button } from '@/components/ui/button';
+  import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+
+  // ❌ DON'T: Import entire library
+  import * as UI from '@/components/ui'; // Imports everything!
+
+  // ✅ DO: Import specific icons
+  import { Plus, Trash2, Edit } from 'lucide-react';
+
+  // ❌ DON'T: Import all icons
+  import * as Icons from 'lucide-react';
+  ```
+
+  **3. Analyze Bundle Size**
+  ```bash
+  # ✅ DO: Regularly check bundle size
+  npm run build
+  # Check dist/assets/*.js file sizes
+
+  # ✅ DO: Use vite-bundle-visualizer
+  npm install --save-dev vite-bundle-visualizer
+  # Add to vite.config.ts:
+  # import { visualizer } from 'vite-bundle-visualizer';
+  # plugins: [visualizer()]
+  ```
+
+- **Network Optimization:**
+
+  **1. Debounce Search**
+  ```typescript
+  // ✅ DO: Debounce search input
+  import { useMemo, useState } from 'react';
+  import { useDebounce } from '@/hooks/useDebounce';
+
+  function ProjectSearch() {
+    const [searchTerm, setSearchTerm] = useState('');
+    const debouncedSearch = useDebounce(searchTerm, 300); // 300ms delay
+
+    const { data: results } = useQuery({
+      queryKey: ['projects', 'search', debouncedSearch],
+      queryFn: () => searchProjects(debouncedSearch),
+      enabled: debouncedSearch.length > 2,
+    });
+
+    return (
+      <input
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+        placeholder="Search projects..."
+      />
+    );
+  }
+
+  // useDebounce hook
+  function useDebounce<T>(value: T, delay: number): T {
+    const [debouncedValue, setDebouncedValue] = useState(value);
+
+    useEffect(() => {
+      const handler = setTimeout(() => {
+        setDebouncedValue(value);
+      }, delay);
+
+      return () => {
+        clearTimeout(handler);
+      };
+    }, [value, delay]);
+
+    return debouncedValue;
+  }
+  ```
+
+  **2. Request Cancellation**
+  ```typescript
+  // ✅ DO: React Query automatically cancels on unmount
+  // No extra work needed!
+
+  const { data } = useQuery({
+    queryKey: ['projects'],
+    queryFn: ({ signal }) => {
+      // signal is passed automatically
+      return fetch('/api/projects', { signal }).then(r => r.json());
+    },
+  });
+
+  // Component unmounts → request automatically cancelled
+  ```
+
+  **3. Optimistic Updates**
+  ```typescript
+  // ✅ DO: Update UI immediately
+  const updateProject = useMutation({
+    mutationFn: (updates: ProjectUpdate) =>
+      supabase.from('projects').update(updates).eq('id', projectId),
+
+    onMutate: async (updates) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['projects', projectId] });
+
+      // Snapshot previous value
+      const previous = queryClient.getQueryData(['projects', projectId]);
+
+      // Optimistically update
+      queryClient.setQueryData(['projects', projectId], (old: Project) => ({
+        ...old,
+        ...updates,
+      }));
+
+      return { previous };
+    },
+
+    onError: (err, updates, context) => {
+      // Rollback on error
+      queryClient.setQueryData(['projects', projectId], context?.previous);
+    },
+
+    onSettled: () => {
+      // Refetch after success or error
+      queryClient.invalidateQueries({ queryKey: ['projects', projectId] });
+    },
+  });
+  ```
+
+- **Rendering Optimization:**
+
+  **1. Avoid Re-renders**
+  ```typescript
+  // ✅ DO: Extract static components
+  const Header = () => <h1>Projects</h1>; // No dependencies
+
+  function ProjectList({ projects }: Props) {
+    return (
+      <>
+        <Header /> {/* Never re-renders */}
+        {projects.map(p => <ProjectCard key={p.id} project={p} />)}
+      </>
+    );
+  }
+
+  // ✅ DO: Use children prop to prevent re-renders
+  function Layout({ children }: { children: React.ReactNode }) {
+    const [count, setCount] = useState(0);
+
+    return (
+      <div>
+        <button onClick={() => setCount(c => c + 1)}>
+          Count: {count}
+        </button>
+        {children} {/* Children don't re-render when count changes */}
+      </div>
+    );
+  }
+
+  // Usage
+  <Layout>
+    <ExpensiveComponent /> {/* Only renders once */}
+  </Layout>
+  ```
+
+  **2. Key Stability**
+  ```typescript
+  // ✅ DO: Use stable keys
+  {items.map(item => (
+    <ItemRow key={item.id} item={item} />
+  ))}
+
+  // ❌ DON'T: Use index as key for dynamic lists
+  {items.map((item, index) => (
+    <ItemRow key={index} item={item} />
+    // Re-renders all items when order changes
+  ))}
+
+  // ❌ DON'T: Generate new keys
+  {items.map(item => (
+    <ItemRow key={Math.random()} item={item} />
+    // Forces full re-render every time!
+  ))}
+  ```
+
+- **Memory Optimization:**
+
+  **1. Cleanup Subscriptions**
+  ```typescript
+  // ✅ DO: Always cleanup
+  useEffect(() => {
+    const channel = supabase
+      .channel('projects-changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects' },
+        handleChange
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel); // Cleanup!
+    };
+  }, []);
+
+  // ❌ DON'T: Forget cleanup
+  useEffect(() => {
+    supabase.channel('projects').subscribe();
+    // Memory leak!
+  }, []);
+  ```
+
+  **2. Avoid Memory Leaks**
+  ```typescript
+  // ✅ DO: Check if mounted
+  function Component() {
+    const [data, setData] = useState(null);
+    const isMounted = useRef(true);
+
+    useEffect(() => {
+      fetchData().then(result => {
+        if (isMounted.current) {
+          setData(result); // Only update if still mounted
+        }
+      });
+
+      return () => {
+        isMounted.current = false;
+      };
+    }, []);
+
+    return <div>{data}</div>;
+  }
+
+  // ✅ BETTER: Use React Query (handles this automatically)
+  const { data } = useQuery({
+    queryKey: ['data'],
+    queryFn: fetchData,
+  });
+  ```
+
+- **Performance Monitoring:**
+
+  ```typescript
+  // ✅ DO: Use React DevTools Profiler
+  import { Profiler } from 'react';
+
+  <Profiler id="ProjectList" onRender={onRenderCallback}>
+    <ProjectList projects={projects} />
+  </Profiler>
+
+  function onRenderCallback(
+    id: string,
+    phase: 'mount' | 'update',
+    actualDuration: number,
+    baseDuration: number,
+    startTime: number,
+    commitTime: number,
+  ) {
+    if (actualDuration > 16) { // Slower than 60fps
+      console.warn(`${id} took ${actualDuration}ms to render`);
+    }
+  }
+
+  // ✅ DO: Use Sentry performance monitoring
+  import * as Sentry from '@sentry/react';
+
+  Sentry.init({
+    dsn: import.meta.env.VITE_SENTRY_DSN,
+    integrations: [
+      new Sentry.BrowserTracing(),
+    ],
+    tracesSampleRate: 0.1, // 10% of transactions
+  });
+  ```
+
+Follow [react_components.mdc](mdc:.cursor/rules/react_components.mdc) for component patterns.
+Follow [supabase.mdc](mdc:.cursor/rules/supabase.mdc) for database optimization.

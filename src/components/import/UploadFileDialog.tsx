@@ -13,11 +13,12 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Upload, File, X, AlertCircle, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { parseFile } from '@/utils/fileParser';
+import { parseFile, ParseResult } from '@/utils/fileParser';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ImportModeSelector } from './ImportModeSelector';
 import { DuplicateStrategySelector } from './DuplicateStrategySelector';
+import { ImportPreview, ColumnDefinition } from './ImportPreview';
 
 export interface UploadFileDialogProps {
   open: boolean;
@@ -38,9 +39,14 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
   const [file, setFile] = useState<File | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [parsing, setParsing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [importMode, setImportMode] = useState<'data' | 'schema_only'>('data');
   const [duplicateStrategy, setDuplicateStrategy] = useState<'skip' | 'update' | 'add_all'>('skip');
+
+  // Preview state
+  const [showPreview, setShowPreview] = useState(false);
+  const [parseResult, setParseResult] = useState<ParseResult | null>(null);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -101,47 +107,68 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
     }
   };
 
-  const handleUpload = async () => {
+  const handleParseAndPreview = async () => {
     if (!file) return;
 
-    setUploading(true);
+    setParsing(true);
     setError(null);
 
     try {
-      console.log('Starting file upload:', file.name);
+      console.log('Starting file parse:', file.name);
 
       // Parse file
-      const parseResult = await parseFile(file);
+      const result = await parseFile(file);
       console.log('Parse result:', {
-        headers: parseResult.headers,
-        rowCount: parseResult.data.length,
-        dateColumns: parseResult.dateColumns,
-        amountColumns: parseResult.amountColumns,
+        headers: result.headers,
+        rowCount: result.data.length,
+        dateColumns: result.dateColumns,
+        amountColumns: result.amountColumns,
       });
 
       // Validate parse result
-      if (!parseResult.data || parseResult.data.length === 0) {
+      if (!result.data || result.data.length === 0) {
         throw new Error('Файл пустой или не удалось распарсить данные');
       }
 
-      if (!parseResult.headers || parseResult.headers.length === 0) {
+      if (!result.headers || result.headers.length === 0) {
         throw new Error('Не найдены заголовки колонок');
       }
+
+      // Store parse result and show preview
+      setParseResult(result);
+      setShowPreview(true);
+      onOpenChange(false); // Close upload dialog
+    } catch (err) {
+      console.error('Parse error:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Ошибка парсинга файла';
+      setError(errorMessage);
+    } finally {
+      setParsing(false);
+    }
+  };
+
+  const handleConfirmImport = async (columns: ColumnDefinition[], data: any[]) => {
+    if (!parseResult) return;
+
+    setUploading(true);
+
+    try {
 
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Пользователь не авторизован');
 
       console.log('User authenticated:', user.id);
+      console.log('Starting import with', columns.length, 'columns and', data.length, 'rows');
 
-      // Save file metadata
+      // Save file metadata with column configuration
       const { data: fileData, error: fileError } = await supabase
         .from('database_files')
         .insert({
           database_id: databaseId,
           filename: parseResult.fileName,
-          file_type: file.name.split('.').pop()?.toLowerCase(),
-          file_size: file.size,
+          file_type: parseResult.fileName.split('.').pop()?.toLowerCase(),
+          file_size: parseResult.fileSize,
           uploaded_by: user.id,
           import_mode: importMode,
           duplicate_strategy: duplicateStrategy,
@@ -149,6 +176,12 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
             headers: parseResult.headers,
             dateColumns: parseResult.dateColumns,
             amountColumns: parseResult.amountColumns,
+            columnConfiguration: columns.map(col => ({
+              name: col.name,
+              type: col.type,
+              displayName: col.displayName,
+              aiSuggested: col.aiSuggested,
+            })),
           }
         })
         .select()
@@ -157,33 +190,37 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
       if (fileError) throw fileError;
 
       if (importMode === 'schema_only') {
-        // Only create columns from headers
+        // Create columns using the configured types from preview
         const { data: existingSchemas } = await supabase
           .from('table_schemas')
           .select('column_name')
           .eq('database_id', databaseId);
 
         const existingColumns = new Set(existingSchemas?.map(s => s.column_name) || []);
-        
-        for (let i = 0; i < parseResult.headers.length; i++) {
-          const columnName = parseResult.headers[i];
-          if (existingColumns.has(columnName)) continue;
+        let createdCount = 0;
 
-          let columnType = 'text';
-          if (parseResult.dateColumns.includes(columnName)) columnType = 'date';
-          else if (parseResult.amountColumns.includes(columnName)) columnType = 'number';
+        for (let i = 0; i < columns.length; i++) {
+          const column = columns[i];
+          if (existingColumns.has(column.name)) continue;
 
           await supabase.from('table_schemas').insert({
             database_id: databaseId,
-            column_name: columnName,
-            column_type: columnType,
+            column_name: column.name,
+            display_name: column.displayName || column.name,
+            column_type: column.type,
             position: i,
+            metadata: column.selectOptions ? {
+              selectOptions: column.selectOptions,
+            } : null,
+            relation_config: column.relationConfig || null,
           });
+
+          createdCount++;
         }
 
         toast({
           title: 'Схема импортирована',
-          description: `Создано ${parseResult.headers.length} колонок`,
+          description: `Создано ${createdCount} новых колонок`,
         });
       } else {
         // Import data with batch processing
@@ -192,12 +229,12 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
         let rowsSkipped = 0;
         let duplicatesFound = 0;
 
-        // Prepare rows for insertion
+        // Prepare rows for insertion (use data from parameters, not parseResult)
         const rowsToInsert = [];
 
         if (duplicateStrategy === 'add_all') {
           // Skip duplicate detection, add all rows
-          rowsToInsert.push(...parseResult.data);
+          rowsToInsert.push(...data);
           console.log('Strategy: add_all, inserting all rows');
         } else {
           // Get existing data for duplicate detection
@@ -216,7 +253,7 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
           console.log('Existing rows:', existingRows.length);
 
           // Check each row for duplicates
-          for (const row of parseResult.data) {
+          for (const row of data) {
             const rowHash = JSON.stringify(row);
             const isDuplicate = existingRows.some(existing =>
               JSON.stringify(existing.data) === rowHash
@@ -344,10 +381,13 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
         });
       }
 
-      // Clear state and close dialog
+      // Clear state
       setFile(null);
-      onSuccess(); // This triggers UI refresh
-      onOpenChange(false);
+      setParseResult(null);
+      setShowPreview(false);
+
+      // Trigger UI refresh and close preview
+      onSuccess();
 
       console.log('Upload process completed');
     } catch (err) {
@@ -364,6 +404,12 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleCancelPreview = () => {
+    setShowPreview(false);
+    setParseResult(null);
+    onOpenChange(true); // Reopen upload dialog
   };
 
   const handleRemoveFile = () => {
@@ -502,28 +548,42 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
           <Button
             variant="outline"
             onClick={handleClose}
-            disabled={uploading}
+            disabled={parsing || uploading}
           >
             Отмена
           </Button>
           <Button
-            onClick={handleUpload}
-            disabled={!file || uploading}
+            onClick={handleParseAndPreview}
+            disabled={!file || parsing || uploading}
           >
-            {uploading ? (
+            {parsing ? (
               <>
                 <span className="animate-spin mr-2">⏳</span>
-                Загрузка...
+                Парсинг...
               </>
             ) : (
               <>
                 <Upload className="w-4 h-4 mr-2" />
-                Загрузить
+                Предпросмотр
               </>
             )}
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {/* Import Preview Dialog */}
+      {showPreview && parseResult && (
+        <ImportPreview
+          open={showPreview}
+          onOpenChange={(open) => {
+            if (!open) handleCancelPreview();
+          }}
+          parseResult={parseResult}
+          databaseId={databaseId}
+          onConfirm={handleConfirmImport}
+          onCancel={handleCancelPreview}
+        />
+      )}
     </Dialog>
   );
 };

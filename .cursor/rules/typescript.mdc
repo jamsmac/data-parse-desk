@@ -1,0 +1,523 @@
+---
+description: TypeScript best practices and type safety rules for DataParseDesk
+globs: src/**/*.ts, src/**/*.tsx
+alwaysApply: true
+---
+
+- **Strict Mode:** MANDATORY
+  - `strict: true` enabled in tsconfig.json
+  - No implicit `any` allowed
+  - Strict null checks enforced
+  - All strict TypeScript flags enabled
+
+  ```typescript
+  // ✅ DO: Explicit types everywhere
+  export function fetchProject(id: string): Promise<Project> {
+    return supabase.from('projects').select('*').eq('id', id).single();
+  }
+
+  // ❌ DON'T: Implicit any
+  export function fetchProject(id) { // Error: Parameter 'id' implicitly has an 'any' type
+    // ...
+  }
+  ```
+
+- **No `any` Policy:**
+  ```typescript
+  // ✅ DO: Use proper types
+  function processData(data: unknown): void {
+    if (isProject(data)) {
+      console.log(data.name); // Type narrowed to Project
+    }
+  }
+
+  // Type guard
+  function isProject(data: unknown): data is Project {
+    return (
+      typeof data === 'object' &&
+      data !== null &&
+      'id' in data &&
+      'name' in data &&
+      'user_id' in data
+    );
+  }
+
+  // ✅ DO: Use unknown for truly unknown data
+  async function fetchExternalData(): Promise<unknown> {
+    const response = await fetch('https://api.example.com/data');
+    return response.json();
+  }
+
+  // ❌ DON'T: Use any
+  function processData(data: any): void { // Bad!
+    console.log(data.name); // No type safety
+  }
+  ```
+
+- **Type Definitions:**
+  ```typescript
+  // ✅ DO: Explicit interfaces/types for all data structures
+  export interface Project {
+    id: string;
+    user_id: string;
+    name: string;
+    description: string | null;
+    created_at: string;
+    updated_at: string;
+    is_archived: boolean;
+  }
+
+  export interface Database {
+    id: string;
+    project_id: string;
+    name: string;
+    description: string | null;
+    created_at: string;
+    columns?: Column[];
+  }
+
+  // ✅ DO: Use Supabase generated types
+  import type { Database as SupabaseDatabase } from '@/integrations/supabase/types';
+
+  type Project = SupabaseDatabase['public']['Tables']['projects']['Row'];
+  type ProjectInsert = SupabaseDatabase['public']['Tables']['projects']['Insert'];
+  type ProjectUpdate = SupabaseDatabase['public']['Tables']['projects']['Update'];
+
+  // ❌ DON'T: Implicit or loose types
+  const project = { id: '1', name: 'Test' }; // Type inference ok for local vars
+  export function getProject() { return project; } // Bad: no explicit return type
+  ```
+
+- **Union Types & Literals:**
+  ```typescript
+  // ✅ DO: Use union types and string literals
+  export type ColumnType =
+    | 'text'
+    | 'number'
+    | 'date'
+    | 'boolean'
+    | 'select'
+    | 'multiselect'
+    | 'relation'
+    | 'lookup'
+    | 'rollup'
+    | 'formula';
+
+  export type UserRole = 'admin' | 'user' | 'guest';
+
+  export type SortDirection = 'asc' | 'desc';
+
+  // ✅ DO: Const objects for enums
+  export const ProjectStatus = {
+    ACTIVE: 'active',
+    ARCHIVED: 'archived',
+    DRAFT: 'draft',
+  } as const;
+
+  export type ProjectStatus = typeof ProjectStatus[keyof typeof ProjectStatus];
+
+  // ❌ DON'T: Use enums (unless necessary for interop)
+  enum ProjectStatus { // Avoid
+    Active = 'active',
+    Archived = 'archived',
+  }
+  ```
+
+- **Utility Types:**
+  ```typescript
+  // ✅ DO: Leverage built-in utility types
+  type CreateProjectInput = Omit<Project, 'id' | 'created_at' | 'updated_at'>;
+  type UpdateProjectInput = Partial<CreateProjectInput>;
+  type ProjectWithDatabases = Project & { databases: Database[] };
+  type ProjectKeys = keyof Project;
+  type ProjectValues = Project[keyof Project];
+
+  // ✅ DO: Custom utility types
+  type NonNullableFields<T> = {
+    [P in keyof T]: NonNullable<T[P]>;
+  };
+
+  type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
+
+  // Example: Make 'name' required
+  type ProjectWithName = RequiredFields<Project, 'name'>;
+
+  // ✅ DO: Async return types
+  type AsyncReturnType<T extends (...args: any) => Promise<any>> =
+    T extends (...args: any) => Promise<infer R> ? R : any;
+
+  const data = await fetchProjects();
+  type ProjectsData = AsyncReturnType<typeof fetchProjects>;
+  ```
+
+- **Generics:**
+  ```typescript
+  // ✅ DO: Use generics for reusable types and functions
+  interface ApiResponse<T> {
+    data: T;
+    error: string | null;
+    status: number;
+  }
+
+  interface PaginatedResponse<T> {
+    data: T[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+    };
+  }
+
+  async function fetchData<T>(url: string): Promise<ApiResponse<T>> {
+    const response = await fetch(url);
+    return response.json();
+  }
+
+  // Usage with type inference
+  const projects = await fetchData<Project[]>('/api/projects');
+
+  // ✅ DO: Constrained generics
+  function getProperty<T, K extends keyof T>(obj: T, key: K): T[K] {
+    return obj[key];
+  }
+
+  const project: Project = { id: '1', name: 'Test', /* ... */ };
+  const name = getProperty(project, 'name'); // Type: string
+  ```
+
+- **Type Guards:**
+  ```typescript
+  // ✅ DO: Create type guards for runtime checks
+  export function isProject(value: unknown): value is Project {
+    return (
+      typeof value === 'object' &&
+      value !== null &&
+      'id' in value &&
+      'name' in value &&
+      'user_id' in value
+    );
+  }
+
+  export function isDatabase(value: unknown): value is Database {
+    return (
+      typeof value === 'object' &&
+      value !== null &&
+      'id' in value &&
+      'project_id' in value
+    );
+  }
+
+  // Usage
+  const data: unknown = await fetch('/api/project');
+  if (isProject(data)) {
+    console.log(data.name); // TypeScript knows this is a Project
+  }
+
+  // ✅ DO: Array type guards
+  export function isProjectArray(value: unknown): value is Project[] {
+    return Array.isArray(value) && value.every(isProject);
+  }
+  ```
+
+- **React Component Props:**
+  ```typescript
+  // ✅ DO: Explicit props interface
+  interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+    variant?: 'default' | 'destructive' | 'outline' | 'secondary';
+    size?: 'default' | 'sm' | 'lg' | 'icon';
+    isLoading?: boolean;
+  }
+
+  export const Button: FC<ButtonProps> = ({
+    variant = 'default',
+    size = 'default',
+    isLoading,
+    children,
+    className,
+    disabled,
+    ...props
+  }) => {
+    return (
+      <button
+        className={cn(buttonVariants({ variant, size }), className)}
+        disabled={disabled || isLoading}
+        {...props}
+      >
+        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+        {children}
+      </button>
+    );
+  };
+
+  // ✅ DO: Children types
+  interface CardProps {
+    children: React.ReactNode;
+    title?: string;
+    className?: string;
+  }
+
+  // ✅ DO: Event handler types
+  interface FormProps {
+    onSubmit: (data: FormData) => void;
+    onChange?: (field: string, value: string) => void;
+  }
+  ```
+
+- **Function Signatures:**
+  ```typescript
+  // ✅ DO: Explicit return types for exported functions
+  export async function fetchProjects(userId: string): Promise<Project[]> {
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (error) throw error;
+    return data;
+  }
+
+  export function calculateTotal(items: number[]): number {
+    return items.reduce((sum, item) => sum + item, 0);
+  }
+
+  // ✅ DO: Inferred for simple functions
+  const add = (a: number, b: number) => a + b; // Return type: number (inferred)
+
+  // ❌ DON'T: Omit return types for complex/exported functions
+  export async function fetchProjects(userId: string) { // Bad: no return type
+    // ...
+  }
+  ```
+
+- **Null Safety:**
+  ```typescript
+  // ✅ DO: Handle null/undefined explicitly
+  function getProjectName(project: Project | null): string {
+    return project?.name ?? 'Безымянный проект';
+  }
+
+  // ✅ DO: Type narrowing with checks
+  function processProject(project: Project | null) {
+    if (project === null) {
+      throw new Error('Проект не найден');
+    }
+
+    // TypeScript knows project is not null here
+    console.log(project.name);
+  }
+
+  // ✅ DO: Nullish coalescing
+  const name = project.name ?? 'Default Name';
+  const count = project.databases?.length ?? 0;
+
+  // ❌ DON'T: Non-null assertion without certainty
+  const name = project!.name; // Dangerous! What if project is null?
+
+  // ✅ DO: Use non-null assertion only when certain
+  const element = document.getElementById('root')!; // OK: root always exists
+
+  // ❌ DON'T: Optional chaining with ??
+  const name = project?.name || 'Default'; // Bad: '' is falsy
+  // ✅ DO:
+  const name = project?.name ?? 'Default'; // Good: only null/undefined
+  ```
+
+- **Type Organization:**
+  ```
+  src/types/
+  ├── project.types.ts      # Project-related types
+  ├── database.types.ts     # Database types
+  ├── column.types.ts       # Column types
+  ├── item.types.ts         # Item (row) types
+  ├── user.types.ts         # User/Auth types
+  ├── api.types.ts          # API response types
+  ├── common.types.ts       # Shared utility types
+  └── index.ts              # Re-export all types
+  ```
+
+  ```typescript
+  // project.types.ts
+  export interface Project {
+    // ...
+  }
+
+  export type CreateProjectInput = Omit<Project, 'id' | 'created_at' | 'updated_at'>;
+
+  // index.ts
+  export * from './project.types';
+  export * from './database.types';
+  // ...
+
+  // Usage
+  import type { Project, Database } from '@/types';
+  ```
+
+- **API Response Types:**
+  ```typescript
+  // ✅ DO: Discriminated unions for API responses
+  interface ApiSuccessResponse<T> {
+    success: true;
+    data: T;
+  }
+
+  interface ApiErrorResponse {
+    success: false;
+    error: {
+      message: string;
+      code: string;
+      details?: Record<string, unknown>;
+    };
+  }
+
+  type ApiResponse<T> = ApiSuccessResponse<T> | ApiErrorResponse;
+
+  // Usage with type narrowing
+  const handleResponse = (response: ApiResponse<Project>) => {
+    if (response.success) {
+      console.log(response.data.name); // TypeScript knows data exists
+    } else {
+      console.error(response.error.message); // TypeScript knows error exists
+    }
+  };
+  ```
+
+- **Zod Integration:**
+  ```typescript
+  // ✅ DO: Use Zod for runtime validation + TypeScript types
+  import { z } from 'zod';
+
+  export const projectSchema = z.object({
+    name: z.string().min(1, 'Название обязательно').max(100),
+    description: z.string().max(1000).optional().nullable(),
+    is_public: z.boolean().default(false),
+    tags: z.array(z.string()).max(10).optional(),
+  });
+
+  // Infer TypeScript type from Zod schema
+  export type ProjectInput = z.infer<typeof projectSchema>;
+
+  // Validation
+  const validateProject = (data: unknown): ProjectInput => {
+    return projectSchema.parse(data); // Throws if invalid
+  };
+
+  // ✅ DO: Use safeParse for non-throwing validation
+  const result = projectSchema.safeParse(data);
+  if (result.success) {
+    console.log(result.data);
+  } else {
+    console.error(result.error);
+  }
+  ```
+
+- **@ts-ignore Policy:**
+  ```typescript
+  // ❌ DON'T: Use @ts-ignore
+  // @ts-ignore
+  const value = library.undefinedMethod();
+
+  // ✅ DO: Use @ts-expect-error with explanation
+  // @ts-expect-error - Legacy library, types will be fixed in v2
+  const value = library.undefinedMethod();
+
+  // ✅ BETTER: Fix the type
+  declare module 'some-library' {
+    export function undefinedMethod(): string;
+  }
+
+  // ✅ BEST: Use unknown and type guards
+  const value: unknown = library.undefinedMethod();
+  if (typeof value === 'string') {
+    console.log(value.toUpperCase());
+  }
+  ```
+
+- **Type Assertions:**
+  ```typescript
+  // ⚠️ CAUTION: Use type assertions sparingly
+  const myCanvas = document.getElementById('canvas') as HTMLCanvasElement;
+
+  // ✅ BETTER: Type guards
+  const myCanvas = document.getElementById('canvas');
+  if (myCanvas instanceof HTMLCanvasElement) {
+    // TypeScript knows this is HTMLCanvasElement
+    const ctx = myCanvas.getContext('2d');
+  }
+
+  // ❌ DON'T: Unsafe assertions
+  const project = data as Project; // What if data is not a Project?
+
+  // ✅ DO: Validate first
+  if (isProject(data)) {
+    const project: Project = data; // Safe
+  }
+  ```
+
+- **Readonly & Const:**
+  ```typescript
+  // ✅ DO: Use readonly for immutable data
+  interface Config {
+    readonly apiUrl: string;
+    readonly maxRetries: number;
+  }
+
+  // ✅ DO: Readonly arrays
+  function processItems(items: readonly string[]): void {
+    // items.push('new'); // Error: Cannot mutate readonly array
+    const newItems = [...items, 'new']; // OK: Creates new array
+  }
+
+  // ✅ DO: as const for literal types
+  const COLUMN_TYPES = ['text', 'number', 'date', 'boolean'] as const;
+  type ColumnType = typeof COLUMN_TYPES[number];
+  // Type: 'text' | 'number' | 'date' | 'boolean'
+  ```
+
+- **Promise Types:**
+  ```typescript
+  // ✅ DO: Explicit Promise return types
+  async function fetchProject(id: string): Promise<Project> {
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  // ✅ DO: Promise.all with proper typing
+  const [projects, databases, users] = await Promise.all([
+    fetchProjects(),
+    fetchDatabases(),
+    fetchUsers(),
+  ]);
+  // Types inferred from functions
+  ```
+
+- **Module Augmentation:**
+  ```typescript
+  // ✅ DO: Extend third-party types when needed
+  declare module '@supabase/supabase-js' {
+    interface Database {
+      public: {
+        Tables: {
+          // Custom table types
+        };
+      };
+    }
+  }
+
+  // ✅ DO: Extend window object
+  declare global {
+    interface Window {
+      analytics?: {
+        track: (event: string, properties?: Record<string, unknown>) => void;
+      };
+    }
+  }
+  ```
+
+Follow [react_components.mdc](mdc:.cursor/rules/react_components.mdc) for component type patterns.
+Follow [supabase.mdc](mdc:.cursor/rules/supabase.mdc) for Supabase type usage.

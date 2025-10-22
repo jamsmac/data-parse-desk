@@ -51,20 +51,34 @@ CREATE TRIGGER cleanup_formula_calculations_trigger
 -- Enable RLS
 ALTER TABLE formula_calculations ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies
+-- ============================================================================
+-- RLS Policies: formula_calculations
+-- Users can view calculations for their composite views
+-- Only authenticated users (or system/service role) can insert
+-- ============================================================================
 CREATE POLICY "Users can view formula calculations in their views"
   ON formula_calculations FOR SELECT
   USING (
     EXISTS (
       SELECT 1 FROM composite_views cv
       WHERE cv.id = formula_calculations.composite_view_id
-        AND cv.user_id = auth.uid()
+        AND cv.created_by = auth.uid()
     )
   );
 
-CREATE POLICY "System can insert formula calculations"
+CREATE POLICY "Authenticated users can insert formula calculations"
   ON formula_calculations FOR INSERT
-  WITH CHECK (true); -- Allow system inserts
+  WITH CHECK (
+    auth.role() IN ('authenticated', 'service_role') AND
+    (
+      composite_view_id IS NULL OR
+      EXISTS (
+        SELECT 1 FROM composite_views cv
+        WHERE cv.id = formula_calculations.composite_view_id
+          AND cv.created_by = auth.uid()
+      )
+    )
+  );
 
 -- Function to trigger formula recalculation when dependencies change
 CREATE OR REPLACE FUNCTION notify_formula_recalculation()

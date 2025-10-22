@@ -3,7 +3,7 @@
 -- ==========================================
 
 -- Создать таблицу проектов
-CREATE TABLE public.projects (
+CREATE TABLE IF NOT EXISTS public.projects (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL,
   name TEXT NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE public.projects (
 );
 
 -- Создать таблицу участников проекта
-CREATE TABLE public.project_members (
+CREATE TABLE IF NOT EXISTS public.project_members (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
   user_id UUID NOT NULL,
@@ -36,7 +36,7 @@ ADD COLUMN project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE;
 -- ==========================================
 
 -- Создать таблицу схем колонок
-CREATE TABLE public.table_schemas (
+CREATE TABLE IF NOT EXISTS public.table_schemas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   database_id UUID NOT NULL REFERENCES public.databases(id) ON DELETE CASCADE,
   column_name TEXT NOT NULL,
@@ -54,7 +54,7 @@ CREATE TABLE public.table_schemas (
 );
 
 -- Создать таблицу данных (JSONB)
-CREATE TABLE public.table_data (
+CREATE TABLE IF NOT EXISTS public.table_data (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   database_id UUID NOT NULL REFERENCES public.databases(id) ON DELETE CASCADE,
   data JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -63,7 +63,7 @@ CREATE TABLE public.table_data (
 );
 
 -- Создать таблицу связей между базами
-CREATE TABLE public.database_relations (
+CREATE TABLE IF NOT EXISTS public.database_relations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   source_database_id UUID NOT NULL REFERENCES public.databases(id) ON DELETE CASCADE,
   target_database_id UUID NOT NULL REFERENCES public.databases(id) ON DELETE CASCADE,
@@ -124,7 +124,7 @@ USING (
     SELECT 1 FROM public.databases d
     LEFT JOIN public.projects p ON d.project_id = p.id
     WHERE d.id = table_schemas.database_id 
-    AND (d.user_id = auth.uid() OR p.user_id = auth.uid() OR EXISTS (
+    AND (d.created_by = auth.uid() OR p.user_id = auth.uid() OR EXISTS (
       SELECT 1 FROM public.project_members pm
       WHERE pm.project_id = p.id AND pm.user_id = auth.uid()
     ))
@@ -141,7 +141,7 @@ USING (
     SELECT 1 FROM public.databases d
     LEFT JOIN public.projects p ON d.project_id = p.id
     WHERE d.id = table_data.database_id 
-    AND (d.user_id = auth.uid() OR p.user_id = auth.uid() OR EXISTS (
+    AND (d.created_by = auth.uid() OR p.user_id = auth.uid() OR EXISTS (
       SELECT 1 FROM public.project_members pm
       WHERE pm.project_id = p.id AND pm.user_id = auth.uid()
     ))
@@ -158,7 +158,7 @@ USING (
     SELECT 1 FROM public.databases d
     LEFT JOIN public.projects p ON d.project_id = p.id
     WHERE d.id = database_relations.source_database_id 
-    AND (d.user_id = auth.uid() OR p.user_id = auth.uid() OR EXISTS (
+    AND (d.created_by = auth.uid() OR p.user_id = auth.uid() OR EXISTS (
       SELECT 1 FROM public.project_members pm
       WHERE pm.project_id = p.id AND pm.user_id = auth.uid()
     ))
@@ -300,17 +300,6 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.delete_database(p_id UUID)
-RETURNS BOOLEAN
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-BEGIN
-  DELETE FROM public.databases WHERE id = p_id;
-  RETURN true;
-END;
-$$;
 
 CREATE OR REPLACE FUNCTION public.clear_database_data(p_database_id UUID)
 RETURNS BOOLEAN
@@ -376,17 +365,6 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.get_table_schemas(p_database_id UUID)
-RETURNS SETOF public.table_schemas
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT * FROM public.table_schemas
-  WHERE database_id = p_database_id
-  ORDER BY position ASC;
-$$;
 
 CREATE OR REPLACE FUNCTION public.update_table_schema(
   p_id UUID,
@@ -425,17 +403,6 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.delete_table_schema(p_id UUID)
-RETURNS BOOLEAN
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-BEGIN
-  DELETE FROM public.table_schemas WHERE id = p_id;
-  RETURN true;
-END;
-$$;
 
 CREATE OR REPLACE FUNCTION public.reorder_columns(
   p_database_id UUID,
@@ -509,25 +476,6 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.insert_table_row(
-  p_database_id UUID,
-  p_data JSONB
-)
-RETURNS public.table_data
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public
-AS $$
-DECLARE
-  new_row public.table_data;
-BEGIN
-  INSERT INTO public.table_data(database_id, data)
-  VALUES (p_database_id, p_data)
-  RETURNING * INTO new_row;
-  
-  RETURN new_row;
-END;
-$$;
 
 CREATE OR REPLACE FUNCTION public.update_table_row(
   p_id UUID,
@@ -597,22 +545,6 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION public.get_database_stats(p_database_id UUID)
-RETURNS TABLE(
-  row_count BIGINT,
-  column_count BIGINT,
-  last_updated TIMESTAMPTZ
-)
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT 
-    (SELECT COUNT(*) FROM public.table_data WHERE database_id = p_database_id) as row_count,
-    (SELECT COUNT(*) FROM public.table_schemas WHERE database_id = p_database_id) as column_count,
-    (SELECT MAX(updated_at) FROM public.table_data WHERE database_id = p_database_id) as last_updated;
-$$;
 
 -- ==========================================
 -- RPC FUNCTIONS: RELATIONS

@@ -1,0 +1,552 @@
+---
+description: Security best practices including RLS policies, input validation, and auth patterns
+globs: supabase/migrations/**/*.sql, src/**/*.ts, src/**/*.tsx
+alwaysApply: true
+---
+
+- **Row Level Security (RLS) - MANDATORY:**
+  - ALL tables MUST have RLS enabled
+  - NEVER disable RLS on production tables
+  - Test RLS policies thoroughly before deployment
+
+  ```sql
+  -- ✅ DO: Enable RLS on all tables
+  CREATE TABLE projects (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL
+  );
+
+  ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+
+  -- ❌ DON'T: Leave RLS disabled
+  CREATE TABLE projects (...);
+  -- Missing: ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+  ```
+
+- **RLS Policy Patterns:**
+
+  **Pattern 1: User-owned resources**
+  ```sql
+  -- ✅ DO: Standard user ownership policies
+  CREATE POLICY "users_select_own_projects"
+    ON projects FOR SELECT
+    USING (auth.uid() = user_id);
+
+  CREATE POLICY "users_insert_own_projects"
+    ON projects FOR INSERT
+    WITH CHECK (auth.uid() = user_id);
+
+  CREATE POLICY "users_update_own_projects"
+    ON projects FOR UPDATE
+    USING (auth.uid() = user_id)
+    WITH CHECK (auth.uid() = user_id);
+
+  CREATE POLICY "users_delete_own_projects"
+    ON projects FOR DELETE
+    USING (auth.uid() = user_id);
+  ```
+
+  **Pattern 2: Shared resources with permissions**
+  ```sql
+  -- ✅ DO: Check permissions table for access
+  CREATE POLICY "users_access_shared_projects"
+    ON projects FOR SELECT
+    USING (
+      auth.uid() = user_id
+      OR EXISTS (
+        SELECT 1 FROM project_permissions
+        WHERE project_id = projects.id
+        AND user_id = auth.uid()
+        AND permission IN ('read', 'write', 'admin')
+      )
+    );
+  ```
+
+  **Pattern 3: Hierarchical access (project -> database -> items)**
+  ```sql
+  -- ✅ DO: Check parent ownership
+  CREATE POLICY "users_access_items"
+    ON items FOR SELECT
+    USING (
+      EXISTS (
+        SELECT 1 FROM databases d
+        JOIN projects p ON p.id = d.project_id
+        WHERE d.id = items.database_id
+        AND p.user_id = auth.uid()
+      )
+    );
+  ```
+
+  **Pattern 4: Role-based access**
+  ```sql
+  -- ✅ DO: Check user role from auth.users
+  CREATE POLICY "admins_full_access"
+    ON projects FOR ALL
+    USING (
+      (SELECT raw_user_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'admin'
+    );
+
+  CREATE POLICY "users_readonly_access"
+    ON projects FOR SELECT
+    USING (
+      (SELECT raw_user_meta_data->>'role' FROM auth.users WHERE id = auth.uid()) = 'user'
+    );
+  ```
+
+- **Common RLS Mistakes:**
+  ```sql
+  -- ❌ DON'T: Expose all data without checks
+  CREATE POLICY "allow_all"
+    ON projects FOR SELECT
+    USING (true); -- Dangerous! Anyone can read everything
+
+  -- ❌ DON'T: Use client-provided user_id
+  CREATE POLICY "unsafe_policy"
+    ON projects FOR SELECT
+    USING (user_id = current_setting('app.user_id')::UUID);
+  -- Bad: Client can set this value!
+
+  -- ✅ DO: Always use auth.uid()
+  CREATE POLICY "safe_policy"
+    ON projects FOR SELECT
+    USING (user_id = auth.uid());
+
+  -- ❌ DON'T: Forget WITH CHECK on INSERT/UPDATE
+  CREATE POLICY "incomplete_insert"
+    ON projects FOR INSERT
+    USING (auth.uid() = user_id); -- Wrong clause!
+  -- Should be: WITH CHECK (auth.uid() = user_id)
+
+  -- ❌ DON'T: Create overly complex policies
+  CREATE POLICY "too_complex"
+    ON projects FOR SELECT
+    USING (
+      -- 50 lines of complex logic here
+      -- Hard to maintain and debug
+    );
+  -- Better: Use helper functions or break into multiple policies
+  ```
+
+- **Helper Functions for RLS:**
+  ```sql
+  -- ✅ DO: Create reusable functions for complex checks
+  CREATE OR REPLACE FUNCTION user_has_project_access(project_id_param UUID)
+  RETURNS BOOLEAN AS $$
+  BEGIN
+    RETURN EXISTS (
+      SELECT 1 FROM projects
+      WHERE id = project_id_param
+      AND (
+        user_id = auth.uid()
+        OR EXISTS (
+          SELECT 1 FROM project_permissions
+          WHERE project_id = project_id_param
+          AND user_id = auth.uid()
+        )
+      )
+    );
+  END;
+  $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+  -- Use in policy
+  CREATE POLICY "users_access_databases"
+    ON databases FOR SELECT
+    USING (user_has_project_access(project_id));
+  ```
+
+- **Input Validation:**
+  ```typescript
+  // ✅ DO: Use Zod for all user input validation
+  import { z } from 'zod';
+
+  const projectSchema = z.object({
+    name: z.string()
+      .min(1, 'Название обязательно')
+      .max(100, 'Максимум 100 символов')
+      .trim(),
+    description: z.string()
+      .max(1000, 'Максимум 1000 символов')
+      .optional()
+      .nullable(),
+    is_public: z.boolean().default(false),
+    tags: z.array(z.string()).max(10, 'Максимум 10 тегов').optional(),
+  });
+
+  type ProjectInput = z.infer<typeof projectSchema>;
+
+  // Validate before sending to Supabase
+  const createProject = async (input: unknown) => {
+    const validated = projectSchema.parse(input); // Throws if invalid
+
+    const { data, error } = await supabase
+      .from('projects')
+      .insert(validated)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  };
+
+  // ❌ DON'T: Send unvalidated user input to database
+  const createProject = async (input: any) => {
+    await supabase.from('projects').insert(input); // Dangerous!
+  };
+  ```
+
+- **SQL Injection Prevention:**
+  ```typescript
+  // ✅ DO: Use parameterized queries (Supabase does this automatically)
+  const { data } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('name', userInput); // Safe: Supabase parameterizes this
+
+  // ✅ DO: Use .rpc() for complex queries
+  const { data } = await supabase.rpc('search_projects', {
+    search_term: userInput, // Parameterized
+  });
+
+  // ❌ DON'T: Concatenate user input in raw SQL (if you ever use it)
+  // const query = `SELECT * FROM projects WHERE name = '${userInput}'`;
+  // NEVER DO THIS!
+
+  // ✅ DO: If using raw SQL, use parameters
+  CREATE OR REPLACE FUNCTION search_projects(search_term TEXT)
+  RETURNS SETOF projects AS $$
+  BEGIN
+    RETURN QUERY
+    SELECT * FROM projects
+    WHERE name ILIKE '%' || search_term || '%'; -- Still safe with plpgsql
+  END;
+  $$ LANGUAGE plpgsql;
+  ```
+
+- **XSS Prevention:**
+  ```typescript
+  // ✅ DO: React automatically escapes content
+  const ProjectCard = ({ project }: { project: Project }) => (
+    <div>
+      <h3>{project.name}</h3> {/* Auto-escaped */}
+      <p>{project.description}</p> {/* Auto-escaped */}
+    </div>
+  );
+
+  // ⚠️ CAUTION: Only use dangerouslySetInnerHTML for trusted content
+  const SafeHTML = ({ content }: { content: string }) => {
+    // Sanitize first!
+    const sanitized = DOMPurify.sanitize(content);
+
+    return <div dangerouslySetInnerHTML={{ __html: sanitized }} />;
+  };
+
+  // ❌ DON'T: Use dangerouslySetInnerHTML with user input
+  <div dangerouslySetInnerHTML={{ __html: userInput }} /> // XSS vulnerability!
+  ```
+
+- **Authentication Best Practices:**
+  ```typescript
+  // ✅ DO: Check authentication state before sensitive operations
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new Error('Пользователь не авторизован');
+  }
+
+  // ✅ DO: Use email verification
+  const { error } = await supabase.auth.signUp({
+    email: 'user@example.com',
+    password: 'secure-password',
+    options: {
+      emailRedirectTo: 'https://example.com/auth/callback',
+    },
+  });
+
+  // ✅ DO: Enforce strong password requirements
+  const passwordSchema = z.string()
+    .min(8, 'Минимум 8 символов')
+    .regex(/[A-Z]/, 'Требуется заглавная буква')
+    .regex(/[a-z]/, 'Требуется строчная буква')
+    .regex(/[0-9]/, 'Требуется цифра')
+    .regex(/[^A-Za-z0-9]/, 'Требуется специальный символ');
+
+  // ❌ DON'T: Store passwords client-side
+  localStorage.setItem('password', password); // Never!
+
+  // ❌ DON'T: Send passwords in GET requests
+  // fetch(`/api/login?password=${password}`); // Bad!
+  ```
+
+- **Authorization Checks:**
+  ```typescript
+  // ✅ DO: Always verify user owns resource before operations
+  const deleteProject = async (projectId: string) => {
+    // Fetch with RLS check
+    const { data: project, error } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', projectId)
+      .single();
+
+    if (error || !project) {
+      throw new Error('Проект не найден или доступ запрещен');
+    }
+
+    // RLS will prevent deletion if user doesn't own it
+    const { error: deleteError } = await supabase
+      .from('projects')
+      .delete()
+      .eq('id', projectId);
+
+    if (deleteError) throw deleteError;
+  };
+
+  // ❌ DON'T: Assume client-side checks are sufficient
+  if (user.id === project.user_id) {
+    // Delete
+  }
+  // Client-side checks can be bypassed!
+  // Always rely on server-side (RLS) checks
+  ```
+
+- **Sensitive Data Handling:**
+  ```typescript
+  // ✅ DO: Never log sensitive data
+  console.log('Creating project:', { name: project.name });
+
+  // ❌ DON'T: Log credentials or tokens
+  console.log('User token:', token); // Bad!
+  console.log('Password:', password); // Never!
+
+  // ✅ DO: Use environment variables for secrets
+  const API_KEY = import.meta.env.VITE_API_KEY;
+
+  // ❌ DON'T: Hardcode secrets
+  const API_KEY = 'sk_live_abc123'; // Bad!
+
+  // ✅ DO: Exclude sensitive fields from API responses
+  const { data } = await supabase
+    .from('users')
+    .select('id, name, email') // Don't select password_hash!
+    .eq('id', userId);
+  ```
+
+- **CORS and CSP:**
+  ```typescript
+  // ✅ DO: Configure CORS properly in Supabase dashboard
+  // Allowed origins: https://yourdomain.com
+
+  // ✅ DO: Set Content Security Policy headers
+  // In index.html or via server headers:
+  // <meta http-equiv="Content-Security-Policy"
+  //       content="default-src 'self';
+  //                script-src 'self' 'unsafe-inline' 'unsafe-eval';
+  //                style-src 'self' 'unsafe-inline';
+  //                img-src 'self' data: https:;
+  //                connect-src 'self' https://*.supabase.co">
+
+  // ❌ DON'T: Allow all origins in production
+  // Access-Control-Allow-Origin: * // Only for development!
+  ```
+
+- **Rate Limiting:**
+  ```sql
+  -- ✅ DO: Implement rate limiting for sensitive operations
+  CREATE TABLE rate_limits (
+    user_id UUID NOT NULL,
+    action TEXT NOT NULL,
+    count INTEGER NOT NULL DEFAULT 0,
+    window_start TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (user_id, action)
+  );
+
+  CREATE OR REPLACE FUNCTION check_rate_limit(
+    p_action TEXT,
+    p_max_requests INTEGER,
+    p_window_minutes INTEGER
+  ) RETURNS BOOLEAN AS $$
+  DECLARE
+    v_count INTEGER;
+    v_window_start TIMESTAMPTZ;
+  BEGIN
+    SELECT count, window_start INTO v_count, v_window_start
+    FROM rate_limits
+    WHERE user_id = auth.uid() AND action = p_action;
+
+    -- Reset window if expired
+    IF v_window_start IS NULL OR
+       NOW() - v_window_start > (p_window_minutes || ' minutes')::INTERVAL THEN
+      INSERT INTO rate_limits (user_id, action, count, window_start)
+      VALUES (auth.uid(), p_action, 1, NOW())
+      ON CONFLICT (user_id, action)
+      DO UPDATE SET count = 1, window_start = NOW();
+      RETURN TRUE;
+    END IF;
+
+    -- Check limit
+    IF v_count >= p_max_requests THEN
+      RETURN FALSE;
+    END IF;
+
+    -- Increment counter
+    UPDATE rate_limits
+    SET count = count + 1
+    WHERE user_id = auth.uid() AND action = p_action;
+
+    RETURN TRUE;
+  END;
+  $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+  -- Use in function
+  CREATE OR REPLACE FUNCTION send_email(...)
+  RETURNS VOID AS $$
+  BEGIN
+    IF NOT check_rate_limit('send_email', 10, 60) THEN
+      RAISE EXCEPTION 'Превышен лимит отправки писем. Попробуйте позже.';
+    END IF;
+
+    -- Send email logic
+  END;
+  $$ LANGUAGE plpgsql;
+  ```
+
+- **Audit Logging:**
+  ```sql
+  -- ✅ DO: Log sensitive operations
+  CREATE TABLE audit_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id),
+    action TEXT NOT NULL,
+    table_name TEXT NOT NULL,
+    record_id UUID,
+    old_data JSONB,
+    new_data JSONB,
+    ip_address INET,
+    user_agent TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
+  -- Trigger for audit logging
+  CREATE OR REPLACE FUNCTION audit_log_changes()
+  RETURNS TRIGGER AS $$
+  BEGIN
+    INSERT INTO audit_logs (
+      user_id,
+      action,
+      table_name,
+      record_id,
+      old_data,
+      new_data
+    ) VALUES (
+      auth.uid(),
+      TG_OP,
+      TG_TABLE_NAME,
+      COALESCE(NEW.id, OLD.id),
+      CASE WHEN TG_OP = 'DELETE' THEN row_to_json(OLD) ELSE NULL END,
+      CASE WHEN TG_OP IN ('INSERT', 'UPDATE') THEN row_to_json(NEW) ELSE NULL END
+    );
+    RETURN NEW;
+  END;
+  $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+  -- Apply to sensitive tables
+  CREATE TRIGGER audit_projects
+    AFTER INSERT OR UPDATE OR DELETE ON projects
+    FOR EACH ROW EXECUTE FUNCTION audit_log_changes();
+  ```
+
+- **File Upload Security:**
+  ```typescript
+  // ✅ DO: Validate file types and sizes
+  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];
+  const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+
+  const validateFile = (file: File) => {
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      throw new Error('Недопустимый тип файла');
+    }
+
+    if (file.size > MAX_SIZE) {
+      throw new Error('Файл слишком большой (максимум 5MB)');
+    }
+  };
+
+  // ✅ DO: Generate unique filenames
+  const uploadFile = async (file: File) => {
+    validateFile(file);
+
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${crypto.randomUUID()}.${fileExt}`;
+    const filePath = `${userId}/${fileName}`;
+
+    const { error } = await supabase.storage
+      .from('attachments')
+      .upload(filePath, file);
+
+    if (error) throw error;
+  };
+
+  // ❌ DON'T: Use user-provided filenames
+  const filePath = file.name; // Bad: could be ../../../etc/passwd
+  ```
+
+- **Dependency Security:**
+  ```bash
+  # ✅ DO: Regularly update dependencies
+  npm audit
+  npm audit fix
+
+  # ✅ DO: Use exact versions for critical deps
+  # package.json:
+  # "dependencies": {
+  #   "@supabase/supabase-js": "2.75.0", // Exact version, not ^2.75.0
+  # }
+
+  # ✅ DO: Review dependency licenses
+  npx license-checker
+  ```
+
+- **Environment Security:**
+  ```bash
+  # ✅ DO: Never commit .env files
+  # .gitignore:
+  .env
+  .env.local
+  .env.*.local
+
+  # ✅ DO: Use different keys for dev/staging/prod
+  # .env.development:
+  VITE_SUPABASE_URL=https://dev-project.supabase.co
+  VITE_SUPABASE_ANON_KEY=dev_key_here
+
+  # .env.production:
+  VITE_SUPABASE_URL=https://prod-project.supabase.co
+  VITE_SUPABASE_ANON_KEY=prod_key_here
+
+  # ❌ DON'T: Use production keys in development
+  ```
+
+- **Error Messages:**
+  ```typescript
+  // ✅ DO: Show generic error messages to users
+  try {
+    await deleteProject(id);
+  } catch (error) {
+    console.error('Delete error:', error); // Log for debugging
+    toast.error('Не удалось удалить проект'); // Generic message to user
+  }
+
+  // ❌ DON'T: Expose internal errors to users
+  catch (error) {
+    toast.error(error.message); // May reveal database structure!
+  }
+
+  // ✅ DO: Different messages for different environments
+  const errorMessage = import.meta.env.DEV
+    ? error.message // Detailed in development
+    : 'Произошла ошибка'; // Generic in production
+  ```
+
+Follow [supabase.mdc](mdc:.cursor/rules/supabase.mdc) for Supabase-specific patterns.
+See recent security fixes in [98b5540](https://github.com/user/repo/commit/98b5540) (18 insecure RLS policies fixed).

@@ -194,7 +194,7 @@ DECLARE
 BEGIN
   -- Extract @mentions from comment content
   FOR v_mentioned_username IN
-    SELECT DISTINCT regexp_matches(NEW.content, '@(\w+)', 'g')[1]
+    SELECT DISTINCT (regexp_matches(NEW.content, '@(\w+)', 'g'))[1]
   LOOP
     -- Find user by username (email or telegram username)
     SELECT u.id INTO v_mentioned_user_id

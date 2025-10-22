@@ -1,0 +1,422 @@
+---
+description: Overview of all Cursor rules for DataParseDesk project
+globs: **/*
+alwaysApply: false
+---
+
+# DataParseDesk Cursor Rules
+
+This directory contains comprehensive coding guidelines and best practices for the DataParseDesk project.
+
+## 📚 Available Rules
+
+### Core Rules (Foundation)
+
+### 1. [project_overview.mdc](mdc:.cursor/rules/project_overview.mdc) ⭐
+**High-level project architecture and technology stack**
+- Project type and features
+- Technology stack (React, Supabase, Tailwind, etc.)
+- Project structure and file organization
+- Routing strategy
+- Performance optimizations
+- Database schema overview
+- Design system
+- File naming conventions
+
+**When to reference:** Understanding overall architecture, making architectural decisions, onboarding new developers.
+
+---
+
+### 2. [supabase.mdc](mdc:.cursor/rules/supabase.mdc) 🗄️
+**Supabase integration patterns and best practices**
+- Database queries with type safety
+- Error handling patterns
+- React Query integration
+- Realtime subscriptions
+- Authentication patterns
+- Storage (file uploads)
+- RPC (Remote Procedure Calls)
+- Batch operations
+- Filtering, sorting, pagination
+- Performance best practices
+- Migration patterns
+
+**When to reference:** Working with database, API calls, auth, file uploads, subscriptions.
+
+---
+
+### 3. [security.mdc](mdc:.cursor/rules/security.mdc) 🔒
+**Security best practices including RLS policies**
+- Row Level Security (RLS) - MANDATORY
+- RLS policy patterns (user-owned, shared, hierarchical, role-based)
+- Common RLS mistakes to avoid
+- Input validation with Zod
+- SQL injection prevention
+- XSS prevention
+- Authentication best practices
+- Authorization checks
+- Sensitive data handling
+- Rate limiting
+- Audit logging
+- File upload security
+- Dependency security
+
+**When to reference:** Creating migrations, implementing RLS policies, handling user input, working with auth.
+
+**CRITICAL:** See [98b5540](https://github.com/user/repo/commit/98b5540) - 18 insecure RLS policies were fixed.
+
+---
+
+### 4. [react_components.mdc](mdc:.cursor/rules/react_components.mdc) ⚛️
+**React component patterns and best practices**
+- Component structure and organization
+- Lazy loading patterns
+- Props and TypeScript types
+- State management (React Query vs useState vs useReducer)
+- Event handlers
+- Conditional rendering
+- Component composition
+- Custom hooks
+- Forms with React Hook Form + Zod
+- Loading states
+- Error handling
+- Accessibility (ARIA, semantic HTML, keyboard nav)
+- Performance optimization (memo, useMemo, useCallback)
+- Virtual scrolling
+
+**When to reference:** Creating/refactoring components, state management, forms, performance issues.
+
+---
+
+### 5. [typescript.mdc](mdc:.cursor/rules/typescript.mdc) 📘
+**TypeScript best practices and type safety**
+- Strict mode - MANDATORY
+- No `any` policy
+- Type definitions and interfaces
+- Union types and literals
+- Utility types (Omit, Partial, Pick, etc.)
+- Generics
+- Type guards
+- React component props types
+- Function signatures
+- Null safety
+- Type organization
+- API response types
+- Zod integration
+- @ts-ignore policy (DON'T USE!)
+- Type assertions
+- Readonly & const
+- Promise types
+- Module augmentation
+
+**When to reference:** All TypeScript code, type definitions, fixing type errors.
+
+---
+
+### 6. [styling.mdc](mdc:.cursor/rules/styling.mdc) 🎨
+**Tailwind CSS and styling conventions**
+- Design system variables (MUST use CSS vars)
+- Theme support (light/dark)
+- Component styling with cn() utility
+- Responsive design (mobile-first)
+- Spacing system
+- Typography
+- Interactive states (hover, focus, active, disabled)
+- Loading & skeleton states
+- Icons with Lucide React
+- Layout patterns
+- Forms
+- Tables
+- Animations
+- Accessibility classes
+- shadcn/ui integration
+- Dark mode testing
+
+**When to reference:** Styling components, theming, responsive design, accessibility.
+
+---
+
+### Specialized Rules (Advanced)
+
+### 7. [performance.mdc](mdc:.cursor/rules/performance.mdc) ⚡
+**Performance optimization patterns** NEW!
+- React optimization (memo, useMemo, useCallback)
+- Virtual scrolling for large lists
+- React Query optimization (prefetching, stale time)
+- Supabase query optimization (indexes, batch operations)
+- Image & asset optimization
+- Bundle size optimization
+- Network optimization (debounce, request cancellation)
+- Rendering optimization
+- Memory leak prevention
+- Performance monitoring
+
+**When to reference:** Performance issues, large datasets, slow rendering, bundle size.
+
+---
+
+### 8. [testing.mdc](mdc:.cursor/rules/testing.mdc) 🧪
+**Testing patterns with Vitest and Playwright** NEW!
+- Unit testing with Vitest
+- Component testing
+- Hook testing
+- Integration testing
+- E2E testing with Playwright
+- Test utilities and helpers
+- Mock data generators
+- Coverage configuration
+- Testing best practices
+- Arrange-Act-Assert pattern
+
+**When to reference:** Writing tests, test coverage, E2E flows.
+
+---
+
+### 9. [forms.mdc](mdc:.cursor/rules/forms.mdc) 📝
+**Advanced form patterns with React Hook Form** NEW!
+- Form setup with React Hook Form + Zod
+- Complex validation rules
+- Async validation
+- Form dialogs
+- Dynamic forms (arrays, conditional fields)
+- Form state management
+- File uploads (single, drag & drop)
+- Multi-step forms (wizards)
+- Form error handling
+- Form performance
+
+**When to reference:** Creating forms, form validation, file uploads, wizards.
+
+---
+
+### 10. [data-tables.mdc](mdc:.cursor/rules/data-tables.mdc) 📊
+**Data table and grid patterns** NEW!
+- Virtual tables for performance
+- Editable cells
+- Cell type renderers
+- Sorting & filtering
+- Column management (reordering, visibility)
+- Pagination (client & server-side)
+- Row selection
+- Bulk operations
+- Export functionality (CSV, Excel)
+
+**When to reference:** Building tables, grids, data management UI.
+
+---
+
+### Meta Rules
+
+### 11. [cursor_rules.mdc](mdc:.cursor/rules/cursor_rules.mdc) 📋
+**Meta-rules for creating and maintaining Cursor rules**
+- Required rule structure
+- File references with `mdc:` syntax
+- Code examples format
+- Rule content guidelines
+- Rule maintenance
+- Best practices
+
+**When to reference:** Creating or updating rules, maintaining documentation.
+
+---
+
+### 12. [self_improve.mdc](mdc:.cursor/rules/self_improve.mdc) 🔄
+**Self-improvement system for rules**
+- Proactive rule updates based on context
+- Pattern recognition
+- When to suggest improvements
+
+**When to reference:** Rarely - this rule auto-triggers when patterns emerge.
+
+---
+
+## 🎯 Quick Reference by Task
+
+### Creating a new component
+1. [react_components.mdc](mdc:.cursor/rules/react_components.mdc) - Component structure
+2. [typescript.mdc](mdc:.cursor/rules/typescript.mdc) - Props types
+3. [styling.mdc](mdc:.cursor/rules/styling.mdc) - Styling patterns
+4. [performance.mdc](mdc:.cursor/rules/performance.mdc) - Optimization
+
+### Working with database
+1. [supabase.mdc](mdc:.cursor/rules/supabase.mdc) - Query patterns
+2. [security.mdc](mdc:.cursor/rules/security.mdc) - RLS policies
+3. [typescript.mdc](mdc:.cursor/rules/typescript.mdc) - Type safety
+4. [performance.mdc](mdc:.cursor/rules/performance.mdc) - Query optimization
+
+### Creating a migration
+1. [security.mdc](mdc:.cursor/rules/security.mdc) - RLS policies (MANDATORY)
+2. [supabase.mdc](mdc:.cursor/rules/supabase.mdc) - Migration patterns
+3. [project_overview.mdc](mdc:.cursor/rules/project_overview.mdc) - Schema overview
+
+### Adding a new feature
+1. [project_overview.mdc](mdc:.cursor/rules/project_overview.mdc) - Architecture
+2. [react_components.mdc](mdc:.cursor/rules/react_components.mdc) - Components
+3. [supabase.mdc](mdc:.cursor/rules/supabase.mdc) - Data layer
+4. [security.mdc](mdc:.cursor/rules/security.mdc) - Security
+5. [testing.mdc](mdc:.cursor/rules/testing.mdc) - Test coverage
+
+### Building a form
+1. [forms.mdc](mdc:.cursor/rules/forms.mdc) - Form patterns
+2. [react_components.mdc](mdc:.cursor/rules/react_components.mdc) - Component structure
+3. [typescript.mdc](mdc:.cursor/rules/typescript.mdc) - Zod schemas
+4. [styling.mdc](mdc:.cursor/rules/styling.mdc) - Form styling
+
+### Building a data table
+1. [data-tables.mdc](mdc:.cursor/rules/data-tables.mdc) - Table patterns
+2. [performance.mdc](mdc:.cursor/rules/performance.mdc) - Virtual scrolling
+3. [react_components.mdc](mdc:.cursor/rules/react_components.mdc) - Component structure
+
+### Fixing type errors
+1. [typescript.mdc](mdc:.cursor/rules/typescript.mdc) - Type patterns
+2. [supabase.mdc](mdc:.cursor/rules/supabase.mdc) - Supabase types
+
+### Styling/theming issues
+1. [styling.mdc](mdc:.cursor/rules/styling.mdc) - All styling patterns
+2. [project_overview.mdc](mdc:.cursor/rules/project_overview.mdc) - Design system
+
+### Performance optimization
+1. [performance.mdc](mdc:.cursor/rules/performance.mdc) - All optimization patterns
+2. [data-tables.mdc](mdc:.cursor/rules/data-tables.mdc) - Virtual scrolling
+3. [supabase.mdc](mdc:.cursor/rules/supabase.mdc) - Database optimization
+
+### Writing tests
+1. [testing.mdc](mdc:.cursor/rules/testing.mdc) - Testing patterns
+2. [react_components.mdc](mdc:.cursor/rules/react_components.mdc) - Component testing
+
+---
+
+## 🔥 Critical Rules (Always Follow)
+
+### Security
+- ✅ ALL tables MUST have RLS enabled
+- ✅ NEVER use `any` type
+- ✅ ALWAYS validate user input with Zod
+- ✅ NEVER commit .env files
+- ✅ NEVER hardcode credentials
+
+### Styling
+- ✅ ALWAYS use CSS variables from index.css
+- ✅ NEVER hardcode colors
+- ✅ ALL components must support light/dark themes
+
+### TypeScript
+- ✅ Strict mode enabled
+- ✅ No `any` types
+- ✅ Explicit return types for exported functions
+- ✅ NEVER use @ts-ignore (use @ts-expect-error with comment)
+
+### Supabase
+- ✅ ALWAYS check for errors
+- ✅ Use React Query for all queries
+- ✅ ALWAYS rely on RLS, not client-side filtering
+- ✅ Use type-safe queries
+
+### React
+- ✅ Lazy load all non-critical pages
+- ✅ Use React Query for server state
+- ✅ Use useState/useReducer for UI state only
+- ✅ Early returns for loading/error states
+
+### Performance
+- ✅ Use virtual scrolling for 100+ items
+- ✅ Memoize expensive computations
+- ✅ Debounce search inputs
+- ✅ Optimize Supabase queries (select specific columns, use indexes)
+
+---
+
+## 📖 How to Use These Rules
+
+### For Developers
+1. Start with [project_overview.mdc](mdc:.cursor/rules/project_overview.mdc) to understand the project
+2. Reference specific rules when working on related tasks
+3. Follow the ✅ DO examples
+4. Avoid the ❌ DON'T anti-patterns
+
+### For AI Assistants (Claude, Cursor, etc.)
+- These rules are automatically applied based on `globs` patterns
+- `alwaysApply: true` rules are active for all files
+- Use `mdc:` file references to cross-reference rules
+- Follow the critical rules at all times
+
+### For Code Reviews
+- Check if code follows the relevant rules
+- Reference specific rule sections in PR comments
+- Update rules if new patterns emerge
+
+---
+
+## 🔧 Maintaining Rules
+
+1. **Adding a new rule:**
+   - Follow [cursor_rules.mdc](mdc:.cursor/rules/cursor_rules.mdc) structure
+   - Add to this README with description
+   - Cross-reference related rules
+
+2. **Updating existing rules:**
+   - Add examples from actual codebase
+   - Remove outdated patterns
+   - Keep DO/DON'T examples clear
+
+3. **Removing rules:**
+   - Archive instead of delete (move to `.cursor/rules/archive/`)
+   - Update cross-references
+
+---
+
+## 📊 Rule Coverage
+
+| Area | Rule File | Coverage |
+|------|-----------|----------|
+| Project Overview | project_overview.mdc | ✅ Complete |
+| Supabase/Database | supabase.mdc | ✅ Complete |
+| Security/RLS | security.mdc | ✅ Complete |
+| React Components | react_components.mdc | ✅ Complete |
+| TypeScript | typescript.mdc | ✅ Complete |
+| Styling/Tailwind | styling.mdc | ✅ Complete |
+| Performance | performance.mdc | ✅ Complete |
+| Testing | testing.mdc | ✅ Complete |
+| Forms | forms.mdc | ✅ Complete |
+| Data Tables | data-tables.mdc | ✅ Complete |
+| Deployment | - | ⚠️ Minimal |
+| Git/Version Control | - | ⚠️ Partial (in git commit hooks) |
+
+---
+
+## 🎓 Learning Path
+
+**For new developers:**
+1. Read [project_overview.mdc](mdc:.cursor/rules/project_overview.mdc) (15 min)
+2. Skim [typescript.mdc](mdc:.cursor/rules/typescript.mdc) (10 min)
+3. Skim [react_components.mdc](mdc:.cursor/rules/react_components.mdc) (10 min)
+4. Read [security.mdc](mdc:.cursor/rules/security.mdc) RLS section (10 min)
+5. Reference other rules as needed while coding
+
+**Total: ~45 minutes to get started**
+
+**For experienced developers:**
+- Jump straight to specialized rules: [performance.mdc](mdc:.cursor/rules/performance.mdc), [testing.mdc](mdc:.cursor/rules/testing.mdc), [forms.mdc](mdc:.cursor/rules/forms.mdc), [data-tables.mdc](mdc:.cursor/rules/data-tables.mdc)
+
+---
+
+## 🤝 Contributing
+
+When you notice a pattern that should be documented:
+1. Check if it fits in an existing rule
+2. Add example to relevant rule file
+3. Update this README if adding new rule
+4. Consider if [self_improve.mdc](mdc:.cursor/rules/self_improve.mdc) should trigger
+
+---
+
+## 📝 License
+
+These rules are part of the DataParseDesk project and follow the same license.
+
+---
+
+**Last Updated:** 2025-10-22
+**Total Rules:** 12 files (6 core + 4 specialized + 2 meta)
+**Total Size:** ~150KB of documentation
+**Status:** ✅ Production Ready

@@ -14,22 +14,6 @@ BEGIN
 END;
 $function$;
 
--- Fix create_database
-CREATE OR REPLACE FUNCTION public.create_database(name text, user_id uuid, description text DEFAULT NULL::text, icon text DEFAULT NULL::text, color text DEFAULT NULL::text)
-RETURNS databases
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $function$
-declare
-  new_db public.databases;
-begin
-  insert into public.databases(name, description, icon, color, user_id)
-  values (name, description, icon, color, user_id)
-  returning * into new_db;
-  return new_db;
-end;
-$function$;
 
 -- Fix create_project
 CREATE OR REPLACE FUNCTION public.create_project(p_name text, p_user_id uuid, p_description text DEFAULT NULL::text, p_icon text DEFAULT '📁'::text, p_color text DEFAULT '#94A3B8'::text)
@@ -112,18 +96,6 @@ BEGIN
 END;
 $function$;
 
--- Fix delete_database
-CREATE OR REPLACE FUNCTION public.delete_database(p_id uuid)
-RETURNS boolean
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $function$
-BEGIN
-  DELETE FROM public.databases WHERE id = p_id;
-  RETURN true;
-END;
-$function$;
 
 -- Fix clear_database_data
 CREATE OR REPLACE FUNCTION public.clear_database_data(p_database_id uuid)
@@ -192,18 +164,6 @@ BEGIN
 END;
 $function$;
 
--- Fix delete_table_schema
-CREATE OR REPLACE FUNCTION public.delete_table_schema(p_id uuid)
-RETURNS boolean
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $function$
-BEGIN
-  DELETE FROM public.table_schemas WHERE id = p_id;
-  RETURN true;
-END;
-$function$;
 
 -- Fix reorder_columns
 CREATE OR REPLACE FUNCTION public.reorder_columns(p_database_id uuid, p_column_order uuid[])
@@ -260,23 +220,6 @@ BEGIN
 END;
 $function$;
 
--- Fix insert_table_row
-CREATE OR REPLACE FUNCTION public.insert_table_row(p_database_id uuid, p_data jsonb)
-RETURNS table_data
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path = public, pg_temp
-AS $function$
-DECLARE
-  new_row public.table_data;
-BEGIN
-  INSERT INTO public.table_data(database_id, data)
-  VALUES (p_database_id, p_data)
-  RETURNING * INTO new_row;
-  
-  RETURN new_row;
-END;
-$function$;
 
 -- Fix update_table_row
 CREATE OR REPLACE FUNCTION public.update_table_row(p_id uuid, p_data jsonb)

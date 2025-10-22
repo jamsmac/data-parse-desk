@@ -1,0 +1,545 @@
+---
+description: Supabase integration patterns and best practices for DataParseDesk
+globs: src/**/*.ts, src/**/*.tsx, supabase/**/*
+alwaysApply: true
+---
+
+- **Supabase Client:**
+  - Use singleton client from [client.ts](mdc:src/integrations/supabase/client.ts)
+  - Client configured with localStorage persistence
+  - Auto-refresh tokens enabled
+  - TypeScript types auto-generated from database
+
+  ```typescript
+  // ✅ DO: Import supabase client
+  import { supabase } from "@/integrations/supabase/client";
+
+  // ❌ DON'T: Create new clients
+  const client = createClient(url, key); // Bad!
+  ```
+
+- **Database Queries:**
+  ```typescript
+  // ✅ DO: Use type-safe queries
+  const { data, error } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('user_id', userId);
+
+  if (error) {
+    console.error('Error fetching projects:', error);
+    throw error;
+  }
+
+  // ✅ DO: Use specific column selection
+  const { data } = await supabase
+    .from('projects')
+    .select('id, name, created_at')
+    .eq('user_id', userId);
+
+  // ✅ DO: Use joins with type safety
+  const { data } = await supabase
+    .from('projects')
+    .select(`
+      *,
+      databases (
+        id,
+        name,
+        columns (count)
+      )
+    `)
+    .eq('user_id', userId);
+
+  // ❌ DON'T: Use select('*') unnecessarily
+  const { data } = await supabase
+    .from('projects')
+    .select('*'); // Fetches all columns even if you only need a few
+  ```
+
+- **Error Handling:**
+  ```typescript
+  // ✅ DO: Always check for errors
+  const { data, error } = await supabase
+    .from('projects')
+    .insert({ name: 'New Project' })
+    .select()
+    .single();
+
+  if (error) {
+    // Log for debugging
+    console.error('Supabase error:', error);
+
+    // Handle specific error codes
+    if (error.code === '23505') {
+      throw new Error('Проект с таким именем уже существует');
+    }
+
+    // Generic error
+    throw new Error('Не удалось создать проект');
+  }
+
+  return data;
+
+  // ❌ DON'T: Ignore errors
+  const { data } = await supabase.from('projects').select('*');
+  // What if there was an error?
+  ```
+
+- **React Query Integration:**
+  ```typescript
+  // ✅ DO: Use React Query for Supabase queries
+  import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+  import { supabase } from '@/integrations/supabase/client';
+
+  // Query function
+  const fetchProjects = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data;
+  };
+
+  // Hook
+  export function useProjects(userId: string) {
+    return useQuery({
+      queryKey: ['projects', userId],
+      queryFn: () => fetchProjects(userId),
+      enabled: !!userId,
+    });
+  }
+
+  // Mutation
+  export function useCreateProject() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+      mutationFn: async (newProject: { name: string; description?: string }) => {
+        const { data, error } = await supabase
+          .from('projects')
+          .insert(newProject)
+          .select()
+          .single();
+
+        if (error) throw error;
+        return data;
+      },
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['projects'] });
+      },
+    });
+  }
+  ```
+
+- **Realtime Subscriptions:**
+  ```typescript
+  // ✅ DO: Set up realtime subscriptions properly
+  useEffect(() => {
+    const channel = supabase
+      .channel('projects-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // INSERT, UPDATE, DELETE, or specific event
+          schema: 'public',
+          table: 'projects',
+          filter: `user_id=eq.${userId}`,
+        },
+        (payload) => {
+          console.log('Change received!', payload);
+
+          // Invalidate cache to refetch
+          queryClient.invalidateQueries({ queryKey: ['projects', userId] });
+        }
+      )
+      .subscribe();
+
+    // Cleanup subscription
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [userId, queryClient]);
+
+  // ❌ DON'T: Forget to clean up subscriptions
+  useEffect(() => {
+    supabase.channel('projects').subscribe();
+    // Missing cleanup - memory leak!
+  }, []);
+  ```
+
+- **Auth Patterns:**
+  ```typescript
+  // ✅ DO: Use Supabase Auth
+
+  // Sign up
+  const { data, error } = await supabase.auth.signUp({
+    email: 'user@example.com',
+    password: 'secure-password',
+    options: {
+      data: {
+        name: 'John Doe',
+      },
+    },
+  });
+
+  // Sign in
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email: 'user@example.com',
+    password: 'secure-password',
+  });
+
+  // Sign out
+  const { error } = await supabase.auth.signOut();
+
+  // Get session
+  const { data: { session } } = await supabase.auth.getSession();
+
+  // Get user
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Listen to auth changes
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN') {
+      console.log('User signed in:', session?.user);
+    } else if (event === 'SIGNED_OUT') {
+      console.log('User signed out');
+    }
+  });
+  ```
+
+- **Storage (File Uploads):**
+  ```typescript
+  // ✅ DO: Upload files to Supabase Storage
+
+  const uploadFile = async (file: File, bucket: string, path: string) => {
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .upload(path, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+
+    if (error) throw error;
+
+    // Get public URL
+    const { data: { publicUrl } } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(data.path);
+
+    return publicUrl;
+  };
+
+  // Download file
+  const { data, error } = await supabase.storage
+    .from('attachments')
+    .download('path/to/file.pdf');
+
+  // Delete file
+  const { error } = await supabase.storage
+    .from('attachments')
+    .remove(['path/to/file.pdf']);
+
+  // List files
+  const { data, error } = await supabase.storage
+    .from('attachments')
+    .list('folder', {
+      limit: 100,
+      offset: 0,
+      sortBy: { column: 'name', order: 'asc' },
+    });
+  ```
+
+- **RPC (Remote Procedure Calls):**
+  ```typescript
+  // ✅ DO: Use RPC for complex operations
+
+  // Call PostgreSQL function
+  const { data, error } = await supabase.rpc('get_project_stats', {
+    project_id_param: projectId,
+  });
+
+  if (error) throw error;
+
+  // Example RPC function in migration:
+  // CREATE OR REPLACE FUNCTION get_project_stats(project_id_param UUID)
+  // RETURNS TABLE(
+  //   database_count INTEGER,
+  //   total_rows BIGINT,
+  //   total_columns INTEGER
+  // ) AS $$
+  // BEGIN
+  //   RETURN QUERY
+  //   SELECT
+  //     COUNT(DISTINCT d.id)::INTEGER as database_count,
+  //     SUM((SELECT COUNT(*) FROM items WHERE database_id = d.id))::BIGINT as total_rows,
+  //     SUM((SELECT COUNT(*) FROM columns WHERE database_id = d.id))::INTEGER as total_columns
+  //   FROM databases d
+  //   WHERE d.project_id = project_id_param;
+  // END;
+  // $$ LANGUAGE plpgsql;
+  ```
+
+- **Batch Operations:**
+  ```typescript
+  // ✅ DO: Use upsert for batch inserts/updates
+  const { data, error } = await supabase
+    .from('items')
+    .upsert([
+      { id: 1, name: 'Item 1' },
+      { id: 2, name: 'Item 2' },
+      { id: 3, name: 'Item 3' },
+    ], {
+      onConflict: 'id',
+      ignoreDuplicates: false,
+    })
+    .select();
+
+  // ✅ DO: Use batch delete
+  const { error } = await supabase
+    .from('items')
+    .delete()
+    .in('id', [1, 2, 3]);
+
+  // ❌ DON'T: Make individual requests in a loop
+  for (const item of items) {
+    await supabase.from('items').insert(item); // Bad: N queries
+  }
+  ```
+
+- **Filtering and Sorting:**
+  ```typescript
+  // ✅ DO: Use Supabase query methods
+
+  // Filtering
+  const { data } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('status', 'active')              // Equal
+    .neq('name', 'Test')                 // Not equal
+    .gt('created_at', '2024-01-01')      // Greater than
+    .gte('priority', 5)                  // Greater than or equal
+    .lt('budget', 10000)                 // Less than
+    .lte('completion', 100)              // Less than or equal
+    .like('name', '%Project%')           // Pattern matching
+    .ilike('description', '%test%')      // Case-insensitive like
+    .in('status', ['active', 'pending']) // In array
+    .is('deleted_at', null)              // Is null
+    .not('status', 'eq', 'archived');    // Not condition
+
+  // Sorting
+  const { data } = await supabase
+    .from('projects')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .order('name', { ascending: true });
+
+  // Pagination
+  const { data } = await supabase
+    .from('projects')
+    .select('*')
+    .range(0, 9) // First 10 items (0-indexed)
+    .limit(10);
+
+  // Text search
+  const { data } = await supabase
+    .from('projects')
+    .select('*')
+    .textSearch('name', 'database', {
+      type: 'websearch',
+      config: 'english',
+    });
+  ```
+
+- **Transactions:**
+  ```typescript
+  // ⚠️ NOTE: Supabase client doesn't support transactions directly
+  // Use RPC with PostgreSQL transaction blocks
+
+  // Create RPC function with transaction:
+  // CREATE OR REPLACE FUNCTION create_project_with_database(
+  //   p_name TEXT,
+  //   d_name TEXT
+  // ) RETURNS UUID AS $$
+  // DECLARE
+  //   new_project_id UUID;
+  // BEGIN
+  //   INSERT INTO projects (name) VALUES (p_name)
+  //   RETURNING id INTO new_project_id;
+  //
+  //   INSERT INTO databases (project_id, name)
+  //   VALUES (new_project_id, d_name);
+  //
+  //   RETURN new_project_id;
+  // EXCEPTION WHEN OTHERS THEN
+  //   RAISE;
+  // END;
+  // $$ LANGUAGE plpgsql;
+
+  // Call from client:
+  const { data: projectId, error } = await supabase.rpc(
+    'create_project_with_database',
+    {
+      p_name: 'New Project',
+      d_name: 'Main Database',
+    }
+  );
+  ```
+
+- **Row Level Security (RLS):**
+  ```typescript
+  // ✅ DO: Rely on RLS policies, not client-side filtering
+
+  // RLS policies are enforced server-side
+  // Example migration:
+  // ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+  //
+  // CREATE POLICY "Users can view their own projects"
+  // ON projects FOR SELECT
+  // USING (auth.uid() = user_id);
+  //
+  // CREATE POLICY "Users can insert their own projects"
+  // ON projects FOR INSERT
+  // WITH CHECK (auth.uid() = user_id);
+  //
+  // CREATE POLICY "Users can update their own projects"
+  // ON projects FOR UPDATE
+  // USING (auth.uid() = user_id)
+  // WITH CHECK (auth.uid() = user_id);
+  //
+  // CREATE POLICY "Users can delete their own projects"
+  // ON projects FOR DELETE
+  // USING (auth.uid() = user_id);
+
+  // Client code doesn't need to filter by user_id
+  // RLS automatically enforces this
+  const { data } = await supabase
+    .from('projects')
+    .select('*');
+  // Returns only projects where user_id matches auth.uid()
+
+  // ❌ DON'T: Manually filter sensitive data client-side
+  const { data } = await supabase.from('projects').select('*');
+  const filtered = data.filter(p => p.user_id === userId);
+  // Bad: RLS should handle this
+  ```
+
+- **Type Safety:**
+  ```typescript
+  // ✅ DO: Use generated types
+  import type { Database } from '@/integrations/supabase/types';
+
+  type Project = Database['public']['Tables']['projects']['Row'];
+  type ProjectInsert = Database['public']['Tables']['projects']['Insert'];
+  type ProjectUpdate = Database['public']['Tables']['projects']['Update'];
+
+  const createProject = async (project: ProjectInsert): Promise<Project> => {
+    const { data, error } = await supabase
+      .from('projects')
+      .insert(project)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  };
+
+  // ✅ DO: Type RPC responses
+  type ProjectStats = Database['public']['Functions']['get_project_stats']['Returns'];
+
+  const getStats = async (projectId: string): Promise<ProjectStats> => {
+    const { data, error } = await supabase.rpc('get_project_stats', {
+      project_id_param: projectId,
+    });
+
+    if (error) throw error;
+    return data;
+  };
+  ```
+
+- **Performance Best Practices:**
+  ```typescript
+  // ✅ DO: Use count with head: true for performance
+  const { count, error } = await supabase
+    .from('projects')
+    .select('*', { count: 'exact', head: true });
+  // Returns only count, not data
+
+  // ✅ DO: Use specific column selection
+  const { data } = await supabase
+    .from('projects')
+    .select('id, name') // Only fetch needed columns
+    .eq('status', 'active');
+
+  // ✅ DO: Use indexes for frequently queried columns
+  // Migration:
+  // CREATE INDEX idx_projects_user_id ON projects(user_id);
+  // CREATE INDEX idx_projects_status ON projects(status);
+  // CREATE INDEX idx_projects_created_at ON projects(created_at DESC);
+
+  // ✅ DO: Paginate large datasets
+  const PAGE_SIZE = 50;
+  const { data } = await supabase
+    .from('items')
+    .select('*')
+    .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+
+  // ❌ DON'T: Fetch all data without pagination
+  const { data } = await supabase.from('items').select('*');
+  // Could return millions of rows!
+  ```
+
+- **Environment Variables:**
+  ```typescript
+  // ✅ DO: Use environment variables for config
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+  const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+  // Never commit these to version control
+  // Store in .env.local:
+  // VITE_SUPABASE_URL=https://xxx.supabase.co
+  // VITE_SUPABASE_ANON_KEY=eyJxxx...
+
+  // ❌ DON'T: Hardcode credentials
+  const url = 'https://myproject.supabase.co'; // Bad!
+  ```
+
+- **Migration Best Practices:**
+  ```sql
+  -- ✅ DO: Use timestamped migrations
+  -- supabase/migrations/20251022120000_create_projects.sql
+
+  CREATE TABLE IF NOT EXISTS projects (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    name TEXT NOT NULL,
+    description TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  );
+
+  -- Enable RLS
+  ALTER TABLE projects ENABLE ROW LEVEL SECURITY;
+
+  -- Create policies
+  CREATE POLICY "Users can view own projects"
+    ON projects FOR SELECT
+    USING (auth.uid() = user_id);
+
+  -- Create indexes
+  CREATE INDEX idx_projects_user_id ON projects(user_id);
+
+  -- Create updated_at trigger
+  CREATE TRIGGER set_updated_at
+    BEFORE UPDATE ON projects
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+  -- ❌ DON'T: Make destructive changes without backups
+  -- DROP TABLE projects; -- Dangerous!
+  ```
+
+Follow [security.mdc](mdc:.cursor/rules/security.mdc) for RLS policy patterns.
+Follow [project_overview.mdc](mdc:.cursor/rules/project_overview.mdc) for overall architecture.

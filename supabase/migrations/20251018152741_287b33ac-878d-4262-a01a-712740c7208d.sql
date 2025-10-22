@@ -97,10 +97,11 @@ ALTER TABLE public.permissions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.role_permissions ENABLE ROW LEVEL SECURITY;
 
 -- RLS policies for permissions
-CREATE POLICY "Everyone can view permissions"
+-- Permissions are a system reference table - read-only for authenticated users
+CREATE POLICY "Authenticated users can view permissions"
 ON public.permissions
 FOR SELECT
-USING (true);
+USING (auth.role() = 'authenticated');
 
 CREATE POLICY "Users can view role permissions in their projects"
 ON public.role_permissions
@@ -191,7 +192,7 @@ USING (
     SELECT 1 FROM public.databases d
     LEFT JOIN public.projects p ON d.project_id = p.id
     WHERE d.id = comments.database_id
-    AND (d.user_id = auth.uid() OR p.user_id = auth.uid() OR EXISTS (
+    AND (d.created_by = auth.uid() OR p.user_id = auth.uid() OR EXISTS (
       SELECT 1 FROM public.project_members pm
       WHERE pm.project_id = p.id AND pm.user_id = auth.uid()
     ))
@@ -207,7 +208,7 @@ WITH CHECK (
     SELECT 1 FROM public.databases d
     LEFT JOIN public.projects p ON d.project_id = p.id
     WHERE d.id = comments.database_id
-    AND (d.user_id = auth.uid() OR p.user_id = auth.uid() OR EXISTS (
+    AND (d.created_by = auth.uid() OR p.user_id = auth.uid() OR EXISTS (
       SELECT 1 FROM public.project_members pm
       WHERE pm.project_id = p.id AND pm.user_id = auth.uid()
     ))

@@ -1,0 +1,723 @@
+---
+description: Accessibility (a11y) patterns and WCAG compliance for DataParseDesk
+globs: src/**/*.tsx
+alwaysApply: false
+---
+
+- **Accessibility Principles (WCAG 2.1):**
+
+  **POUR Principles:**
+  - **Perceivable:** Information must be presentable in ways users can perceive
+  - **Operable:** UI components must be operable by all users
+  - **Understandable:** Information and UI must be understandable
+  - **Robust:** Content must work with current and future technologies
+
+- **Semantic HTML:**
+
+  **1. Use Proper HTML Elements**
+  ```typescript
+  // ✅ DO: Use semantic HTML
+  <header>
+    <nav aria-label="Основная навигация">
+      <ul>
+        <li><a href="/projects">Проекты</a></li>
+        <li><a href="/analytics">Аналитика</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <main>
+    <article>
+      <h1>Заголовок страницы</h1>
+      <section>
+        <h2>Секция контента</h2>
+        <p>Текст...</p>
+      </section>
+    </article>
+  </main>
+
+  <footer>
+    <p>&copy; 2024 DataParseDesk</p>
+  </footer>
+
+  // ❌ DON'T: Use divs for everything
+  <div className="header">
+    <div className="nav">
+      <div className="nav-item">Проекты</div>
+    </div>
+  </div>
+  ```
+
+  **2. Heading Hierarchy**
+  ```typescript
+  // ✅ DO: Logical heading structure
+  <h1>Проекты</h1>
+    <h2>Активные проекты</h2>
+      <h3>Project Alpha</h3>
+      <h3>Project Beta</h3>
+    <h2>Архивные проекты</h2>
+      <h3>Project Gamma</h3>
+
+  // ❌ DON'T: Skip heading levels
+  <h1>Проекты</h1>
+  <h3>Project Alpha</h3>  {/* Skipped h2! */}
+
+  // ❌ DON'T: Use headings for styling
+  <h4>Small text</h4>  {/* Use CSS instead */}
+  ```
+
+- **ARIA Labels and Roles:**
+
+  **1. ARIA Labels**
+  ```typescript
+  // ✅ DO: Label interactive elements
+  <button
+    aria-label="Удалить проект Alpha"
+    onClick={() => handleDelete(project.id)}
+  >
+    <Trash2 className="h-4 w-4" />
+  </button>
+
+  <input
+    type="search"
+    aria-label="Поиск проектов"
+    placeholder="Поиск..."
+  />
+
+  <nav aria-label="Пагинация">
+    <button aria-label="Предыдущая страница">←</button>
+    <button aria-label="Следующая страница">→</button>
+  </nav>
+
+  // ✅ DO: Describe icon-only buttons
+  <Button size="icon" aria-label="Редактировать">
+    <Edit className="h-4 w-4" />
+  </Button>
+
+  // ❌ DON'T: Icon buttons without labels
+  <button onClick={handleEdit}>
+    <Edit />  {/* Screen reader doesn't know what this does */}
+  </button>
+  ```
+
+  **2. ARIA Attributes**
+  ```typescript
+  // ✅ DO: Use appropriate ARIA attributes
+
+  // aria-expanded for collapsible content
+  <button
+    aria-expanded={isExpanded}
+    aria-controls="details-panel"
+    onClick={() => setIsExpanded(!isExpanded)}
+  >
+    Показать детали
+  </button>
+  <div id="details-panel" hidden={!isExpanded}>
+    {/* Content */}
+  </div>
+
+  // aria-pressed for toggle buttons
+  <button
+    aria-pressed={isActive}
+    onClick={() => setIsActive(!isActive)}
+  >
+    {isActive ? 'Активно' : 'Неактивно'}
+  </button>
+
+  // aria-current for navigation
+  <nav>
+    <a
+      href="/projects"
+      aria-current={pathname === '/projects' ? 'page' : undefined}
+    >
+      Проекты
+    </a>
+  </nav>
+
+  // aria-live for dynamic content
+  <div aria-live="polite" aria-atomic="true">
+    {statusMessage}
+  </div>
+
+  // aria-describedby for hints
+  <input
+    id="email"
+    aria-describedby="email-hint"
+  />
+  <span id="email-hint" className="text-sm text-muted-foreground">
+    Мы никогда не передадим ваш email третьим лицам
+  </span>
+
+  // aria-invalid for form errors
+  <input
+    aria-invalid={!!errors.name}
+    aria-describedby={errors.name ? 'name-error' : undefined}
+  />
+  {errors.name && (
+    <span id="name-error" className="text-destructive">
+      {errors.name.message}
+    </span>
+  )}
+  ```
+
+  **3. ARIA Roles**
+  ```typescript
+  // ✅ DO: Use roles when needed
+
+  // Dialog role
+  <div
+    role="dialog"
+    aria-labelledby="dialog-title"
+    aria-describedby="dialog-description"
+  >
+    <h2 id="dialog-title">Подтверждение</h2>
+    <p id="dialog-description">Вы уверены?</p>
+  </div>
+
+  // Alert role
+  <div role="alert" className="bg-destructive text-destructive-foreground">
+    Ошибка сохранения данных
+  </div>
+
+  // Status role
+  <div role="status" aria-live="polite">
+    Загрузка: {progress}%
+  </div>
+
+  // List role (when not using ul/ol)
+  <div role="list">
+    <div role="listitem">Item 1</div>
+    <div role="listitem">Item 2</div>
+  </div>
+
+  // ❌ DON'T: Overuse roles
+  <button role="button">  {/* Redundant */}
+    Click
+  </button>
+  ```
+
+- **Keyboard Navigation:**
+
+  **1. Tab Order**
+  ```typescript
+  // ✅ DO: Logical tab order
+  <form>
+    <input tabIndex={0} />  {/* Default: 0 */}
+    <input tabIndex={0} />
+    <button tabIndex={0}>Submit</button>
+  </form>
+
+  // ✅ DO: Skip navigation link
+  <a
+    href="#main-content"
+    className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50"
+  >
+    Перейти к основному содержимому
+  </a>
+
+  <main id="main-content">
+    {/* Content */}
+  </main>
+
+  // ❌ DON'T: Positive tabIndex
+  <input tabIndex={1} />  {/* Disrupts natural flow */}
+  <input tabIndex={2} />
+  ```
+
+  **2. Keyboard Handlers**
+  ```typescript
+  // ✅ DO: Support keyboard navigation
+  function ClickableCard({ onClick }: { onClick: () => void }) {
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onClick();
+      }
+    };
+
+    return (
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onClick}
+        onKeyDown={handleKeyDown}
+        className="cursor-pointer"
+      >
+        Card content
+      </div>
+    );
+  }
+
+  // ✅ DO: Arrow key navigation in lists
+  function ProjectList({ projects }: { projects: Project[] }) {
+    const [selectedIndex, setSelectedIndex] = useState(0);
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          setSelectedIndex(i => Math.min(i + 1, projects.length - 1));
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setSelectedIndex(i => Math.max(i - 1, 0));
+          break;
+        case 'Home':
+          e.preventDefault();
+          setSelectedIndex(0);
+          break;
+        case 'End':
+          e.preventDefault();
+          setSelectedIndex(projects.length - 1);
+          break;
+      }
+    };
+
+    return (
+      <div
+        role="listbox"
+        onKeyDown={handleKeyDown}
+        tabIndex={0}
+      >
+        {projects.map((project, index) => (
+          <div
+            key={project.id}
+            role="option"
+            aria-selected={index === selectedIndex}
+          >
+            {project.name}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // ✅ DO: Escape to close
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleEscape);
+      return () => document.removeEventListener('keydown', handleEscape);
+    }
+  }, [isOpen, handleClose]);
+  ```
+
+- **Focus Management:**
+
+  **1. Focus Indicators**
+  ```typescript
+  // ✅ DO: Clear focus indicators
+  <button className="
+    focus:outline-none
+    focus-visible:ring-2
+    focus-visible:ring-ring
+    focus-visible:ring-offset-2
+  ">
+    Click me
+  </button>
+
+  // ✅ DO: High contrast focus rings
+  <input className="
+    border border-input
+    focus:ring-2
+    focus:ring-primary
+    focus:border-transparent
+  " />
+
+  // ❌ DON'T: Remove focus indicators
+  button:focus {
+    outline: none; /* Bad! Users can't see focus */
+  }
+  ```
+
+  **2. Focus Trapping (Modals)**
+  ```typescript
+  // ✅ DO: Trap focus in modal dialogs
+  import { useEffect, useRef } from 'react';
+
+  function Modal({ isOpen, onClose, children }: ModalProps) {
+    const modalRef = useRef<HTMLDivElement>(null);
+    const previousFocusRef = useRef<HTMLElement | null>(null);
+
+    useEffect(() => {
+      if (isOpen) {
+        // Save previous focus
+        previousFocusRef.current = document.activeElement as HTMLElement;
+
+        // Focus first focusable element in modal
+        const focusableElements = modalRef.current?.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+
+        if (focusableElements && focusableElements.length > 0) {
+          (focusableElements[0] as HTMLElement).focus();
+        }
+
+        // Trap focus
+        const handleTab = (e: KeyboardEvent) => {
+          if (e.key !== 'Tab') return;
+
+          const focusable = Array.from(focusableElements || []) as HTMLElement[];
+          const firstElement = focusable[0];
+          const lastElement = focusable[focusable.length - 1];
+
+          if (e.shiftKey && document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          } else if (!e.shiftKey && document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        };
+
+        document.addEventListener('keydown', handleTab);
+
+        return () => {
+          document.removeEventListener('keydown', handleTab);
+          // Restore focus
+          previousFocusRef.current?.focus();
+        };
+      }
+    }, [isOpen]);
+
+    if (!isOpen) return null;
+
+    return (
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="modal-title"
+      >
+        {children}
+      </div>
+    );
+  }
+  ```
+
+- **Screen Reader Support:**
+
+  **1. Screen Reader Only Text**
+  ```typescript
+  // ✅ DO: Provide screen reader only text
+  // In tailwind.config.ts, sr-only is already defined
+
+  <button>
+    <Trash2 className="h-4 w-4" />
+    <span className="sr-only">Удалить проект</span>
+  </button>
+
+  <div>
+    <span className="sr-only">Прогресс загрузки:</span>
+    <div className="progress-bar" aria-valuenow={progress} />
+    <span className="sr-only">{progress}%</span>
+  </div>
+
+  // ✅ DO: Hide decorative icons from screen readers
+  <div>
+    <Star className="h-4 w-4" aria-hidden="true" />
+    <span>Избранное</span>
+  </div>
+  ```
+
+  **2. Live Regions**
+  ```typescript
+  // ✅ DO: Announce dynamic content
+  function SaveStatus({ isSaving, lastSaved }: SaveStatusProps) {
+    return (
+      <>
+        {/* Visual status */}
+        <div className="text-sm text-muted-foreground">
+          {isSaving ? 'Сохранение...' : `Сохранено ${lastSaved}`}
+        </div>
+
+        {/* Announce to screen readers */}
+        <div
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          className="sr-only"
+        >
+          {isSaving ? 'Сохранение данных' : 'Данные успешно сохранены'}
+        </div>
+      </>
+    );
+  }
+
+  // aria-live values:
+  // - off: Don't announce
+  // - polite: Announce when user is idle
+  // - assertive: Announce immediately (interrupts)
+
+  // aria-atomic:
+  // - true: Announce entire region
+  // - false: Announce only changed content
+  ```
+
+- **Form Accessibility:**
+
+  **1. Label Association**
+  ```typescript
+  // ✅ DO: Associate labels with inputs
+  <div>
+    <label htmlFor="project-name">Название проекта</label>
+    <input
+      id="project-name"
+      name="name"
+      type="text"
+      required
+      aria-required="true"
+    />
+  </div>
+
+  // ✅ DO: Use fieldset for related inputs
+  <fieldset>
+    <legend>Настройки приватности</legend>
+    <div>
+      <input
+        type="checkbox"
+        id="public"
+        name="is_public"
+      />
+      <label htmlFor="public">Публичный проект</label>
+    </div>
+    <div>
+      <input
+        type="checkbox"
+        id="searchable"
+        name="is_searchable"
+      />
+      <label htmlFor="searchable">Доступен в поиске</label>
+    </div>
+  </fieldset>
+
+  // ❌ DON'T: Labels without association
+  <label>Название</label>
+  <input />  {/* Not connected! */}
+  ```
+
+  **2. Error Messages**
+  ```typescript
+  // ✅ DO: Associate errors with inputs
+  <div>
+    <label htmlFor="email">Email</label>
+    <input
+      id="email"
+      type="email"
+      aria-invalid={!!errors.email}
+      aria-describedby={errors.email ? 'email-error' : undefined}
+    />
+    {errors.email && (
+      <span id="email-error" role="alert" className="text-destructive">
+        {errors.email.message}
+      </span>
+    )}
+  </div>
+
+  // ✅ DO: Announce form submission status
+  {submitError && (
+    <div role="alert" className="text-destructive">
+      Ошибка отправки формы: {submitError}
+    </div>
+  )}
+
+  {submitSuccess && (
+    <div role="status" className="text-success">
+      Форма успешно отправлена
+    </div>
+  )}
+  ```
+
+- **Color and Contrast:**
+
+  **1. Color Contrast Requirements**
+  ```typescript
+  // ✅ DO: WCAG AA contrast ratio (4.5:1 for normal text, 3:1 for large text)
+
+  // Using CSS variables from index.css (already compliant)
+  <div className="bg-background text-foreground">
+    Normal text
+  </div>
+
+  <div className="bg-primary text-primary-foreground">
+    Button text
+  </div>
+
+  // ✅ DO: Test contrast
+  // Use browser DevTools or online tools:
+  // - https://webaim.org/resources/contrastchecker/
+  // - Chrome DevTools > Lighthouse > Accessibility audit
+
+  // ❌ DON'T: Rely on color alone
+  <div className="text-green-500">Success</div>  {/* Color-blind users can't tell */}
+
+  // ✅ DO: Use icons + color
+  <div className="text-green-500">
+    <CheckCircle className="h-4 w-4 inline" />
+    Success
+  </div>
+  ```
+
+  **2. Dark Mode Accessibility**
+  ```typescript
+  // ✅ DO: Ensure accessibility in both themes
+  // Test all components in both light and dark mode
+  // CSS variables in index.css handle this automatically
+
+  // ✅ DO: Provide theme toggle
+  <button
+    onClick={toggleTheme}
+    aria-label={`Переключить на ${theme === 'dark' ? 'светлую' : 'темную'} тему`}
+  >
+    {theme === 'dark' ? <Sun /> : <Moon />}
+  </button>
+  ```
+
+- **Images and Media:**
+
+  **1. Alt Text**
+  ```typescript
+  // ✅ DO: Descriptive alt text
+  <img
+    src="/project-thumbnail.jpg"
+    alt="График продаж проекта Alpha за 2024 год"
+  />
+
+  // ✅ DO: Empty alt for decorative images
+  <img
+    src="/decoration.svg"
+    alt=""
+    aria-hidden="true"
+  />
+
+  // ✅ DO: Complex images with long description
+  <figure>
+    <img
+      src="/complex-chart.png"
+      alt="Детальный график"
+      aria-describedby="chart-description"
+    />
+    <figcaption id="chart-description">
+      График показывает рост выручки с января по декабрь...
+    </figcaption>
+  </figure>
+
+  // ❌ DON'T: Generic alt text
+  <img src="/photo.jpg" alt="изображение" />
+  <img src="/icon.png" alt="икона" />
+  ```
+
+  **2. Video Accessibility**
+  ```typescript
+  // ✅ DO: Provide captions and transcripts
+  <video controls>
+    <source src="/tutorial.mp4" type="video/mp4" />
+    <track
+      kind="captions"
+      src="/tutorial-captions-ru.vtt"
+      srclang="ru"
+      label="Русский"
+      default
+    />
+    <track
+      kind="captions"
+      src="/tutorial-captions-en.vtt"
+      srclang="en"
+      label="English"
+    />
+  </video>
+  ```
+
+- **Tables Accessibility:**
+
+  **1. Table Headers**
+  ```typescript
+  // ✅ DO: Use proper table structure
+  <table>
+    <caption>Список проектов</caption>
+    <thead>
+      <tr>
+        <th scope="col">Название</th>
+        <th scope="col">Статус</th>
+        <th scope="col">Дата создания</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row">Project Alpha</th>
+        <td>Активен</td>
+        <td>01.01.2024</td>
+      </tr>
+    </tbody>
+  </table>
+
+  // ✅ DO: Complex headers
+  <table>
+    <thead>
+      <tr>
+        <th id="name" scope="col">Название</th>
+        <th id="q1" scope="col">Q1</th>
+        <th id="q2" scope="col">Q2</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th id="alpha" scope="row">Alpha</th>
+        <td headers="alpha q1">100</td>
+        <td headers="alpha q2">150</td>
+      </tr>
+    </tbody>
+  </table>
+  ```
+
+- **Testing Accessibility:**
+
+  **1. Automated Testing**
+  ```bash
+  # Install axe-core for automated testing
+  npm install --save-dev @axe-core/react
+
+  # In development mode (main.tsx)
+  if (import.meta.env.DEV) {
+    import('@axe-core/react').then((axe) => {
+      axe.default(React, ReactDOM, 1000);
+    });
+  }
+  ```
+
+  **2. Manual Testing Checklist**
+  ```typescript
+  // ✅ DO: Test accessibility manually
+
+  // Keyboard navigation:
+  // - [ ] Tab through all interactive elements
+  // - [ ] Press Enter/Space on buttons
+  // - [ ] Use arrow keys in lists
+  // - [ ] Escape closes modals
+  // - [ ] Focus visible on all elements
+
+  // Screen reader:
+  // - [ ] Use NVDA (Windows) or VoiceOver (Mac)
+  // - [ ] All content announced correctly
+  // - [ ] Forms are understandable
+  // - [ ] Errors announced properly
+
+  // Color/Contrast:
+  // - [ ] Run Lighthouse accessibility audit
+  // - [ ] Check in dark mode
+  // - [ ] Test with color blindness simulator
+
+  // Zoom/Text size:
+  // - [ ] Test at 200% zoom
+  // - [ ] Test with larger system font
+  // - [ ] No content cut off
+  ```
+
+Follow [react_components.mdc](mdc:.cursor/rules/react_components.mdc) for component patterns.
+Follow [styling.mdc](mdc:.cursor/rules/styling.mdc) for CSS and theme considerations.
+Follow [forms.mdc](mdc:.cursor/rules/forms.mdc) for accessible form patterns.

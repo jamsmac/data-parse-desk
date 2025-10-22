@@ -11,6 +11,8 @@ interface RelationCellProps {
   displayColumn: string;
   onChange: (value: string | null) => void;
   readOnly?: boolean;
+  resolvedValue?: string; // Pre-resolved display value from auto-loading
+  resolvedData?: any; // Full resolved record data
 }
 
 export function RelationCell({
@@ -20,17 +22,24 @@ export function RelationCell({
   displayColumn,
   onChange,
   readOnly,
+  resolvedValue,
+  resolvedData,
 }: RelationCellProps) {
-  const [displayValue, setDisplayValue] = useState<string>('');
+  const [displayValue, setDisplayValue] = useState<string>(resolvedValue || '');
   const [showPicker, setShowPicker] = useState(false);
 
+  // Use pre-resolved value if available, otherwise fetch
   useEffect(() => {
-    if (value) {
+    if (resolvedValue) {
+      // Already resolved by useTableData hook
+      setDisplayValue(resolvedValue);
+    } else if (value) {
+      // Fallback: load manually
       loadDisplayValue();
     } else {
       setDisplayValue('');
     }
-  }, [value]);
+  }, [value, resolvedValue]);
 
   const loadDisplayValue = async () => {
     if (!value || !targetDatabaseId) return;

@@ -1,0 +1,223 @@
+---
+description: High-level overview of the DataParseDesk project architecture and conventions
+globs: **/*
+alwaysApply: true
+---
+
+- **Project Type:** Data management platform with Supabase backend
+  - Multi-tenant project and database management
+  - Advanced data manipulation and analytics
+  - Real-time collaboration features
+  - AI-powered insights and automation
+
+- **Technology Stack:**
+  - **Frontend:** React 18 + TypeScript + Vite
+  - **UI Library:** shadcn/ui (Radix UI primitives)
+  - **Backend:** Supabase (PostgreSQL + RLS + Realtime)
+  - **Styling:** Tailwind CSS with CSS variables
+  - **Routing:** React Router v6 with lazy loading
+  - **State Management:**
+    - React Query (@tanstack/react-query) for server state
+    - React Context for auth state
+  - **Forms:** React Hook Form + Zod validation
+  - **Charts:** Recharts
+  - **Icons:** Lucide React
+  - **Notifications:** Sonner
+  - **Virtual Scrolling:** @tanstack/react-virtual
+  - **DnD:** @dnd-kit (drag and drop)
+  - **Excel Export:** ExcelJS
+  - **PDF Export:** jsPDF
+  - **CSV Parsing:** PapaParse
+  - **Error Tracking:** Sentry
+  - **PWA:** vite-plugin-pwa + workbox
+
+- **Project Structure:**
+  ```
+  src/
+  ├── components/
+  │   ├── ui/                    # shadcn/ui primitives
+  │   ├── common/                # Shared components (EmptyState, LoadingSpinner, etc.)
+  │   ├── database/              # Database-related components
+  │   ├── composite-views/       # Composite view components
+  │   ├── ai/                    # AI features (Assistant, Insights)
+  │   ├── analytics/             # Analytics and statistics
+  │   ├── charts/                # Chart builders and visualizations
+  │   ├── collaboration/         # User management, comments, notifications
+  │   ├── formula/               # Formula editor
+  │   ├── import/                # Import wizards
+  │   ├── relations/             # Relation management (ERD, Lookup, Rollup)
+  │   ├── reports/               # Report builders and templates
+  │   ├── storage/               # Storage provider integrations
+  │   └── telegram/              # Telegram notifications
+  ├── contexts/                  # React contexts (AuthContext)
+  ├── pages/                     # Route components (lazy loaded)
+  ├── hooks/                     # Custom React hooks
+  ├── integrations/              # External integrations
+  │   └── supabase/              # Supabase client and utilities
+  ├── lib/                       # Utilities and helpers
+  └── types/                     # TypeScript types
+  ```
+
+- **Key Features:**
+  1. **Project & Database Management**
+     - Create/edit/delete projects
+     - Multiple databases per project
+     - Column management with custom types
+     - Row CRUD operations
+
+  2. **Composite Views**
+     - Join multiple tables
+     - Custom columns (status, progress, checklist)
+     - Conditional formatting
+     - Filtering and sorting
+
+  3. **Advanced Data Operations**
+     - Formula columns (calculated fields)
+     - Relations (one-to-many, many-to-many)
+     - Lookup columns (reference data from related tables)
+     - Rollup columns (aggregations)
+     - Cell history tracking
+
+  4. **Import/Export**
+     - CSV/Excel import with column mapping
+     - Duplicate detection strategies
+     - Export to Excel/CSV/PDF
+     - Import history tracking
+
+  5. **Analytics & Insights**
+     - Real-time statistics
+     - Chart builders (bar, line, pie, etc.)
+     - Pivot tables
+     - Dashboard builder
+     - AI-powered proactive insights
+
+  6. **Collaboration**
+     - User management and roles
+     - Activity feeds
+     - Comments system
+     - Real-time notifications
+     - Email and Telegram integrations
+
+  7. **Reports**
+     - Report builders
+     - Scheduled reports
+     - PDF export
+     - Email delivery
+
+  8. **AI Features**
+     - Conversational AI assistant
+     - Proactive insights
+     - Data analysis suggestions
+
+  9. **Storage Integrations**
+     - Multiple storage providers
+     - File attachments for items
+     - Sync capabilities
+
+  10. **PWA Support**
+      - Offline capabilities
+      - Install prompts
+      - Service worker
+
+- **Routing Strategy:**
+  ```typescript
+  // Public routes (eagerly loaded)
+  /login
+  /register
+  /reset-password
+  /install
+
+  // Protected routes (lazy loaded)
+  /projects                                          # List all projects
+  /projects/:projectId                               # Project details
+  /projects/:projectId/database/:databaseId          # Database view
+  /projects/:projectId/database/:databaseId/import-history
+  /analytics
+  /advanced-analytics
+  /reports
+  /profile
+  /settings
+  /integrations
+  /marketplace
+
+  // Admin routes (lazy loaded, admin only)
+  /admin
+  ```
+
+- **Performance Optimizations:**
+  - Lazy loading for all non-auth pages
+  - Code splitting by route
+  - React Query caching (60s stale time)
+  - Virtual scrolling for large tables (@tanstack/react-virtual)
+  - Optimistic updates for instant UI feedback
+
+- **Supabase Architecture:**
+  - **Auth:** Supabase Auth for user management
+  - **Database:** PostgreSQL with RLS policies
+  - **Storage:** Supabase Storage for file uploads
+  - **Realtime:** Subscriptions for collaborative features
+  - **RPC:** Custom PostgreSQL functions
+  - **Migrations:** Version-controlled schema changes
+
+- **Database Schema (Core Tables):**
+  ```
+  projects
+  ├── databases
+  │   ├── columns
+  │   ├── items (rows)
+  │   └── composite_views
+  │       ├── composite_view_columns
+  │       ├── composite_view_joins
+  │       └── composite_view_custom_data
+  ├── relations
+  ├── formulas
+  ├── import_history
+  └── user_permissions
+  ```
+
+- **Design System:**
+  - CSS variables for theming (light/dark mode)
+  - HSL color system
+  - Primary color: Purple
+  - Consistent spacing and typography
+  - Responsive design (mobile-first)
+  - shadcn/ui component library
+
+- **File Naming Conventions:**
+  - Pages: PascalCase (e.g., `ProjectView.tsx`)
+  - Components: PascalCase (e.g., `DatabaseCard.tsx`)
+  - Hooks: camelCase with `use` prefix (e.g., `useAuth.ts`)
+  - Contexts: PascalCase with `Context` suffix (e.g., `AuthContext.tsx`)
+  - Types: camelCase with `.types.ts` suffix
+  - Utilities: camelCase (e.g., `formatDate.ts`)
+
+- **Code Organization Principles:**
+  - Feature-first organization (e.g., `components/database/`, `components/ai/`)
+  - Shared components in `components/common/`
+  - UI primitives in `components/ui/`
+  - Business logic in hooks and utilities
+  - Type safety everywhere (strict TypeScript)
+  - No `any` types allowed
+
+- **Security:**
+  - Row Level Security (RLS) policies on all tables
+  - JWT-based authentication
+  - Role-based access control (admin/user)
+  - Secure environment variables
+  - Input validation with Zod
+  - SQL injection prevention via parameterized queries
+
+- **Testing:**
+  - Vitest for unit tests
+  - Playwright for E2E tests
+  - Coverage reporting
+
+- **Deployment:**
+  - Docker multi-stage builds
+  - Vercel deployment config
+  - Environment-specific builds
+  - Health checks
+
+Reference this file when making architectural decisions or understanding project context.
+See [supabase.mdc](mdc:.cursor/rules/supabase.mdc) for Supabase-specific patterns.
+See [security.mdc](mdc:.cursor/rules/security.mdc) for security best practices.

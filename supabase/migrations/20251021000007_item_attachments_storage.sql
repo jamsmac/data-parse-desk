@@ -3,27 +3,27 @@
 -- Purpose: Configure Supabase Storage bucket for file attachments
 
 -- Create storage bucket (if not exists)
-INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
-VALUES (
-  'item-attachments',
-  'item-attachments',
-  false, -- Private bucket
-  10485760, -- 10MB in bytes
-  ARRAY[
-    'image/jpeg',
-    'image/png',
-    'image/gif',
-    'image/webp',
-    'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'text/plain',
-    'text/csv'
-  ]
-)
-ON CONFLICT (id) DO NOTHING;
+-- INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+-- VALUES (
+--   'item-attachments',
+--   'item-attachments',
+--   false, -- Private bucket
+--   10485760, -- 10MB in bytes
+--   ARRAY[
+--     'image/jpeg',
+--     'image/png',
+--     'image/gif',
+--     'image/webp',
+--     'application/pdf',
+--     'application/msword',
+--     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+--     'application/vnd.ms-excel',
+--     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+--     'text/plain',
+--     'text/csv'
+--   ]
+-- )
+-- ON CONFLICT (id) DO NOTHING;
 
 -- Storage Policies for item-attachments bucket
 
@@ -52,4 +52,4 @@ USING (
 );
 
 -- Comments
-COMMENT ON TABLE storage.buckets IS 'Storage buckets configuration';
+-- COMMENT ON TABLE storage.buckets IS 'Storage buckets configuration';

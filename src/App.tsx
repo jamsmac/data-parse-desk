@@ -7,6 +7,8 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Loader2 } from "lucide-react";
+import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
+import { InstallPWA as InstallPWAPrompt } from "@/components/pwa/InstallPWA";
 
 // Eagerly load only auth pages for fastest initial load
 import LoginPage from "./pages/LoginPage";
@@ -53,6 +55,8 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <OfflineIndicator />
+      <InstallPWAPrompt />
       <BrowserRouter>
         <AuthProvider>
           <Suspense fallback={<PageLoader />}>

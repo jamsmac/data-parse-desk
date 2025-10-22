@@ -3,10 +3,10 @@
 -- Функция создания базы данных
 CREATE OR REPLACE FUNCTION create_database(
   p_name TEXT,
+  p_user_id UUID,
   p_description TEXT DEFAULT NULL,
   p_icon TEXT DEFAULT NULL,
-  p_color TEXT DEFAULT NULL,
-  p_user_id UUID
+  p_color TEXT DEFAULT NULL
 ) RETURNS JSONB AS $$
 DECLARE
   v_database_id UUID;

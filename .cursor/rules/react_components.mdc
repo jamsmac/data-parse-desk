@@ -1,0 +1,488 @@
+---
+description: React component patterns and best practices for DataParseDesk
+globs: src/**/*.tsx, src/**/*.jsx
+alwaysApply: true
+---
+
+- **Component Structure:**
+  ```typescript
+  // ✅ DO: Proper component organization
+  import { FC, useState } from "react";
+  import { ProjectCardProps } from "@/types/project.types";
+  import { Card } from "@/components/ui/card";
+  import { useProjects } from "@/hooks/useProjects";
+
+  export const ProjectCard: FC<ProjectCardProps> = ({
+    project,
+    onEdit,
+    onDelete
+  }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+
+    // Early returns for loading/error states
+    if (!project) return null;
+
+    return (
+      <Card>
+        {/* Component content */}
+      </Card>
+    );
+  };
+
+  // ❌ DON'T: Default exports for components (except pages)
+  export default function ProjectCard(props) { /* ... */ }
+
+  // ❌ DON'T: Mix concerns
+  export const ProjectCard = () => {
+    // Don't fetch data here - use React Query in parent or custom hook
+    const [data, setData] = useState([]);
+    useEffect(() => { fetchData(); }, []);
+    // ...
+  };
+  ```
+
+- **Lazy Loading Pattern:**
+  ```typescript
+  // ✅ DO: Follow pattern from [App.tsx](mdc:src/App.tsx)
+  import { lazy, Suspense } from "react";
+  import { Loader2 } from "lucide-react";
+
+  // Lazy load pages
+  const Projects = lazy(() => import("./pages/Projects"));
+
+  // PageLoader component
+  const PageLoader = () => (
+    <div className="min-h-screen flex items-center justify-center">
+      <Loader2 className="h-12 w-12 animate-spin text-primary" />
+    </div>
+  );
+
+  // Usage
+  <Suspense fallback={<PageLoader />}>
+    <Projects />
+  </Suspense>
+
+  // ❌ DON'T: Lazy load critical components
+  const Button = lazy(() => import("./ui/button")); // Too small to lazy load
+  const LoginPage = lazy(() => import("./LoginPage")); // Auth pages should be eager
+  ```
+
+- **Props & Types:**
+  ```typescript
+  // ✅ DO: Explicit interface with JSDoc
+  interface DatabaseCardProps {
+    /** Database object to display */
+    database: Database;
+    /** Project ID for navigation */
+    projectId: string;
+    /** Optional edit handler */
+    onEdit?: (id: string) => void;
+    /** Optional delete handler */
+    onDelete?: (id: string) => void;
+    /** Show statistics */
+    showStats?: boolean;
+  }
+
+  export const DatabaseCard: FC<DatabaseCardProps> = ({
+    database,
+    projectId,
+    onEdit,
+    onDelete,
+    showStats = true,
+  }) => {
+    // ...
+  };
+
+  // ❌ DON'T: Implicit or loose types
+  const DatabaseCard = ({ database, projectId, onEdit }: any) => {
+    // Bad: any type, missing documentation
+  };
+  ```
+
+- **State Management:**
+  ```typescript
+  // ✅ DO: React Query for server state
+  import { useQuery } from '@tanstack/react-query';
+
+  const ProjectList = () => {
+    const { data: projects, isLoading, error } = useQuery({
+      queryKey: ['projects'],
+      queryFn: fetchProjects,
+    });
+
+    if (isLoading) return <LoadingSpinner />;
+    if (error) return <ErrorState error={error} />;
+
+    return <ProjectGrid projects={projects} />;
+  };
+
+  // ✅ DO: useState for UI state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'settings'>('overview');
+
+  // ✅ DO: useReducer for complex state
+  type FilterState = {
+    search: string;
+    status: string[];
+    sortBy: 'name' | 'date';
+  };
+
+  type FilterAction =
+    | { type: 'SET_SEARCH'; payload: string }
+    | { type: 'SET_STATUS'; payload: string[] }
+    | { type: 'RESET' };
+
+  const filterReducer = (state: FilterState, action: FilterAction) => {
+    switch (action.type) {
+      case 'SET_SEARCH':
+        return { ...state, search: action.payload };
+      case 'SET_STATUS':
+        return { ...state, status: action.payload };
+      case 'RESET':
+        return initialState;
+      default:
+        return state;
+    }
+  };
+
+  const [filters, dispatch] = useReducer(filterReducer, initialState);
+
+  // ❌ DON'T: useState for server data
+  const [projects, setProjects] = useState([]);
+  useEffect(() => {
+    fetchProjects().then(setProjects); // Use React Query instead!
+  }, []);
+  ```
+
+- **Event Handlers:**
+  ```typescript
+  // ✅ DO: Descriptive handler names
+  const handleProjectCreate = async (data: ProjectInput) => {
+    await createProject.mutateAsync(data);
+  };
+
+  const handleDatabaseDelete = async (id: string) => {
+    if (confirm('Удалить базу данных?')) {
+      await deleteDatabase.mutateAsync(id);
+    }
+  };
+
+  // ✅ DO: Use useCallback for expensive handlers
+  const handleRowSelect = useCallback((rowId: string) => {
+    setSelectedRows(prev => [...prev, rowId]);
+  }, []);
+
+  // ❌ DON'T: Generic names
+  const handle = () => { /* ... */ };
+  const onClick = () => { /* ... */ };
+  ```
+
+- **Conditional Rendering:**
+  ```typescript
+  // ✅ DO: Early returns
+  if (isLoading) return <PageLoader />;
+  if (error) return <ErrorState error={error} />;
+  if (!data || data.length === 0) return <EmptyState />;
+
+  return <DataDisplay data={data} />;
+
+  // ✅ DO: Boolean && for simple conditionals
+  {showStats && <ProjectStats project={project} />}
+
+  // ✅ DO: Ternary for if/else
+  {isExpanded ? <FullDetails /> : <Summary />}
+
+  // ❌ DON'T: Deeply nested conditions
+  return (
+    <div>
+      {isLoading ? (
+        <Loader />
+      ) : error ? (
+        <Error />
+      ) : data ? (
+        data.length > 0 ? (
+          <List />
+        ) : (
+          <Empty />
+        )
+      ) : null}
+    </div>
+  );
+  ```
+
+- **Component Composition:**
+  ```typescript
+  // ✅ DO: Small, focused components
+  const ProjectCard = ({ project }: { project: Project }) => (
+    <Card>
+      <ProjectHeader project={project} />
+      <ProjectStats stats={project.stats} />
+      <ProjectActions projectId={project.id} />
+    </Card>
+  );
+
+  const ProjectHeader = ({ project }: { project: Project }) => (
+    <CardHeader>
+      <h3 className="text-lg font-semibold">{project.name}</h3>
+      {project.description && <p className="text-muted-foreground">{project.description}</p>}
+    </CardHeader>
+  );
+
+  // ❌ DON'T: Monolithic components
+  const ProjectCard = ({ project }) => (
+    <div>
+      {/* 500 lines of mixed logic and UI */}
+    </div>
+  );
+  ```
+
+- **Custom Hooks:**
+  ```typescript
+  // ✅ DO: Extract reusable logic into hooks
+  function useLocalStorage<T>(key: string, initialValue: T) {
+    const [storedValue, setStoredValue] = useState<T>(() => {
+      try {
+        const item = window.localStorage.getItem(key);
+        return item ? JSON.parse(item) : initialValue;
+      } catch {
+        return initialValue;
+      }
+    });
+
+    const setValue = (value: T | ((val: T) => T)) => {
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      window.localStorage.setItem(key, JSON.stringify(valueToStore));
+    };
+
+    return [storedValue, setValue] as const;
+  }
+
+  // Usage
+  const [theme, setTheme] = useLocalStorage('theme', 'dark');
+
+  // ✅ DO: Compose hooks for common patterns
+  function useProject(projectId: string) {
+    const { data: project, isLoading, error } = useQuery({
+      queryKey: ['projects', projectId],
+      queryFn: () => fetchProject(projectId),
+      enabled: !!projectId,
+    });
+
+    const updateProject = useUpdateProject();
+    const deleteProject = useDeleteProject();
+
+    return {
+      project,
+      isLoading,
+      error,
+      updateProject: updateProject.mutate,
+      deleteProject: deleteProject.mutate,
+    };
+  }
+  ```
+
+- **Forms with React Hook Form:**
+  ```typescript
+  // ✅ DO: Use React Hook Form + Zod
+  import { useForm } from 'react-hook-form';
+  import { zodResolver } from '@hookform/resolvers/zod';
+  import { z } from 'zod';
+
+  const projectSchema = z.object({
+    name: z.string().min(1, 'Название обязательно').max(100),
+    description: z.string().optional(),
+  });
+
+  type ProjectFormData = z.infer<typeof projectSchema>;
+
+  function ProjectForm({ onSubmit }: { onSubmit: (data: ProjectFormData) => void }) {
+    const {
+      register,
+      handleSubmit,
+      formState: { errors, isSubmitting },
+      reset,
+    } = useForm<ProjectFormData>({
+      resolver: zodResolver(projectSchema),
+    });
+
+    return (
+      <form onSubmit={handleSubmit(onSubmit)}>
+        <div>
+          <label htmlFor="name">Название</label>
+          <input {...register('name')} />
+          {errors.name && <p className="text-destructive">{errors.name.message}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="description">Описание</label>
+          <textarea {...register('description')} />
+          {errors.description && <p className="text-destructive">{errors.description.message}</p>}
+        </div>
+
+        <button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Создание...' : 'Создать'}
+        </button>
+      </form>
+    );
+  }
+  ```
+
+- **Loading States:**
+  ```typescript
+  // ✅ DO: Use consistent loading components
+  import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+
+  {isLoading && <LoadingSpinner />}
+
+  // ✅ DO: Skeleton loaders for better UX
+  import { Skeleton } from '@/components/ui/skeleton';
+
+  {isLoading ? (
+    <div className="space-y-2">
+      <Skeleton className="h-4 w-full" />
+      <Skeleton className="h-4 w-3/4" />
+      <Skeleton className="h-4 w-1/2" />
+    </div>
+  ) : (
+    <Content />
+  )}
+
+  // ✅ DO: Button loading states
+  <Button disabled={isSubmitting}>
+    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+    {isSubmitting ? 'Сохранение...' : 'Сохранить'}
+  </Button>
+  ```
+
+- **Error Handling:**
+  ```typescript
+  // ✅ DO: Use ErrorState component from components/common
+  import { EmptyState } from '@/components/common/EmptyState';
+
+  if (error) {
+    return (
+      <EmptyState
+        title="Ошибка загрузки"
+        message={error.message || 'Попробуйте позже'}
+        action={{
+          label: 'Повторить',
+          onClick: () => queryClient.invalidateQueries({ queryKey: ['projects'] }),
+        }}
+      />
+    );
+  }
+
+  // ✅ DO: Toast notifications for mutations
+  import { toast } from 'sonner';
+
+  const handleDelete = async () => {
+    try {
+      await deleteProject.mutateAsync(projectId);
+      toast.success('Проект удален');
+    } catch (error) {
+      toast.error('Не удалось удалить проект');
+    }
+  };
+  ```
+
+- **Accessibility:**
+  ```typescript
+  // ✅ DO: Include ARIA labels
+  <button
+    onClick={handleDelete}
+    aria-label={`Удалить проект ${project.name}`}
+    className="text-destructive"
+  >
+    <Trash2 className="h-4 w-4" />
+  </button>
+
+  // ✅ DO: Use semantic HTML
+  <nav aria-label="Основная навигация">
+    <ul role="list">
+      <li><Link to="/projects">Проекты</Link></li>
+      <li><Link to="/analytics">Аналитика</Link></li>
+    </ul>
+  </nav>
+
+  // ✅ DO: Keyboard navigation
+  <div
+    role="button"
+    tabIndex={0}
+    onClick={handleClick}
+    onKeyDown={(e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        handleClick();
+      }
+    }}
+  >
+    Clickable div
+  </div>
+
+  // ❌ DON'T: Divs as buttons without accessibility
+  <div onClick={handleClick}>Click me</div> // Bad!
+  ```
+
+- **Performance Optimization:**
+  ```typescript
+  // ✅ DO: React.memo for expensive re-renders
+  import { memo } from 'react';
+
+  export const ExpensiveComponent = memo(({ data }: Props) => {
+    // Expensive rendering logic
+    return <div>{/* ... */}</div>;
+  });
+
+  // ✅ DO: useMemo for expensive calculations
+  const sortedData = useMemo(() => {
+    return data.sort((a, b) => a.name.localeCompare(b.name));
+  }, [data]);
+
+  // ✅ DO: useCallback for stable callbacks
+  const handleItemClick = useCallback((id: string) => {
+    setSelectedId(id);
+  }, []);
+
+  // ✅ DO: Virtual scrolling for large lists
+  import { useVirtualizer } from '@tanstack/react-virtual';
+
+  const rowVirtualizer = useVirtualizer({
+    count: items.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 50,
+  });
+  ```
+
+- **Component Documentation:**
+  ```typescript
+  /**
+   * ProjectCard displays project information with actions.
+   *
+   * Features:
+   * - Shows project name, description, and statistics
+   * - Edit and delete actions
+   * - Responsive design
+   *
+   * @example
+   * ```tsx
+   * <ProjectCard
+   *   project={project}
+   *   onEdit={handleEdit}
+   *   onDelete={handleDelete}
+   * />
+   * ```
+   */
+  export const ProjectCard: FC<ProjectCardProps> = (props) => {
+    // ...
+  };
+  ```
+
+- **Common Components:**
+  - Use [EmptyState](mdc:src/components/common/EmptyState.tsx) for empty data
+  - Use [LoadingSpinner](mdc:src/components/common/LoadingSpinner.tsx) for loading
+  - Use [ColorPicker](mdc:src/components/common/ColorPicker.tsx) for color selection
+  - Use [IconPicker](mdc:src/components/common/IconPicker.tsx) for icon selection
+  - Use [VirtualTable](mdc:src/components/common/VirtualTable.tsx) for large tables
+
+Follow [styling.mdc](mdc:.cursor/rules/styling.mdc) for styling patterns.
+Follow [typescript.mdc](mdc:.cursor/rules/typescript.mdc) for type safety.
