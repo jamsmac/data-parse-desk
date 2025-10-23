@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { BarChart3, TrendingUp, Activity, Database, Users, FileText } from 'lucide-react';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { ChartWrapper, LazyLineChart, LazyBarChart, LazyPieChart, Line, Bar, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from '@/components/charts/LazyChart';
 import { useAuth } from '@/contexts/AuthContext';
 
 const COLORS = ['#1E40AF', '#3B82F6', '#60A5FA', '#93C5FD', '#DBEAFE'];
@@ -178,17 +178,19 @@ export default function AdvancedAnalytics() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={dailyActivity}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis />
-                    <Tooltip />
-                    <Legend />
-                    <Bar dataKey="records" fill="#1E40AF" name="Записи" />
-                    <Bar dataKey="imports" fill="#60A5FA" name="Импорты" />
-                  </BarChart>
-                </ResponsiveContainer>
+                <ChartWrapper height={300}>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LazyBarChart data={dailyActivity}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="records" fill="#1E40AF" name="Записи" />
+                      <Bar dataKey="imports" fill="#60A5FA" name="Импорты" />
+                    </LazyBarChart>
+                  </ResponsiveContainer>
+                </ChartWrapper>
               </CardContent>
             </Card>
           </TabsContent>
@@ -202,25 +204,27 @@ export default function AdvancedAnalytics() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={projectDistribution}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {projectDistribution.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
+                <ChartWrapper height={300}>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LazyPieChart>
+                      <Pie
+                        data={projectDistribution}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {projectDistribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </LazyPieChart>
+                  </ResponsiveContainer>
+                </ChartWrapper>
               </CardContent>
             </Card>
           </TabsContent>

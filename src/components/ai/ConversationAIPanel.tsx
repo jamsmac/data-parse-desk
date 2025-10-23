@@ -11,7 +11,7 @@ import { Sparkles, Send, Loader2, Plus, MessageSquare, Mic, BarChart3, Wrench } 
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
-import { LineChart, Line, BarChart, Bar, PieChart, Pie, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
+import { ChartWrapper, LazyLineChart, LazyBarChart, LazyPieChart, LazyAreaChart, Line, Bar, Pie, Area, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from '@/components/charts/LazyChart';
 
 interface ConversationAIPanelProps {
   open: boolean;
@@ -538,109 +538,117 @@ function ChartRenderer({ config }: { config: any }) {
 
   if (config.type === 'line') {
     return (
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-          <XAxis dataKey={config.x_column} stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
-          <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
-          <Tooltip 
-            contentStyle={{ 
-              backgroundColor: 'hsl(var(--card))',
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '8px',
-              fontSize: '12px'
-            }}
-          />
-          <Legend wrapperStyle={{ fontSize: '12px' }} />
-          <Line 
-            type="monotone" 
-            dataKey={config.y_column} 
-            stroke="hsl(var(--primary))" 
-            strokeWidth={2}
-            dot={{ fill: 'hsl(var(--primary))' }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+      <ChartWrapper height={300}>
+        <ResponsiveContainer width="100%" height={300}>
+          <LazyLineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis dataKey={config.x_column} stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
+            <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '8px',
+                fontSize: '12px'
+              }}
+            />
+            <Legend wrapperStyle={{ fontSize: '12px' }} />
+            <Line
+              type="monotone"
+              dataKey={config.y_column}
+              stroke="hsl(var(--primary))"
+              strokeWidth={2}
+              dot={{ fill: 'hsl(var(--primary))' }}
+            />
+          </LazyLineChart>
+        </ResponsiveContainer>
+      </ChartWrapper>
     );
   }
 
   if (config.type === 'bar') {
     return (
-      <ResponsiveContainer width="100%" height={300}>
-        <BarChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-          <XAxis dataKey={config.x_column} stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
-          <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
-          <Tooltip 
-            contentStyle={{ 
-              backgroundColor: 'hsl(var(--card))',
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '8px',
-              fontSize: '12px'
-            }}
-          />
-          <Legend wrapperStyle={{ fontSize: '12px' }} />
-          <Bar dataKey={config.y_column} fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-        </BarChart>
-      </ResponsiveContainer>
+      <ChartWrapper height={300}>
+        <ResponsiveContainer width="100%" height={300}>
+          <LazyBarChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis dataKey={config.x_column} stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
+            <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '8px',
+                fontSize: '12px'
+              }}
+            />
+            <Legend wrapperStyle={{ fontSize: '12px' }} />
+            <Bar dataKey={config.y_column} fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+          </LazyBarChart>
+        </ResponsiveContainer>
+      </ChartWrapper>
     );
   }
 
   if (config.type === 'pie') {
     return (
-      <ResponsiveContainer width="100%" height={300}>
-        <PieChart>
-          <Pie
-            data={chartData}
-            dataKey={config.y_column}
-            nameKey={config.x_column}
-            cx="50%"
-            cy="50%"
-            outerRadius={100}
-            label
-          >
-            {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-            ))}
-          </Pie>
-          <Tooltip 
-            contentStyle={{ 
-              backgroundColor: 'hsl(var(--card))',
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '8px',
-              fontSize: '12px'
-            }}
-          />
-          <Legend wrapperStyle={{ fontSize: '12px' }} />
-        </PieChart>
-      </ResponsiveContainer>
+      <ChartWrapper height={300}>
+        <ResponsiveContainer width="100%" height={300}>
+          <LazyPieChart>
+            <Pie
+              data={chartData}
+              dataKey={config.y_column}
+              nameKey={config.x_column}
+              cx="50%"
+              cy="50%"
+              outerRadius={100}
+              label
+            >
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '8px',
+                fontSize: '12px'
+              }}
+            />
+            <Legend wrapperStyle={{ fontSize: '12px' }} />
+          </LazyPieChart>
+        </ResponsiveContainer>
+      </ChartWrapper>
     );
   }
 
   if (config.type === 'area') {
     return (
-      <ResponsiveContainer width="100%" height={300}>
-        <AreaChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-          <XAxis dataKey={config.x_column} stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
-          <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
-          <Tooltip 
-            contentStyle={{ 
-              backgroundColor: 'hsl(var(--card))',
-              border: '1px solid hsl(var(--border))',
-              borderRadius: '8px',
-              fontSize: '12px'
-            }}
-          />
-          <Legend wrapperStyle={{ fontSize: '12px' }} />
-          <Area 
-            type="monotone" 
-            dataKey={config.y_column} 
-            stroke="hsl(var(--primary))" 
-            fill="hsl(var(--primary) / 0.2)"
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+      <ChartWrapper height={300}>
+        <ResponsiveContainer width="100%" height={300}>
+          <LazyAreaChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis dataKey={config.x_column} stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
+            <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} />
+            <Tooltip
+              contentStyle={{
+                backgroundColor: 'hsl(var(--card))',
+                border: '1px solid hsl(var(--border))',
+                borderRadius: '8px',
+                fontSize: '12px'
+              }}
+            />
+            <Legend wrapperStyle={{ fontSize: '12px' }} />
+            <Area
+              type="monotone"
+              dataKey={config.y_column}
+              stroke="hsl(var(--primary))"
+              fill="hsl(var(--primary) / 0.2)"
+            />
+          </LazyAreaChart>
+        </ResponsiveContainer>
+      </ChartWrapper>
     );
   }
 

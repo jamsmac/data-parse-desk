@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { ChartWrapper, LazyBarChart, LazyLineChart, LazyPieChart, Bar, Line, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from '@/components/charts/LazyChart';
 import { Database, FileUp, Zap, TrendingUp, DollarSign, Activity } from 'lucide-react';
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
@@ -201,26 +201,28 @@ export const SystemStats = () => {
               <CardDescription>Распределение использования AI агентов</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={aiRequestsByType}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={(entry) => entry.name}
-                    outerRadius={80}
-                    fill="hsl(var(--primary))"
-                    dataKey="value"
-                  >
-                    {aiRequestsByType.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+              <ChartWrapper height={300}>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LazyPieChart>
+                    <Pie
+                      data={aiRequestsByType}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={(entry) => entry.name}
+                      outerRadius={80}
+                      fill="hsl(var(--primary))"
+                      dataKey="value"
+                    >
+                      {aiRequestsByType.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </LazyPieChart>
+                </ResponsiveContainer>
+              </ChartWrapper>
             </CardContent>
           </Card>
         )}
@@ -233,16 +235,18 @@ export const SystemStats = () => {
               <CardDescription>Последние 7 дней</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={uploadTrend}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Bar dataKey="rows" fill="hsl(var(--primary))" name="Записей" />
-                </BarChart>
-              </ResponsiveContainer>
+              <ChartWrapper height={300}>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LazyBarChart data={uploadTrend}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="rows" fill="hsl(var(--primary))" name="Записей" />
+                  </LazyBarChart>
+                </ResponsiveContainer>
+              </ChartWrapper>
             </CardContent>
           </Card>
         )}
@@ -255,22 +259,24 @@ export const SystemStats = () => {
               <CardDescription>Последние транзакции</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={creditsTrend}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <Tooltip />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="amount"
-                    stroke="hsl(var(--primary))"
-                    name="Кредиты"
-                    strokeWidth={2}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              <ChartWrapper height={300}>
+                <ResponsiveContainer width="100%" height={300}>
+                  <LazyLineChart data={creditsTrend}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="date" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Line
+                      type="monotone"
+                      dataKey="amount"
+                      stroke="hsl(var(--primary))"
+                      name="Кредиты"
+                      strokeWidth={2}
+                    />
+                  </LazyLineChart>
+                </ResponsiveContainer>
+              </ChartWrapper>
             </CardContent>
           </Card>
         )}
