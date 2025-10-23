@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/421</span>
+                <span class='fraction'>0/435</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/421</span>
+                <span class='fraction'>0/435</span>
             </div>
         
             
@@ -484,7 +484,35 @@
 <a name='L419'></a><a href='#L419'>419</a>
 <a name='L420'></a><a href='#L420'>420</a>
 <a name='L421'></a><a href='#L421'>421</a>
-<a name='L422'></a><a href='#L422'>422</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L422'></a><a href='#L422'>422</a>
+<a name='L423'></a><a href='#L423'>423</a>
+<a name='L424'></a><a href='#L424'>424</a>
+<a name='L425'></a><a href='#L425'>425</a>
+<a name='L426'></a><a href='#L426'>426</a>
+<a name='L427'></a><a href='#L427'>427</a>
+<a name='L428'></a><a href='#L428'>428</a>
+<a name='L429'></a><a href='#L429'>429</a>
+<a name='L430'></a><a href='#L430'>430</a>
+<a name='L431'></a><a href='#L431'>431</a>
+<a name='L432'></a><a href='#L432'>432</a>
+<a name='L433'></a><a href='#L433'>433</a>
+<a name='L434'></a><a href='#L434'>434</a>
+<a name='L435'></a><a href='#L435'>435</a>
+<a name='L436'></a><a href='#L436'>436</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -909,6 +937,8 @@
 <span class="cstat-no" title="statement not covered" >// AUTOMATION TYPES</span>
 <span class="cstat-no" title="statement not covered" >// =====================================================</span>
 <span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >import { ColumnValue, FilterValue, TableRow, Database, TableSchema } from './database';</span>
+<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >export interface ScheduledTask {</span>
 <span class="cstat-no" title="statement not covered" >  id: string;</span>
 <span class="cstat-no" title="statement not covered" >  database_id: string;</span>
@@ -950,11 +980,17 @@
 <span class="cstat-no" title="statement not covered" >  notify_on_error: boolean;</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export interface FilterCondition {</span>
+<span class="cstat-no" title="statement not covered" >  column: string;</span>
+<span class="cstat-no" title="statement not covered" >  operator: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than' | 'in' | 'between';</span>
+<span class="cstat-no" title="statement not covered" >  value: FilterValue;</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >export interface ExportTaskConfig {</span>
 <span class="cstat-no" title="statement not covered" >  type: 'export';</span>
 <span class="cstat-no" title="statement not covered" >  table_id: string;</span>
 <span class="cstat-no" title="statement not covered" >  format: 'csv' | 'xlsx' | 'json';</span>
-<span class="cstat-no" title="statement not covered" >  filters?: any[];</span>
+<span class="cstat-no" title="statement not covered" >  filters?: FilterCondition[];</span>
 <span class="cstat-no" title="statement not covered" >  destination: ExportDestination;</span>
 <span class="cstat-no" title="statement not covered" >  notify_on_complete: boolean;</span>
 <span class="cstat-no" title="statement not covered" >}</span>
@@ -970,7 +1006,7 @@
 <span class="cstat-no" title="statement not covered" >export interface WorkflowTaskConfig {</span>
 <span class="cstat-no" title="statement not covered" >  type: 'workflow';</span>
 <span class="cstat-no" title="statement not covered" >  workflow_id: string;</span>
-<span class="cstat-no" title="statement not covered" >  input_data?: Record&lt;string, any&gt;;</span>
+<span class="cstat-no" title="statement not covered" >  input_data?: Record&lt;string, ColumnValue&gt;;</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >export interface ReportTaskConfig {</span>
@@ -1048,15 +1084,15 @@
 <span class="cstat-no" title="statement not covered" >export interface RecordTriggerConfig {</span>
 <span class="cstat-no" title="statement not covered" >  type: 'record_created' | 'record_updated' | 'record_deleted';</span>
 <span class="cstat-no" title="statement not covered" >  table_id: string;</span>
-<span class="cstat-no" title="statement not covered" >  filters?: any[];</span>
+<span class="cstat-no" title="statement not covered" >  filters?: FilterCondition[];</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >export interface FieldChangedTriggerConfig {</span>
 <span class="cstat-no" title="statement not covered" >  type: 'field_changed';</span>
 <span class="cstat-no" title="statement not covered" >  table_id: string;</span>
 <span class="cstat-no" title="statement not covered" >  column_name: string;</span>
-<span class="cstat-no" title="statement not covered" >  from_value?: any;</span>
-<span class="cstat-no" title="statement not covered" >  to_value?: any;</span>
+<span class="cstat-no" title="statement not covered" >  from_value?: ColumnValue;</span>
+<span class="cstat-no" title="statement not covered" >  to_value?: ColumnValue;</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >export interface WorkflowCondition {</span>
@@ -1064,7 +1100,7 @@
 <span class="cstat-no" title="statement not covered" >  type: 'field_equals' | 'field_contains' | 'field_greater_than' | 'field_less_than' | 'custom_logic';</span>
 <span class="cstat-no" title="statement not covered" >  field?: string;</span>
 <span class="cstat-no" title="statement not covered" >  operator?: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'greater_than' | 'less_than' | 'is_empty' | 'is_not_empty';</span>
-<span class="cstat-no" title="statement not covered" >  value?: any;</span>
+<span class="cstat-no" title="statement not covered" >  value?: ColumnValue;</span>
 <span class="cstat-no" title="statement not covered" >  logic?: string; // JavaScript expression</span>
 <span class="cstat-no" title="statement not covered" >  conjunction: 'and' | 'or';</span>
 <span class="cstat-no" title="statement not covered" >}</span>
@@ -1091,14 +1127,14 @@
 <span class="cstat-no" title="statement not covered" >export interface CreateRecordActionConfig {</span>
 <span class="cstat-no" title="statement not covered" >  type: 'create_record';</span>
 <span class="cstat-no" title="statement not covered" >  table_id: string;</span>
-<span class="cstat-no" title="statement not covered" >  data: Record&lt;string, any&gt;;</span>
+<span class="cstat-no" title="statement not covered" >  data: Partial&lt;TableRow&gt;;</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >export interface UpdateRecordActionConfig {</span>
 <span class="cstat-no" title="statement not covered" >  type: 'update_record';</span>
 <span class="cstat-no" title="statement not covered" >  table_id: string;</span>
 <span class="cstat-no" title="statement not covered" >  record_id: string;</span>
-<span class="cstat-no" title="statement not covered" >  data: Record&lt;string, any&gt;;</span>
+<span class="cstat-no" title="statement not covered" >  data: Partial&lt;TableRow&gt;;</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >export interface DeleteRecordActionConfig {</span>
@@ -1131,7 +1167,7 @@
 <span class="cstat-no" title="statement not covered" >  url: string;</span>
 <span class="cstat-no" title="statement not covered" >  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';</span>
 <span class="cstat-no" title="statement not covered" >  headers?: Record&lt;string, string&gt;;</span>
-<span class="cstat-no" title="statement not covered" >  body?: any;</span>
+<span class="cstat-no" title="statement not covered" >  body?: Record&lt;string, unknown&gt; | string;</span>
 <span class="cstat-no" title="statement not covered" >  timeout?: number; // seconds</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
@@ -1186,13 +1222,19 @@
 <span class="cstat-no" title="statement not covered" >  | 'table.deleted'</span>
 <span class="cstat-no" title="statement not covered" >  | 'database.updated';</span>
 <span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export interface WebhookPayload {</span>
+<span class="cstat-no" title="statement not covered" >  event: WebhookEvent;</span>
+<span class="cstat-no" title="statement not covered" >  timestamp: string;</span>
+<span class="cstat-no" title="statement not covered" >  data: TableRow | Database | TableSchema;</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >export interface WebhookLog {</span>
 <span class="cstat-no" title="statement not covered" >  id: string;</span>
 <span class="cstat-no" title="statement not covered" >  webhook_id: string;</span>
 <span class="cstat-no" title="statement not covered" >  event: WebhookEvent;</span>
-<span class="cstat-no" title="statement not covered" >  payload: any;</span>
+<span class="cstat-no" title="statement not covered" >  payload: WebhookPayload;</span>
 <span class="cstat-no" title="statement not covered" >  response_status?: number;</span>
-<span class="cstat-no" title="statement not covered" >  response_body?: any;</span>
+<span class="cstat-no" title="statement not covered" >  response_body?: Record&lt;string, unknown&gt; | string;</span>
 <span class="cstat-no" title="statement not covered" >  error_message?: string;</span>
 <span class="cstat-no" title="statement not covered" >  created_at: string;</span>
 <span class="cstat-no" title="statement not covered" >}</span>
@@ -1291,7 +1333,7 @@
 <span class="cstat-no" title="statement not covered" >  id: string;</span>
 <span class="cstat-no" title="statement not covered" >  workflow_id: string;</span>
 <span class="cstat-no" title="statement not covered" >  trigger_type: string;</span>
-<span class="cstat-no" title="statement not covered" >  trigger_data?: any;</span>
+<span class="cstat-no" title="statement not covered" >  trigger_data?: Record&lt;string, ColumnValue&gt;;</span>
 <span class="cstat-no" title="statement not covered" >  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';</span>
 <span class="cstat-no" title="statement not covered" >  started_at: string;</span>
 <span class="cstat-no" title="statement not covered" >  completed_at?: string;</span>
@@ -1308,8 +1350,8 @@
 <span class="cstat-no" title="statement not covered" >  started_at?: string;</span>
 <span class="cstat-no" title="statement not covered" >  completed_at?: string;</span>
 <span class="cstat-no" title="statement not covered" >  duration_ms?: number;</span>
-<span class="cstat-no" title="statement not covered" >  input?: any;</span>
-<span class="cstat-no" title="statement not covered" >  output?: any;</span>
+<span class="cstat-no" title="statement not covered" >  input?: Record&lt;string, ColumnValue&gt;;</span>
+<span class="cstat-no" title="statement not covered" >  output?: Record&lt;string, ColumnValue&gt;;</span>
 <span class="cstat-no" title="statement not covered" >  error_message?: string;</span>
 <span class="cstat-no" title="statement not covered" >  retry_count?: number;</span>
 <span class="cstat-no" title="statement not covered" >}</span>
@@ -1333,7 +1375,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-23T11:31:47.039Z
+                at 2025-10-23T19:41:28.467Z
             </div>
         <script src="../prettify.js"></script>
         <script>

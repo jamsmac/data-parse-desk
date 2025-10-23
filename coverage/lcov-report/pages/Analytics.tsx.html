@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/208</span>
+                <span class='fraction'>0/209</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/208</span>
+                <span class='fraction'>0/209</span>
             </div>
         
             
@@ -271,7 +271,9 @@
 <a name='L206'></a><a href='#L206'>206</a>
 <a name='L207'></a><a href='#L207'>207</a>
 <a name='L208'></a><a href='#L208'>208</a>
-<a name='L209'></a><a href='#L209'>209</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L209'></a><a href='#L209'>209</a>
+<a name='L210'></a><a href='#L210'>210</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -579,8 +581,8 @@
 <span class="cstat-no" title="statement not covered" >  }, []);</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  return (</span>
-<span class="cstat-no" title="statement not covered" >    &lt;div className="container mx-auto p-6 space-y-6"&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;div className="flex items-center justify-between"&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;main id="main-content" className="container mx-auto p-6 space-y-6"&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;header className="flex items-center justify-between"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;div&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;h1 className="text-3xl font-bold"&gt;Аналитика&lt;/h1&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;p className="text-muted-foreground mt-2"&gt;</span>
@@ -590,8 +592,8 @@
 <span class="cstat-no" title="statement not covered" >        &lt;div className="flex gap-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;Popover&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;PopoverTrigger asChild&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;CalendarIcon className="mr-2 h-4 w-4" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Button variant="outline" aria-label="Выбрать период анализа"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;CalendarIcon className="mr-2 h-4 w-4" aria-hidden="true" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                {dateRange?.from ? (</span>
 <span class="cstat-no" title="statement not covered" >                  dateRange.to ? (</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;&gt;</span>
@@ -614,15 +616,15 @@
 <span class="cstat-no" title="statement not covered" >              /&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/PopoverContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/Popover&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Button onClick={() =&gt; handleExportPivot(mockData.map(d =&gt; Object.values(d)))}&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;Download className="mr-2 h-4 w-4" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;Button onClick={() =&gt; handleExportPivot(mockData.map(d =&gt; Object.values(d)))} aria-label="Экспортировать данные в CSV"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Download className="mr-2 h-4 w-4" aria-hidden="true" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >            Экспорт CSV</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;/header&gt;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >      &lt;Tabs value={activeTab} onValueChange={setActiveTab}&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;TabsList className="grid w-full grid-cols-5"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;TabsList className="grid w-full grid-cols-5" role="tablist" aria-label="Разделы аналитики"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;TabsTrigger value="stats"&gt;Статистика&lt;/TabsTrigger&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;TabsTrigger value="gallery"&gt;Галерея&lt;/TabsTrigger&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;TabsTrigger value="builder"&gt;Конструктор графиков&lt;/TabsTrigger&gt;</span>
@@ -670,21 +672,22 @@
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >      {/* Saved Charts Summary */}</span>
 <span class="cstat-no" title="statement not covered" >      {savedCharts.length &gt; 0 &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >        &lt;div className="mt-8 p-4 bg-secondary/50 rounded-lg"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;section className="mt-8 p-4 bg-secondary/50 rounded-lg" aria-label="Сохраненные графики"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;h3 className="font-semibold mb-2"&gt;Сохраненные графики ({savedCharts.length})&lt;/h3&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="flex flex-wrap gap-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="flex flex-wrap gap-2" role="list"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            {savedCharts.map((chart) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div</span>
 <span class="cstat-no" title="statement not covered" >                key={chart.id}</span>
 <span class="cstat-no" title="statement not covered" >                className="px-3 py-1 bg-background rounded-md text-sm border"</span>
+<span class="cstat-no" title="statement not covered" >                role="listitem"</span>
 <span class="cstat-no" title="statement not covered" >              &gt;</span>
 <span class="cstat-no" title="statement not covered" >                {chart.name}</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            ))}</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;/section&gt;</span>
 <span class="cstat-no" title="statement not covered" >      )}</span>
-<span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;/main&gt;</span>
 <span class="cstat-no" title="statement not covered" >  );</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;</pre></td></tr></table></pre>
@@ -694,7 +697,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-23T11:31:47.039Z
+                at 2025-10-23T19:41:28.467Z
             </div>
         <script src="../prettify.js"></script>
         <script>

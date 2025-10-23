@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/171</span>
+                <span class='fraction'>0/175</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/171</span>
+                <span class='fraction'>0/175</span>
             </div>
         
             
@@ -234,7 +234,15 @@
 <a name='L169'></a><a href='#L169'>169</a>
 <a name='L170'></a><a href='#L170'>170</a>
 <a name='L171'></a><a href='#L171'>171</a>
-<a name='L172'></a><a href='#L172'>172</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L172'></a><a href='#L172'>172</a>
+<a name='L173'></a><a href='#L173'>173</a>
+<a name='L174'></a><a href='#L174'>174</a>
+<a name='L175'></a><a href='#L175'>175</a>
+<a name='L176'></a><a href='#L176'>176</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -499,42 +507,45 @@
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;div className="min-h-screen flex flex-col bg-background"&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;Header /&gt;</span>
-<span class="cstat-no" title="statement not covered" >      </span>
-<span class="cstat-no" title="statement not covered" >      &lt;main className="flex-1 container mx-auto px-4 py-8"&gt;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >      &lt;main id="main-content" className="flex-1 container mx-auto px-4 py-8"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        {/* Заголовок */}</span>
-<span class="cstat-no" title="statement not covered" >        &lt;div className="flex items-center justify-between mb-8"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;header className="flex items-center justify-between mb-8"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;h1 className="text-3xl font-bold"&gt;Проекты&lt;/h1&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;p className="text-muted-foreground mt-1"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              Управляйте своими проектами и базами данных</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Button onClick={() =&gt; setIsCreateDialogOpen(true)}&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;Plus className="h-4 w-4 mr-2" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;Button onClick={() =&gt; setIsCreateDialogOpen(true)} aria-label="Создать новый проект"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Plus className="h-4 w-4 mr-2" aria-hidden="true" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >            Создать проект</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/Button&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;/header&gt;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >        {/* Поиск */}</span>
-<span class="cstat-no" title="statement not covered" >        &lt;div className="mb-6"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;section className="mb-6" aria-label="Поиск проектов"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="relative max-w-md"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;Input</span>
+<span class="cstat-no" title="statement not covered" >              type="search"</span>
 <span class="cstat-no" title="statement not covered" >              placeholder="Поиск проектов..."</span>
 <span class="cstat-no" title="statement not covered" >              value={searchQuery}</span>
 <span class="cstat-no" title="statement not covered" >              onChange={(e) =&gt; setSearchQuery(e.target.value)}</span>
 <span class="cstat-no" title="statement not covered" >              className="pl-10"</span>
+<span class="cstat-no" title="statement not covered" >              aria-label="Поиск проектов по названию"</span>
 <span class="cstat-no" title="statement not covered" >            /&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;/section&gt;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >        {/* Список проектов */}</span>
+<span class="cstat-no" title="statement not covered" >        &lt;section aria-label="Список проектов"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        {isLoading ? (</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="text-center py-12"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;p className="text-muted-foreground"&gt;Загрузка проектов...&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        ) : filteredProjects &amp;&amp; filteredProjects.length &gt; 0 ? (</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" role="list"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            {filteredProjects.map((project) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >              &lt;ProjectCard</span>
 <span class="cstat-no" title="statement not covered" >                key={project.id}</span>
@@ -551,18 +562,19 @@
 <span class="cstat-no" title="statement not covered" >            ))}</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        ) : (</span>
-<span class="cstat-no" title="statement not covered" >          &lt;div className="text-center py-12"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="text-center py-12" role="status"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;p className="text-muted-foreground mb-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              {searchQuery ? 'Проекты не найдены' : 'У вас пока нет проектов'}</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >            {!searchQuery &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Button onClick={() =&gt; setIsCreateDialogOpen(true)}&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;Plus className="h-4 w-4 mr-2" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Button onClick={() =&gt; setIsCreateDialogOpen(true)} aria-label="Создать первый проект"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;Plus className="h-4 w-4 mr-2" aria-hidden="true" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                Создать первый проект</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >            )}</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        )}</span>
+<span class="cstat-no" title="statement not covered" >        &lt;/section&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/main&gt;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >      {/* Диалог создания проекта */}</span>
@@ -583,7 +595,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-23T11:31:46.902Z
+                at 2025-10-23T19:41:28.321Z
             </div>
         <script src="../prettify.js"></script>
         <script>

@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/302</span>
+                <span class='fraction'>0/308</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/302</span>
+                <span class='fraction'>0/308</span>
             </div>
         
             
@@ -365,7 +365,19 @@
 <a name='L300'></a><a href='#L300'>300</a>
 <a name='L301'></a><a href='#L301'>301</a>
 <a name='L302'></a><a href='#L302'>302</a>
-<a name='L303'></a><a href='#L303'>303</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L303'></a><a href='#L303'>303</a>
+<a name='L304'></a><a href='#L304'>304</a>
+<a name='L305'></a><a href='#L305'>305</a>
+<a name='L306'></a><a href='#L306'>306</a>
+<a name='L307'></a><a href='#L307'>307</a>
+<a name='L308'></a><a href='#L308'>308</a>
+<a name='L309'></a><a href='#L309'>309</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -671,7 +683,7 @@
 <span class="cstat-no" title="statement not covered" >import { supabase } from '@/integrations/supabase/client';</span>
 <span class="cstat-no" title="statement not covered" >import { useAuth } from '@/contexts/AuthContext';</span>
 <span class="cstat-no" title="statement not covered" >import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';</span>
-<span class="cstat-no" title="statement not covered" >import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';</span>
+<span class="cstat-no" title="statement not covered" >import { ChartWrapper, LazyBarChart, LazyLineChart, LazyPieChart, Bar, Line, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from '@/components/charts/LazyChart';</span>
 <span class="cstat-no" title="statement not covered" >import { Database, FileUp, Zap, TrendingUp, DollarSign, Activity } from 'lucide-react';</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];</span>
@@ -870,26 +882,28 @@
 <span class="cstat-no" title="statement not covered" >              &lt;CardDescription&gt;Распределение использования AI агентов&lt;/CardDescription&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;CardContent&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;ResponsiveContainer width="100%" height={300}&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;PieChart&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;Pie</span>
-<span class="cstat-no" title="statement not covered" >                    data={aiRequestsByType}</span>
-<span class="cstat-no" title="statement not covered" >                    cx="50%"</span>
-<span class="cstat-no" title="statement not covered" >                    cy="50%"</span>
-<span class="cstat-no" title="statement not covered" >                    labelLine={false}</span>
-<span class="cstat-no" title="statement not covered" >                    label={(entry) =&gt; entry.name}</span>
-<span class="cstat-no" title="statement not covered" >                    outerRadius={80}</span>
-<span class="cstat-no" title="statement not covered" >                    fill="hsl(var(--primary))"</span>
-<span class="cstat-no" title="statement not covered" >                    dataKey="value"</span>
-<span class="cstat-no" title="statement not covered" >                  &gt;</span>
-<span class="cstat-no" title="statement not covered" >                    {aiRequestsByType.map((entry, index) =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >                      &lt;Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    ))}</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;/Pie&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;Tooltip /&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;Legend /&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;/PieChart&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/ResponsiveContainer&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;ChartWrapper height={300}&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;ResponsiveContainer width="100%" height={300}&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;LazyPieChart&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;Pie</span>
+<span class="cstat-no" title="statement not covered" >                      data={aiRequestsByType}</span>
+<span class="cstat-no" title="statement not covered" >                      cx="50%"</span>
+<span class="cstat-no" title="statement not covered" >                      cy="50%"</span>
+<span class="cstat-no" title="statement not covered" >                      labelLine={false}</span>
+<span class="cstat-no" title="statement not covered" >                      label={(entry) =&gt; entry.name}</span>
+<span class="cstat-no" title="statement not covered" >                      outerRadius={80}</span>
+<span class="cstat-no" title="statement not covered" >                      fill="hsl(var(--primary))"</span>
+<span class="cstat-no" title="statement not covered" >                      dataKey="value"</span>
+<span class="cstat-no" title="statement not covered" >                    &gt;</span>
+<span class="cstat-no" title="statement not covered" >                      {aiRequestsByType.map((entry, index) =&gt; (</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                      ))}</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;/Pie&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;Tooltip /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;Legend /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;/LazyPieChart&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;/ResponsiveContainer&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/ChartWrapper&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/CardContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/Card&gt;</span>
 <span class="cstat-no" title="statement not covered" >        )}</span>
@@ -902,16 +916,18 @@
 <span class="cstat-no" title="statement not covered" >              &lt;CardDescription&gt;Последние 7 дней&lt;/CardDescription&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;CardContent&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;ResponsiveContainer width="100%" height={300}&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;BarChart data={uploadTrend}&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;CartesianGrid strokeDasharray="3 3" /&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;XAxis dataKey="date" /&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;YAxis /&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;Tooltip /&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;Legend /&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;Bar dataKey="rows" fill="hsl(var(--primary))" name="Записей" /&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;/BarChart&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/ResponsiveContainer&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;ChartWrapper height={300}&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;ResponsiveContainer width="100%" height={300}&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;LazyBarChart data={uploadTrend}&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;CartesianGrid strokeDasharray="3 3" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;XAxis dataKey="date" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;YAxis /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;Tooltip /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;Legend /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;Bar dataKey="rows" fill="hsl(var(--primary))" name="Записей" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;/LazyBarChart&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;/ResponsiveContainer&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/ChartWrapper&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/CardContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/Card&gt;</span>
 <span class="cstat-no" title="statement not covered" >        )}</span>
@@ -924,22 +940,24 @@
 <span class="cstat-no" title="statement not covered" >              &lt;CardDescription&gt;Последние транзакции&lt;/CardDescription&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;CardContent&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;ResponsiveContainer width="100%" height={300}&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;LineChart data={creditsTrend}&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;CartesianGrid strokeDasharray="3 3" /&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;XAxis dataKey="date" /&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;YAxis /&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;Tooltip /&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;Legend /&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;Line</span>
-<span class="cstat-no" title="statement not covered" >                    type="monotone"</span>
-<span class="cstat-no" title="statement not covered" >                    dataKey="amount"</span>
-<span class="cstat-no" title="statement not covered" >                    stroke="hsl(var(--primary))"</span>
-<span class="cstat-no" title="statement not covered" >                    name="Кредиты"</span>
-<span class="cstat-no" title="statement not covered" >                    strokeWidth={2}</span>
-<span class="cstat-no" title="statement not covered" >                  /&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;/LineChart&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/ResponsiveContainer&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;ChartWrapper height={300}&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;ResponsiveContainer width="100%" height={300}&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;LazyLineChart data={creditsTrend}&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;CartesianGrid strokeDasharray="3 3" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;XAxis dataKey="date" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;YAxis /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;Tooltip /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;Legend /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;Line</span>
+<span class="cstat-no" title="statement not covered" >                      type="monotone"</span>
+<span class="cstat-no" title="statement not covered" >                      dataKey="amount"</span>
+<span class="cstat-no" title="statement not covered" >                      stroke="hsl(var(--primary))"</span>
+<span class="cstat-no" title="statement not covered" >                      name="Кредиты"</span>
+<span class="cstat-no" title="statement not covered" >                      strokeWidth={2}</span>
+<span class="cstat-no" title="statement not covered" >                    /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;/LazyLineChart&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;/ResponsiveContainer&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/ChartWrapper&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/CardContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/Card&gt;</span>
 <span class="cstat-no" title="statement not covered" >        )}</span>
@@ -976,7 +994,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-23T11:31:47.039Z
+                at 2025-10-23T19:41:28.467Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

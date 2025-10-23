@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/181</span>
+                <span class='fraction'>0/189</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/181</span>
+                <span class='fraction'>0/189</span>
             </div>
         
             
@@ -244,7 +244,23 @@
 <a name='L179'></a><a href='#L179'>179</a>
 <a name='L180'></a><a href='#L180'>180</a>
 <a name='L181'></a><a href='#L181'>181</a>
-<a name='L182'></a><a href='#L182'>182</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L182'></a><a href='#L182'>182</a>
+<a name='L183'></a><a href='#L183'>183</a>
+<a name='L184'></a><a href='#L184'>184</a>
+<a name='L185'></a><a href='#L185'>185</a>
+<a name='L186'></a><a href='#L186'>186</a>
+<a name='L187'></a><a href='#L187'>187</a>
+<a name='L188'></a><a href='#L188'>188</a>
+<a name='L189'></a><a href='#L189'>189</a>
+<a name='L190'></a><a href='#L190'>190</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -438,6 +454,7 @@
 <span class="cstat-no" title="statement not covered" >import { ExportDataDialog } from '@/components/export/ExportDataDialog';</span>
 <span class="cstat-no" title="statement not covered" >import { toast } from 'sonner';</span>
 <span class="cstat-no" title="statement not covered" >import { loadPapaParse, loadExcelJS, loadFileSaver } from '@/utils/lazyFileParser';</span>
+<span class="cstat-no" title="statement not covered" >import { useAnnounce } from '@/components/accessibility/LiveAnnouncer';</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >interface ExportButtonProps {</span>
 <span class="cstat-no" title="statement not covered" >  data: Record&lt;string, unknown&gt;[];</span>
@@ -448,6 +465,7 @@
 <span class="cstat-no" title="statement not covered" >export function ExportButton({ data, fileName, columns }: ExportButtonProps) {</span>
 <span class="cstat-no" title="statement not covered" >  const [exporting, setExporting] = useState(false);</span>
 <span class="cstat-no" title="statement not covered" >  const [showAdvancedDialog, setShowAdvancedDialog] = useState(false);</span>
+<span class="cstat-no" title="statement not covered" >  const announce = useAnnounce();</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  const exportToCSV = async () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    try {</span>
@@ -458,8 +476,10 @@
 <span class="cstat-no" title="statement not covered" >      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });</span>
 <span class="cstat-no" title="statement not covered" >      downloadBlob(blob, `${fileName}.csv`);</span>
 <span class="cstat-no" title="statement not covered" >      toast.success('CSV экспортирован');</span>
+<span class="cstat-no" title="statement not covered" >      announce(`CSV файл ${fileName} успешно экспортирован. Экспортировано ${data.length} записей`, 'polite');</span>
 <span class="cstat-no" title="statement not covered" >    } catch (_error) {</span>
 <span class="cstat-no" title="statement not covered" >      toast.error('Ошибка экспорта CSV');</span>
+<span class="cstat-no" title="statement not covered" >      announce('Ошибка при экспорте CSV файла', 'assertive');</span>
 <span class="cstat-no" title="statement not covered" >    } finally {</span>
 <span class="cstat-no" title="statement not covered" >      setExporting(false);</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
@@ -512,8 +532,10 @@
 <span class="cstat-no" title="statement not covered" >      });</span>
 <span class="cstat-no" title="statement not covered" >      downloadBlob(blob, `${fileName}.xlsx`);</span>
 <span class="cstat-no" title="statement not covered" >      toast.success('Excel экспортирован');</span>
+<span class="cstat-no" title="statement not covered" >      announce(`Excel файл ${fileName} успешно экспортирован. Экспортировано ${data.length} записей`, 'polite');</span>
 <span class="cstat-no" title="statement not covered" >    } catch (_error) {</span>
 <span class="cstat-no" title="statement not covered" >      toast.error('Ошибка экспорта Excel');</span>
+<span class="cstat-no" title="statement not covered" >      announce('Ошибка при экспорте Excel файла', 'assertive');</span>
 <span class="cstat-no" title="statement not covered" >    } finally {</span>
 <span class="cstat-no" title="statement not covered" >      setExporting(false);</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
@@ -526,8 +548,10 @@
 <span class="cstat-no" title="statement not covered" >      const blob = new Blob([jsonString], { type: 'application/json' });</span>
 <span class="cstat-no" title="statement not covered" >      downloadBlob(blob, `${fileName}.json`);</span>
 <span class="cstat-no" title="statement not covered" >      toast.success('JSON экспортирован');</span>
+<span class="cstat-no" title="statement not covered" >      announce(`JSON файл ${fileName} успешно экспортирован. Экспортировано ${data.length} записей`, 'polite');</span>
 <span class="cstat-no" title="statement not covered" >    } catch (_error) {</span>
 <span class="cstat-no" title="statement not covered" >      toast.error('Ошибка экспорта JSON');</span>
+<span class="cstat-no" title="statement not covered" >      announce('Ошибка при экспорте JSON файла', 'assertive');</span>
 <span class="cstat-no" title="statement not covered" >    } finally {</span>
 <span class="cstat-no" title="statement not covered" >      setExporting(false);</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
@@ -613,7 +637,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-23T11:31:46.902Z
+                at 2025-10-23T19:41:28.321Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

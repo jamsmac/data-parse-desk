@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/169</span>
+                <span class='fraction'>0/190</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/169</span>
+                <span class='fraction'>0/190</span>
             </div>
         
             
@@ -232,7 +232,49 @@
 <a name='L167'></a><a href='#L167'>167</a>
 <a name='L168'></a><a href='#L168'>168</a>
 <a name='L169'></a><a href='#L169'>169</a>
-<a name='L170'></a><a href='#L170'>170</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L170'></a><a href='#L170'>170</a>
+<a name='L171'></a><a href='#L171'>171</a>
+<a name='L172'></a><a href='#L172'>172</a>
+<a name='L173'></a><a href='#L173'>173</a>
+<a name='L174'></a><a href='#L174'>174</a>
+<a name='L175'></a><a href='#L175'>175</a>
+<a name='L176'></a><a href='#L176'>176</a>
+<a name='L177'></a><a href='#L177'>177</a>
+<a name='L178'></a><a href='#L178'>178</a>
+<a name='L179'></a><a href='#L179'>179</a>
+<a name='L180'></a><a href='#L180'>180</a>
+<a name='L181'></a><a href='#L181'>181</a>
+<a name='L182'></a><a href='#L182'>182</a>
+<a name='L183'></a><a href='#L183'>183</a>
+<a name='L184'></a><a href='#L184'>184</a>
+<a name='L185'></a><a href='#L185'>185</a>
+<a name='L186'></a><a href='#L186'>186</a>
+<a name='L187'></a><a href='#L187'>187</a>
+<a name='L188'></a><a href='#L188'>188</a>
+<a name='L189'></a><a href='#L189'>189</a>
+<a name='L190'></a><a href='#L190'>190</a>
+<a name='L191'></a><a href='#L191'>191</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -407,9 +449,9 @@
 <span class="cstat-no" title="statement not covered" > * Reduces initial bundle size by ~961KB</span>
 <span class="cstat-no" title="statement not covered" > */</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >// Type definitions for lazy-loaded libraries (use any to avoid Vite build errors)</span>
-<span class="cstat-no" title="statement not covered" >type Papa = any;</span>
-<span class="cstat-no" title="statement not covered" >type ExcelJS = any;</span>
+<span class="cstat-no" title="statement not covered" >// Type definitions for lazy-loaded libraries</span>
+<span class="cstat-no" title="statement not covered" >type Papa = typeof import('papaparse');</span>
+<span class="cstat-no" title="statement not covered" >type ExcelJS = typeof import('exceljs');</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >// Cache for loaded libraries to avoid re-importing</span>
 <span class="cstat-no" title="statement not covered" >let papaCache: Papa | null = null;</span>
@@ -447,10 +489,23 @@
 <span class="cstat-no" title="statement not covered" >  return exceljs;</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export type ParsedCSVData = {</span>
+<span class="cstat-no" title="statement not covered" >  data: Record&lt;string, string | number&gt;[];</span>
+<span class="cstat-no" title="statement not covered" >  errors: unknown[];</span>
+<span class="cstat-no" title="statement not covered" >  meta: {</span>
+<span class="cstat-no" title="statement not covered" >    delimiter: string;</span>
+<span class="cstat-no" title="statement not covered" >    linebreak: string;</span>
+<span class="cstat-no" title="statement not covered" >    aborted: boolean;</span>
+<span class="cstat-no" title="statement not covered" >    truncated: boolean;</span>
+<span class="cstat-no" title="statement not covered" >    cursor: number;</span>
+<span class="cstat-no" title="statement not covered" >    fields?: string[];</span>
+<span class="cstat-no" title="statement not covered" >  };</span>
+<span class="cstat-no" title="statement not covered" >};</span>
+<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >/**</span>
 <span class="cstat-no" title="statement not covered" > * Parse CSV file using dynamically loaded PapaParse</span>
 <span class="cstat-no" title="statement not covered" > */</span>
-<span class="cstat-no" title="statement not covered" >export async function parseCSV(file: File): Promise&lt;any&gt; {</span>
+<span class="cstat-no" title="statement not covered" >export async function parseCSV(file: File): Promise&lt;ParsedCSVData&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  const Papa = await loadPapaParse();</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  return new Promise((resolve, reject) =&gt; {</span>
@@ -464,26 +519,34 @@
 <span class="cstat-no" title="statement not covered" >  });</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >export type ParsedExcelData = {</span>
+<span class="cstat-no" title="statement not covered" >  data: (string | number)[][];</span>
+<span class="cstat-no" title="statement not covered" >  headers: string[];</span>
+<span class="cstat-no" title="statement not covered" >  rowCount: number;</span>
+<span class="cstat-no" title="statement not covered" >};</span>
+<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >/**</span>
 <span class="cstat-no" title="statement not covered" > * Parse Excel file using dynamically loaded ExcelJS</span>
 <span class="cstat-no" title="statement not covered" > * Note: This project uses ExcelJS for Excel parsing (see fileParser.ts)</span>
 <span class="cstat-no" title="statement not covered" > * This function is kept for compatibility but should use the fileParser module instead</span>
 <span class="cstat-no" title="statement not covered" > */</span>
-<span class="cstat-no" title="statement not covered" >export async function parseExcel(file: File): Promise&lt;any&gt; {</span>
+<span class="cstat-no" title="statement not covered" >export async function parseExcel(file: File): Promise&lt;ParsedExcelData&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  // Delegate to fileParser.ts which properly handles ExcelJS loading</span>
 <span class="cstat-no" title="statement not covered" >  const { parseFile } = await import('./fileParser');</span>
 <span class="cstat-no" title="statement not covered" >  return parseFile(file);</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >/**</span>
-<span class="cstat-no" title="statement not covered" > * Auto-detect file type and parse accordingly</span>
-<span class="cstat-no" title="statement not covered" > */</span>
-<span class="cstat-no" title="statement not covered" >export async function parseFile(file: File): Promise&lt;{</span>
-<span class="cstat-no" title="statement not covered" >  data: any[];</span>
+<span class="cstat-no" title="statement not covered" >export type ParsedFileData = {</span>
+<span class="cstat-no" title="statement not covered" >  data: Record&lt;string, string | number | boolean | Date | null&gt;[];</span>
 <span class="cstat-no" title="statement not covered" >  headers: string[];</span>
 <span class="cstat-no" title="statement not covered" >  rowCount: number;</span>
 <span class="cstat-no" title="statement not covered" >  fileType: 'csv' | 'excel' | 'json';</span>
-<span class="cstat-no" title="statement not covered" >}&gt; {</span>
+<span class="cstat-no" title="statement not covered" >};</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >/**</span>
+<span class="cstat-no" title="statement not covered" > * Auto-detect file type and parse accordingly</span>
+<span class="cstat-no" title="statement not covered" > */</span>
+<span class="cstat-no" title="statement not covered" >export async function parseFile(file: File): Promise&lt;ParsedFileData&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  const fileName = file.name.toLowerCase();</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  try {</span>
@@ -501,8 +564,8 @@
 <span class="cstat-no" title="statement not covered" >      const data = result.data.slice(1);</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >      return {</span>
-<span class="cstat-no" title="statement not covered" >        data: data.map((row: any[]) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >          const obj: any = {};</span>
+<span class="cstat-no" title="statement not covered" >        data: data.map((row: (string | number)[]) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >          const obj: Record&lt;string, string | number&gt; = {};</span>
 <span class="cstat-no" title="statement not covered" >          headers.forEach((header: string, index: number) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >            obj[header] = row[index];</span>
 <span class="cstat-no" title="statement not covered" >          });</span>
@@ -577,7 +640,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-23T11:31:47.039Z
+                at 2025-10-23T19:41:28.467Z
             </div>
         <script src="../prettify.js"></script>
         <script>

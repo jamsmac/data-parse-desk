@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/776</span>
+                <span class='fraction'>0/786</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/776</span>
+                <span class='fraction'>0/786</span>
             </div>
         
             
@@ -839,7 +839,27 @@
 <a name='L774'></a><a href='#L774'>774</a>
 <a name='L775'></a><a href='#L775'>775</a>
 <a name='L776'></a><a href='#L776'>776</a>
-<a name='L777'></a><a href='#L777'>777</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L777'></a><a href='#L777'>777</a>
+<a name='L778'></a><a href='#L778'>778</a>
+<a name='L779'></a><a href='#L779'>779</a>
+<a name='L780'></a><a href='#L780'>780</a>
+<a name='L781'></a><a href='#L781'>781</a>
+<a name='L782'></a><a href='#L782'>782</a>
+<a name='L783'></a><a href='#L783'>783</a>
+<a name='L784'></a><a href='#L784'>784</a>
+<a name='L785'></a><a href='#L785'>785</a>
+<a name='L786'></a><a href='#L786'>786</a>
+<a name='L787'></a><a href='#L787'>787</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1632,6 +1652,16 @@
 <span class="cstat-no" title="statement not covered" >};</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >/**</span>
+<span class="cstat-no" title="statement not covered" > * Возможные типы значений формул</span>
+<span class="cstat-no" title="statement not covered" > */</span>
+<span class="cstat-no" title="statement not covered" >type FormulaValue = string | number | boolean | Date | null | undefined;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >/**</span>
+<span class="cstat-no" title="statement not covered" > * Контекст выполнения формулы (данные строки)</span>
+<span class="cstat-no" title="statement not covered" > */</span>
+<span class="cstat-no" title="statement not covered" >type FormulaContext = Record&lt;string, FormulaValue&gt;;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >/**</span>
 <span class="cstat-no" title="statement not covered" > * Математические функции</span>
 <span class="cstat-no" title="statement not covered" > */</span>
 <span class="cstat-no" title="statement not covered" >const mathFunctions: Record&lt;string, (...args: number[]) =&gt; number&gt; = {</span>
@@ -1650,11 +1680,11 @@
 <span class="cstat-no" title="statement not covered" >/**</span>
 <span class="cstat-no" title="statement not covered" > * Строковые функции</span>
 <span class="cstat-no" title="statement not covered" > */</span>
-<span class="cstat-no" title="statement not covered" >const stringFunctions: Record&lt;string, ((...args: any[]) =&gt; string)&gt; = {</span>
-<span class="cstat-no" title="statement not covered" >  upper: (str: string) =&gt; String(str).toUpperCase(),</span>
-<span class="cstat-no" title="statement not covered" >  lower: (str: string) =&gt; String(str).toLowerCase(),</span>
-<span class="cstat-no" title="statement not covered" >  trim: (str: string) =&gt; String(str).trim(),</span>
-<span class="cstat-no" title="statement not covered" >  concat: (...args: any[]) =&gt; args.map(String).join(''),</span>
+<span class="cstat-no" title="statement not covered" >const stringFunctions: Record&lt;string, ((...args: FormulaValue[]) =&gt; string)&gt; = {</span>
+<span class="cstat-no" title="statement not covered" >  upper: (str: FormulaValue) =&gt; String(str).toUpperCase(),</span>
+<span class="cstat-no" title="statement not covered" >  lower: (str: FormulaValue) =&gt; String(str).toLowerCase(),</span>
+<span class="cstat-no" title="statement not covered" >  trim: (str: FormulaValue) =&gt; String(str).trim(),</span>
+<span class="cstat-no" title="statement not covered" >  concat: (...args: FormulaValue[]) =&gt; args.map(String).join(''),</span>
 <span class="cstat-no" title="statement not covered" >  substring: (str: string, start: number, end?: number) =&gt; </span>
 <span class="cstat-no" title="statement not covered" >    String(str).substring(start, end),</span>
 <span class="cstat-no" title="statement not covered" >  replace: (str: string, search: string, replace: string) =&gt; {</span>
@@ -1670,7 +1700,7 @@
 <span class="cstat-no" title="statement not covered" >/**</span>
 <span class="cstat-no" title="statement not covered" > * Функции для работы с датами</span>
 <span class="cstat-no" title="statement not covered" > */</span>
-<span class="cstat-no" title="statement not covered" >const dateFunctions: Record&lt;string, ((...args: any[]) =&gt; any)&gt; = {</span>
+<span class="cstat-no" title="statement not covered" >const dateFunctions: Record&lt;string, ((...args: FormulaValue[]) =&gt; Date | number | string)&gt; = {</span>
 <span class="cstat-no" title="statement not covered" >  now: () =&gt; new Date(),</span>
 <span class="cstat-no" title="statement not covered" >  today: () =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    const date = new Date();</span>
@@ -1712,13 +1742,13 @@
 <span class="cstat-no" title="statement not covered" >/**</span>
 <span class="cstat-no" title="statement not covered" > * Логические функции</span>
 <span class="cstat-no" title="statement not covered" > */</span>
-<span class="cstat-no" title="statement not covered" >const logicalFunctions: Record&lt;string, ((...args: any[]) =&gt; any)&gt; = {</span>
-<span class="cstat-no" title="statement not covered" >  if: (condition: boolean, ifTrue: any, ifFalse: any) =&gt; condition ? ifTrue : ifFalse,</span>
-<span class="cstat-no" title="statement not covered" >  and: (...args: boolean[]) =&gt; args.every(Boolean),</span>
-<span class="cstat-no" title="statement not covered" >  or: (...args: boolean[]) =&gt; args.some(Boolean),</span>
-<span class="cstat-no" title="statement not covered" >  not: (value: boolean) =&gt; !value,</span>
-<span class="cstat-no" title="statement not covered" >  isNull: (value: any) =&gt; value == null,</span>
-<span class="cstat-no" title="statement not covered" >  isEmpty: (value: any) =&gt; value == null || value === '' || (Array.isArray(value) &amp;&amp; value.length === 0),</span>
+<span class="cstat-no" title="statement not covered" >const logicalFunctions: Record&lt;string, ((...args: FormulaValue[]) =&gt; FormulaValue)&gt; = {</span>
+<span class="cstat-no" title="statement not covered" >  if: (condition: FormulaValue, ifTrue: FormulaValue, ifFalse: FormulaValue) =&gt; condition ? ifTrue : ifFalse,</span>
+<span class="cstat-no" title="statement not covered" >  and: (...args: FormulaValue[]) =&gt; args.every(Boolean),</span>
+<span class="cstat-no" title="statement not covered" >  or: (...args: FormulaValue[]) =&gt; args.some(Boolean),</span>
+<span class="cstat-no" title="statement not covered" >  not: (value: FormulaValue) =&gt; !value,</span>
+<span class="cstat-no" title="statement not covered" >  isNull: (value: FormulaValue) =&gt; value == null,</span>
+<span class="cstat-no" title="statement not covered" >  isEmpty: (value: FormulaValue) =&gt; value == null || value === '' || (Array.isArray(value) &amp;&amp; value.length === 0),</span>
 <span class="cstat-no" title="statement not covered" >};</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >/**</span>
@@ -1833,8 +1863,8 @@
 <span class="cstat-no" title="statement not covered" > */</span>
 <span class="cstat-no" title="statement not covered" >export function evaluateFormula(</span>
 <span class="cstat-no" title="statement not covered" >  expression: string,</span>
-<span class="cstat-no" title="statement not covered" >  context: Record&lt;string, any&gt;</span>
-<span class="cstat-no" title="statement not covered" >): any {</span>
+<span class="cstat-no" title="statement not covered" >  context: FormulaContext</span>
+<span class="cstat-no" title="statement not covered" >): FormulaValue {</span>
 <span class="cstat-no" title="statement not covered" >  try {</span>
 <span class="cstat-no" title="statement not covered" >    const tokens = tokenize(expression);</span>
 <span class="cstat-no" title="statement not covered" >    return evaluateTokens(tokens, context);</span>
@@ -1847,7 +1877,7 @@
 <span class="cstat-no" title="statement not covered" >/**</span>
 <span class="cstat-no" title="statement not covered" > * Вычисляет токены</span>
 <span class="cstat-no" title="statement not covered" > */</span>
-<span class="cstat-no" title="statement not covered" >function evaluateTokens(tokens: Token[], context: Record&lt;string, any&gt;): any {</span>
+<span class="cstat-no" title="statement not covered" >function evaluateTokens(tokens: Token[], context: FormulaContext): FormulaValue {</span>
 <span class="cstat-no" title="statement not covered" >  if (tokens.length === 0) return null;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  // Простые случаи</span>
@@ -1871,7 +1901,7 @@
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >    // Извлекаем аргументы из скобок</span>
-<span class="cstat-no" title="statement not covered" >    const args: any[] = [];</span>
+<span class="cstat-no" title="statement not covered" >    const args: FormulaValue[] = [];</span>
 <span class="cstat-no" title="statement not covered" >    let depth = 0;</span>
 <span class="cstat-no" title="statement not covered" >    const currentArg: Token[] = [];</span>
 <span class="cstat-no" title="statement not covered" ></span>
@@ -1908,11 +1938,11 @@
 <span class="cstat-no" title="statement not covered" >/**</span>
 <span class="cstat-no" title="statement not covered" > * Вычисляет выражение с операторами</span>
 <span class="cstat-no" title="statement not covered" > */</span>
-<span class="cstat-no" title="statement not covered" >function evaluateExpression(tokens: Token[], context: Record&lt;string, any&gt;): any {</span>
+<span class="cstat-no" title="statement not covered" >function evaluateExpression(tokens: Token[], context: FormulaContext): FormulaValue {</span>
 <span class="cstat-no" title="statement not covered" >  // Простая реализация для базовых операций</span>
 <span class="cstat-no" title="statement not covered" >  // TODO: Полная реализация парсера с приоритетами операторов</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  let result: any = null;</span>
+<span class="cstat-no" title="statement not covered" >  let result: FormulaValue = null;</span>
 <span class="cstat-no" title="statement not covered" >  let operator: string | null = null;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  for (let i = 0; i &lt; tokens.length; i++) {</span>
@@ -1944,7 +1974,7 @@
 <span class="cstat-no" title="statement not covered" >/**</span>
 <span class="cstat-no" title="statement not covered" > * Применяет оператор к двум значениям</span>
 <span class="cstat-no" title="statement not covered" > */</span>
-<span class="cstat-no" title="statement not covered" >function applyOperator(left: any, right: any, operator: string): any {</span>
+<span class="cstat-no" title="statement not covered" >function applyOperator(left: FormulaValue, right: FormulaValue, operator: string): FormulaValue {</span>
 <span class="cstat-no" title="statement not covered" >  switch (operator) {</span>
 <span class="cstat-no" title="statement not covered" >    case '+':</span>
 <span class="cstat-no" title="statement not covered" >      return left + right;</span>
@@ -2398,7 +2428,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-23T11:31:46.902Z
+                at 2025-10-23T19:41:28.321Z
             </div>
         <script src="../prettify.js"></script>
         <script>

@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/457</span>
+                <span class='fraction'>0/462</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/457</span>
+                <span class='fraction'>0/462</span>
             </div>
         
             
@@ -520,7 +520,17 @@
 <a name='L455'></a><a href='#L455'>455</a>
 <a name='L456'></a><a href='#L456'>456</a>
 <a name='L457'></a><a href='#L457'>457</a>
-<a name='L458'></a><a href='#L458'>458</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L458'></a><a href='#L458'>458</a>
+<a name='L459'></a><a href='#L459'>459</a>
+<a name='L460'></a><a href='#L460'>460</a>
+<a name='L461'></a><a href='#L461'>461</a>
+<a name='L462'></a><a href='#L462'>462</a>
+<a name='L463'></a><a href='#L463'>463</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1003,12 +1013,17 @@
 <span class="cstat-no" title="statement not covered" >  | 'endsWith';  // заканчивается на</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >/**</span>
+<span class="cstat-no" title="statement not covered" > * Возможные типы значений для SQL параметров</span>
+<span class="cstat-no" title="statement not covered" > */</span>
+<span class="cstat-no" title="statement not covered" >export type SQLValue = string | number | boolean | Date | null | string[] | number[];</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >/**</span>
 <span class="cstat-no" title="statement not covered" > * Расширенный фильтр с оператором</span>
 <span class="cstat-no" title="statement not covered" > */</span>
 <span class="cstat-no" title="statement not covered" >export interface ExtendedFilter {</span>
 <span class="cstat-no" title="statement not covered" >  column: string;</span>
 <span class="cstat-no" title="statement not covered" >  operator: FilterOperator;</span>
-<span class="cstat-no" title="statement not covered" >  value: any;</span>
+<span class="cstat-no" title="statement not covered" >  value: SQLValue;</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >/**</span>
@@ -1046,12 +1061,12 @@
 <span class="cstat-no" title="statement not covered" >  /**</span>
 <span class="cstat-no" title="statement not covered" >   * Строит WHERE условие для фильтров</span>
 <span class="cstat-no" title="statement not covered" >   */</span>
-<span class="cstat-no" title="statement not covered" >  buildWhereClause(): { sql: string; params: any[] } {</span>
+<span class="cstat-no" title="statement not covered" >  buildWhereClause(): { sql: string; params: SQLValue[] } {</span>
 <span class="cstat-no" title="statement not covered" >    if (!this.config.filters) {</span>
 <span class="cstat-no" title="statement not covered" >      return { sql: '', params: [] };</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >    const params: any[] = [];</span>
+<span class="cstat-no" title="statement not covered" >    const params: SQLValue[] = [];</span>
 <span class="cstat-no" title="statement not covered" >    const conditions: string[] = [];</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >    // Простые фильтры (объект)</span>
@@ -1086,7 +1101,7 @@
 <span class="cstat-no" title="statement not covered" >  /**</span>
 <span class="cstat-no" title="statement not covered" >   * Строит условие для одного фильтра</span>
 <span class="cstat-no" title="statement not covered" >   */</span>
-<span class="cstat-no" title="statement not covered" >  private buildFilterCondition(filter: ExtendedFilter, params: any[]): string | null {</span>
+<span class="cstat-no" title="statement not covered" >  private buildFilterCondition(filter: ExtendedFilter, params: SQLValue[]): string | null {</span>
 <span class="cstat-no" title="statement not covered" >    const column = this.escapeIdentifier(filter.column);</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >    switch (filter.operator) {</span>
@@ -1232,7 +1247,7 @@
 <span class="cstat-no" title="statement not covered" >  /**</span>
 <span class="cstat-no" title="statement not covered" >   * Строит полный SELECT запрос</span>
 <span class="cstat-no" title="statement not covered" >   */</span>
-<span class="cstat-no" title="statement not covered" >  buildSelectQuery(): { sql: string; params: any[] } {</span>
+<span class="cstat-no" title="statement not covered" >  buildSelectQuery(): { sql: string; params: SQLValue[] } {</span>
 <span class="cstat-no" title="statement not covered" >    const select = this.buildSelectClause();</span>
 <span class="cstat-no" title="statement not covered" >    const from = this.escapeIdentifier(this.config.tableName);</span>
 <span class="cstat-no" title="statement not covered" >    const joins = this.buildJoinClauses();</span>
@@ -1258,7 +1273,7 @@
 <span class="cstat-no" title="statement not covered" >  /**</span>
 <span class="cstat-no" title="statement not covered" >   * Строит COUNT запрос для получения общего количества</span>
 <span class="cstat-no" title="statement not covered" >   */</span>
-<span class="cstat-no" title="statement not covered" >  buildCountQuery(): { sql: string; params: any[] } {</span>
+<span class="cstat-no" title="statement not covered" >  buildCountQuery(): { sql: string; params: SQLValue[] } {</span>
 <span class="cstat-no" title="statement not covered" >    const from = this.escapeIdentifier(this.config.tableName);</span>
 <span class="cstat-no" title="statement not covered" >    const joins = this.buildJoinClauses();</span>
 <span class="cstat-no" title="statement not covered" >    const { sql: where, params } = this.buildWhereClause();</span>
@@ -1352,8 +1367,8 @@
 <span class="cstat-no" title="statement not covered" > */</span>
 <span class="cstat-no" title="statement not covered" >export function buildInsertQuery(</span>
 <span class="cstat-no" title="statement not covered" >  tableName: string,</span>
-<span class="cstat-no" title="statement not covered" >  data: Record&lt;string, any&gt;</span>
-<span class="cstat-no" title="statement not covered" >): { sql: string; params: any[] } {</span>
+<span class="cstat-no" title="statement not covered" >  data: Record&lt;string, SQLValue&gt;</span>
+<span class="cstat-no" title="statement not covered" >): { sql: string; params: SQLValue[] } {</span>
 <span class="cstat-no" title="statement not covered" >  const columns = Object.keys(data);</span>
 <span class="cstat-no" title="statement not covered" >  const params = Object.values(data);</span>
 <span class="cstat-no" title="statement not covered" ></span>
@@ -1372,10 +1387,10 @@
 <span class="cstat-no" title="statement not covered" >export function buildUpdateQuery(</span>
 <span class="cstat-no" title="statement not covered" >  tableName: string,</span>
 <span class="cstat-no" title="statement not covered" >  id: string,</span>
-<span class="cstat-no" title="statement not covered" >  data: Record&lt;string, any&gt;</span>
-<span class="cstat-no" title="statement not covered" >): { sql: string; params: any[] } {</span>
+<span class="cstat-no" title="statement not covered" >  data: Record&lt;string, SQLValue&gt;</span>
+<span class="cstat-no" title="statement not covered" >): { sql: string; params: SQLValue[] } {</span>
 <span class="cstat-no" title="statement not covered" >  const updates: string[] = [];</span>
-<span class="cstat-no" title="statement not covered" >  const params: any[] = [];</span>
+<span class="cstat-no" title="statement not covered" >  const params: SQLValue[] = [];</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  for (const [column, value] of Object.entries(data)) {</span>
 <span class="cstat-no" title="statement not covered" >    params.push(value);</span>
@@ -1396,7 +1411,7 @@
 <span class="cstat-no" title="statement not covered" >export function buildDeleteQuery(</span>
 <span class="cstat-no" title="statement not covered" >  tableName: string,</span>
 <span class="cstat-no" title="statement not covered" >  id: string</span>
-<span class="cstat-no" title="statement not covered" >): { sql: string; params: any[] } {</span>
+<span class="cstat-no" title="statement not covered" >): { sql: string; params: SQLValue[] } {</span>
 <span class="cstat-no" title="statement not covered" >  return {</span>
 <span class="cstat-no" title="statement not covered" >    sql: `DELETE FROM "${tableName.replace(/"/g, '""')}" WHERE id = $1`,</span>
 <span class="cstat-no" title="statement not covered" >    params: [id],</span>
@@ -1408,14 +1423,14 @@
 <span class="cstat-no" title="statement not covered" > */</span>
 <span class="cstat-no" title="statement not covered" >export function buildBulkInsertQuery(</span>
 <span class="cstat-no" title="statement not covered" >  tableName: string,</span>
-<span class="cstat-no" title="statement not covered" >  data: Record&lt;string, any&gt;[]</span>
-<span class="cstat-no" title="statement not covered" >): { sql: string; params: any[] } {</span>
+<span class="cstat-no" title="statement not covered" >  data: Record&lt;string, SQLValue&gt;[]</span>
+<span class="cstat-no" title="statement not covered" >): { sql: string; params: SQLValue[] } {</span>
 <span class="cstat-no" title="statement not covered" >  if (data.length === 0) {</span>
 <span class="cstat-no" title="statement not covered" >    throw new Error('Нет данных для вставки');</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  const columns = Object.keys(data[0]);</span>
-<span class="cstat-no" title="statement not covered" >  const params: any[] = [];</span>
+<span class="cstat-no" title="statement not covered" >  const params: SQLValue[] = [];</span>
 <span class="cstat-no" title="statement not covered" >  const valueSets: string[] = [];</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  for (const row of data) {</span>
@@ -1441,7 +1456,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-23T11:31:46.902Z
+                at 2025-10-23T19:41:28.321Z
             </div>
         <script src="../prettify.js"></script>
         <script>

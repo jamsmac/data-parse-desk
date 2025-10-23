@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/252</span>
+                <span class='fraction'>0/256</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/252</span>
+                <span class='fraction'>0/256</span>
             </div>
         
             
@@ -315,7 +315,15 @@
 <a name='L250'></a><a href='#L250'>250</a>
 <a name='L251'></a><a href='#L251'>251</a>
 <a name='L252'></a><a href='#L252'>252</a>
-<a name='L253'></a><a href='#L253'>253</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L253'></a><a href='#L253'>253</a>
+<a name='L254'></a><a href='#L254'>254</a>
+<a name='L255'></a><a href='#L255'>255</a>
+<a name='L256'></a><a href='#L256'>256</a>
+<a name='L257'></a><a href='#L257'>257</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -647,21 +655,21 @@
 <span class="cstat-no" title="statement not covered" >  };</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  return (</span>
-<span class="cstat-no" title="statement not covered" >    &lt;div className="min-h-screen flex items-center justify-center bg-background p-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;main id="main-content" className="min-h-screen flex items-center justify-center bg-background p-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;Card className="w-full max-w-md animate-fade-in"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;CardHeader className="space-y-1"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="flex items-center justify-center mb-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;div className="p-3 bg-primary/10 rounded-full"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Database className="h-8 w-8 text-primary" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Database className="h-8 w-8 text-primary" aria-hidden="true" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;CardTitle className="text-2xl text-center"&gt;Регистрация в VHData&lt;/CardTitle&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;CardTitle className="text-2xl text-center" id="register-title"&gt;Регистрация в VHData&lt;/CardTitle&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;CardDescription className="text-center"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            Создайте аккаунт для доступа к платформе</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/CardDescription&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/CardHeader&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;CardContent&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;form onSubmit={handleSubmit} className="space-y-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;form onSubmit={handleSubmit} className="space-y-4" aria-labelledby="register-title"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            {error &amp;&amp; (</span>
 <span class="cstat-no" title="statement not covered" >              &lt;Alert variant="destructive"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;AlertDescription&gt;{error}&lt;/AlertDescription&gt;</span>
@@ -724,18 +732,22 @@
 <span class="cstat-no" title="statement not covered" >                  ) : (</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;Eye className="h-4 w-4 text-muted-foreground" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  )}</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;span className="sr-only"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    {showPassword ? 'Скрыть пароль' : 'Показать пароль'}</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;/span&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >              {/* Password Requirements */}</span>
 <span class="cstat-no" title="statement not covered" >              {formData.password &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >                &lt;div className="space-y-1 mt-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="space-y-1 mt-2" role="status" aria-label="Требования к паролю"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  {passwordRequirements.map((req, index) =&gt; (</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;div key={index} className="flex items-center gap-2 text-xs"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;CheckCircle2</span>
 <span class="cstat-no" title="statement not covered" >                        className={`h-3 w-3 ${</span>
 <span class="cstat-no" title="statement not covered" >                          req.valid ? 'text-green-500' : 'text-muted-foreground'</span>
 <span class="cstat-no" title="statement not covered" >                        }`}</span>
+<span class="cstat-no" title="statement not covered" >                        aria-hidden="true"</span>
 <span class="cstat-no" title="statement not covered" >                      /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;span className={req.valid ? 'text-green-600' : 'text-muted-foreground'}&gt;</span>
 <span class="cstat-no" title="statement not covered" >                        {req.label}</span>
@@ -816,7 +828,7 @@
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/CardContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/Card&gt;</span>
-<span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;/main&gt;</span>
 <span class="cstat-no" title="statement not covered" >  );</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;</pre></td></tr></table></pre>
@@ -826,7 +838,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-23T11:31:47.039Z
+                at 2025-10-23T19:41:28.467Z
             </div>
         <script src="../prettify.js"></script>
         <script>

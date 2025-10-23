@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/404</span>
+                <span class='fraction'>0/406</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/404</span>
+                <span class='fraction'>0/406</span>
             </div>
         
             
@@ -467,7 +467,11 @@
 <a name='L402'></a><a href='#L402'>402</a>
 <a name='L403'></a><a href='#L403'>403</a>
 <a name='L404'></a><a href='#L404'>404</a>
-<a name='L405'></a><a href='#L405'>405</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L405'></a><a href='#L405'>405</a>
+<a name='L406'></a><a href='#L406'>406</a>
+<a name='L407'></a><a href='#L407'>407</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -876,6 +880,8 @@
 <span class="cstat-no" title="statement not covered" > * Stores data, pending changes, and sync queue for offline mode</span>
 <span class="cstat-no" title="statement not covered" > */</span>
 <span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >import { TableRow, Database, TableSchema } from '@/types/database';</span>
+<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >const DB_NAME = 'DataParseDeskOffline';</span>
 <span class="cstat-no" title="statement not covered" >const DB_VERSION = 1;</span>
 <span class="cstat-no" title="statement not covered" ></span>
@@ -893,20 +899,20 @@
 <span class="cstat-no" title="statement not covered" >  timestamp: number;</span>
 <span class="cstat-no" title="statement not covered" >  operation: 'insert' | 'update' | 'delete';</span>
 <span class="cstat-no" title="statement not covered" >  table: string;</span>
-<span class="cstat-no" title="statement not covered" >  data: any;</span>
-<span class="cstat-no" title="statement not covered" >  originalData?: any;</span>
+<span class="cstat-no" title="statement not covered" >  data: TableRow;</span>
+<span class="cstat-no" title="statement not covered" >  originalData?: TableRow;</span>
 <span class="cstat-no" title="statement not covered" >  synced: boolean;</span>
 <span class="cstat-no" title="statement not covered" >  error?: string;</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >interface SyncQueueItem {</span>
+<span class="cstat-no" title="statement not covered" >interface SyncQueueItem&lt;T = unknown&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  id: string;</span>
 <span class="cstat-no" title="statement not covered" >  timestamp: number;</span>
 <span class="cstat-no" title="statement not covered" >  priority: number;</span>
 <span class="cstat-no" title="statement not covered" >  retryCount: number;</span>
 <span class="cstat-no" title="statement not covered" >  maxRetries: number;</span>
-<span class="cstat-no" title="statement not covered" >  operation: () =&gt; Promise&lt;any&gt;;</span>
-<span class="cstat-no" title="statement not covered" >  onSuccess?: (result: any) =&gt; void;</span>
+<span class="cstat-no" title="statement not covered" >  operation: () =&gt; Promise&lt;T&gt;;</span>
+<span class="cstat-no" title="statement not covered" >  onSuccess?: (result: T) =&gt; void;</span>
 <span class="cstat-no" title="statement not covered" >  onError?: (error: Error) =&gt; void;</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
@@ -989,7 +995,7 @@
 <span class="cstat-no" title="statement not covered" >  /**</span>
 <span class="cstat-no" title="statement not covered" >   * Cache table data for offline access</span>
 <span class="cstat-no" title="statement not covered" >   */</span>
-<span class="cstat-no" title="statement not covered" >  async cacheTableData(databaseId: string, rows: any[]): Promise&lt;void&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  async cacheTableData(databaseId: string, rows: TableRow[]): Promise&lt;void&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    await this.init();</span>
 <span class="cstat-no" title="statement not covered" >    const store = this.getStore(STORES.TABLE_DATA, 'readwrite');</span>
 <span class="cstat-no" title="statement not covered" ></span>
@@ -1013,7 +1019,7 @@
 <span class="cstat-no" title="statement not covered" >  /**</span>
 <span class="cstat-no" title="statement not covered" >   * Get cached table data</span>
 <span class="cstat-no" title="statement not covered" >   */</span>
-<span class="cstat-no" title="statement not covered" >  async getCachedTableData(databaseId: string): Promise&lt;any[]&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  async getCachedTableData(databaseId: string): Promise&lt;TableRow[]&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    await this.init();</span>
 <span class="cstat-no" title="statement not covered" >    const store = this.getStore(STORES.TABLE_DATA);</span>
 <span class="cstat-no" title="statement not covered" >    const index = store.index('database_id');</span>
@@ -1053,7 +1059,7 @@
 <span class="cstat-no" title="statement not covered" >  /**</span>
 <span class="cstat-no" title="statement not covered" >   * Cache database metadata</span>
 <span class="cstat-no" title="statement not covered" >   */</span>
-<span class="cstat-no" title="statement not covered" >  async cacheDatabases(databases: any[]): Promise&lt;void&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  async cacheDatabases(databases: Database[]): Promise&lt;void&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    await this.init();</span>
 <span class="cstat-no" title="statement not covered" >    const store = this.getStore(STORES.DATABASES, 'readwrite');</span>
 <span class="cstat-no" title="statement not covered" ></span>
@@ -1076,7 +1082,7 @@
 <span class="cstat-no" title="statement not covered" >  /**</span>
 <span class="cstat-no" title="statement not covered" >   * Get cached databases</span>
 <span class="cstat-no" title="statement not covered" >   */</span>
-<span class="cstat-no" title="statement not covered" >  async getCachedDatabases(): Promise&lt;any[]&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  async getCachedDatabases(): Promise&lt;Database[]&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    await this.init();</span>
 <span class="cstat-no" title="statement not covered" >    const store = this.getStore(STORES.DATABASES);</span>
 <span class="cstat-no" title="statement not covered" >    const request = store.getAll();</span>
@@ -1092,7 +1098,7 @@
 <span class="cstat-no" title="statement not covered" >  /**</span>
 <span class="cstat-no" title="statement not covered" >   * Cache table schemas</span>
 <span class="cstat-no" title="statement not covered" >   */</span>
-<span class="cstat-no" title="statement not covered" >  async cacheSchemas(databaseId: string, schemas: any[]): Promise&lt;void&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  async cacheSchemas(databaseId: string, schemas: TableSchema[]): Promise&lt;void&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    await this.init();</span>
 <span class="cstat-no" title="statement not covered" >    const store = this.getStore(STORES.SCHEMAS, 'readwrite');</span>
 <span class="cstat-no" title="statement not covered" ></span>
@@ -1116,7 +1122,7 @@
 <span class="cstat-no" title="statement not covered" >  /**</span>
 <span class="cstat-no" title="statement not covered" >   * Get cached schemas</span>
 <span class="cstat-no" title="statement not covered" >   */</span>
-<span class="cstat-no" title="statement not covered" >  async getCachedSchemas(databaseId: string): Promise&lt;any[]&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  async getCachedSchemas(databaseId: string): Promise&lt;TableSchema[]&gt; {</span>
 <span class="cstat-no" title="statement not covered" >    await this.init();</span>
 <span class="cstat-no" title="statement not covered" >    const store = this.getStore(STORES.SCHEMAS);</span>
 <span class="cstat-no" title="statement not covered" >    const index = store.index('database_id');</span>
@@ -1282,7 +1288,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-23T11:31:47.039Z
+                at 2025-10-23T19:41:28.467Z
             </div>
         <script src="../prettify.js"></script>
         <script>

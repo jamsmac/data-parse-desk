@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/533</span>
+                <span class='fraction'>0/534</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/533</span>
+                <span class='fraction'>0/534</span>
             </div>
         
             
@@ -596,7 +596,9 @@
 <a name='L531'></a><a href='#L531'>531</a>
 <a name='L532'></a><a href='#L532'>532</a>
 <a name='L533'></a><a href='#L533'>533</a>
-<a name='L534'></a><a href='#L534'>534</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L534'></a><a href='#L534'>534</a>
+<a name='L535'></a><a href='#L535'>535</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1326,24 +1328,24 @@
 <span class="cstat-no" title="statement not covered" >  };</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  return (</span>
-<span class="cstat-no" title="statement not covered" >    &lt;div className="container mx-auto p-6 max-w-4xl"&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;main id="main-content" className="container mx-auto p-6 max-w-4xl"&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;div className="space-y-6"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        {/* Header */}</span>
-<span class="cstat-no" title="statement not covered" >        &lt;div&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;header&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;h1 className="text-3xl font-bold"&gt;Профиль&lt;/h1&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;p className="text-muted-foreground mt-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            Управление личной информацией и настройками безопасности</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/p&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;/header&gt;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >        {/* Alerts */}</span>
 <span class="cstat-no" title="statement not covered" >        {success &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Alert&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;Alert role="status"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;AlertDescription&gt;{success}&lt;/AlertDescription&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/Alert&gt;</span>
 <span class="cstat-no" title="statement not covered" >        )}</span>
 <span class="cstat-no" title="statement not covered" >        {error &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Alert variant="destructive"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;Alert variant="destructive" role="alert"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;AlertDescription&gt;{error}&lt;/AlertDescription&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/Alert&gt;</span>
 <span class="cstat-no" title="statement not covered" >        )}</span>
@@ -1354,12 +1356,12 @@
 <span class="cstat-no" title="statement not covered" >            &lt;div className="flex items-center gap-6"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div className="relative"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;Avatar className="h-24 w-24"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;AvatarImage src={avatarUrl} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;AvatarImage src={avatarUrl} alt={`Аватар пользователя ${user.user_metadata?.full_name || user.email}`} /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;AvatarFallback className="text-2xl"&gt;{getInitials(user.user_metadata?.full_name as string)}&lt;/AvatarFallback&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/Avatar&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;Label htmlFor="avatar-upload" className="absolute bottom-0 right-0 cursor-pointer"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;div className="bg-primary text-primary-foreground rounded-full p-2 shadow-lg hover:bg-primary/90"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    {uploading ? &lt;Loader2 className="h-4 w-4 animate-spin" /&gt; : &lt;Upload className="h-4 w-4" /&gt;}</span>
+<span class="cstat-no" title="statement not covered" >                    {uploading ? &lt;Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /&gt; : &lt;Upload className="h-4 w-4" aria-hidden="true" /&gt;}</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;Input</span>
 <span class="cstat-no" title="statement not covered" >                    id="avatar-upload"</span>
@@ -1368,6 +1370,7 @@
 <span class="cstat-no" title="statement not covered" >                    className="hidden"</span>
 <span class="cstat-no" title="statement not covered" >                    onChange={handleAvatarUpload}</span>
 <span class="cstat-no" title="statement not covered" >                    disabled={uploading}</span>
+<span class="cstat-no" title="statement not covered" >                    aria-label="Загрузить новый аватар"</span>
 <span class="cstat-no" title="statement not covered" >                  /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/Label&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
@@ -1376,11 +1379,11 @@
 <span class="cstat-no" title="statement not covered" >                &lt;p className="text-sm text-muted-foreground"&gt;{user.email}&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;div className="flex items-center gap-2 mt-2"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;Badge variant="secondary"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;Shield className="mr-1 h-3 w-3" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;Shield className="mr-1 h-3 w-3" aria-hidden="true" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    Пользователь</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/Badge&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;Badge variant="outline"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;Calendar className="mr-1 h-3 w-3" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;Calendar className="mr-1 h-3 w-3" aria-hidden="true" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    С {new Date(user.created_at!).toLocaleDateString('ru-RU')}</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/Badge&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
@@ -1391,21 +1394,21 @@
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >        {/* Tabs */}</span>
 <span class="cstat-no" title="statement not covered" >        &lt;Tabs defaultValue="profile" className="w-full"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;TabsList className="grid w-full grid-cols-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;TabsList className="grid w-full grid-cols-4" role="tablist" aria-label="Настройки профиля"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TabsTrigger value="profile"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;UserIcon className="mr-2 h-4 w-4" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;UserIcon className="mr-2 h-4 w-4" aria-hidden="true" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              Профиль</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TabsTrigger&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TabsTrigger value="security"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Key className="mr-2 h-4 w-4" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Key className="mr-2 h-4 w-4" aria-hidden="true" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              Безопасность</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TabsTrigger&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TabsTrigger value="subscription"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;CreditCard className="mr-2 h-4 w-4" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;CreditCard className="mr-2 h-4 w-4" aria-hidden="true" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              Подписка</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TabsTrigger&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TabsTrigger value="notifications"&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Bell className="mr-2 h-4 w-4" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Bell className="mr-2 h-4 w-4" aria-hidden="true" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              Уведомления</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/TabsTrigger&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/TabsList&gt;</span>
@@ -1448,15 +1451,15 @@
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >                &lt;div className="flex gap-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;Button onClick={handleProfileUpdate} disabled={isLoading}&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;Button onClick={handleProfileUpdate} disabled={isLoading} aria-label="Сохранить изменения профиля"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    {isLoading ? (</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;&gt;</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;Loader2 className="mr-2 h-4 w-4 animate-spin" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                        Сохранение...</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;/&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    ) : (</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;&gt;</span>
-<span class="cstat-no" title="statement not covered" >                        &lt;Save className="mr-2 h-4 w-4" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                        &lt;Save className="mr-2 h-4 w-4" aria-hidden="true" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                        Сохранить изменения</span>
 <span class="cstat-no" title="statement not covered" >                      &lt;/&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    )}</span>
@@ -1553,15 +1556,15 @@
 <span class="cstat-no" title="statement not covered" >                  /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >                &lt;Button onClick={handlePasswordUpdate} disabled={isLoading}&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;Button onClick={handlePasswordUpdate} disabled={isLoading} aria-label="Изменить пароль"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  {isLoading ? (</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;&gt;</span>
-<span class="cstat-no" title="statement not covered" >                      &lt;Loader2 className="mr-2 h-4 w-4 animate-spin" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                      &lt;Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      Изменение...</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;/&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  ) : (</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;&gt;</span>
-<span class="cstat-no" title="statement not covered" >                      &lt;Key className="mr-2 h-4 w-4" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                      &lt;Key className="mr-2 h-4 w-4" aria-hidden="true" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                      Изменить пароль</span>
 <span class="cstat-no" title="statement not covered" >                    &lt;/&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  )}</span>
@@ -1659,7 +1662,7 @@
 <span class="cstat-no" title="statement not covered" >          &lt;/TabsContent&gt;</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/Tabs&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >    &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;/main&gt;</span>
 <span class="cstat-no" title="statement not covered" >  );</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;</pre></td></tr></table></pre>
@@ -1669,7 +1672,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-23T11:31:47.039Z
+                at 2025-10-23T19:41:28.467Z
             </div>
         <script src="../prettify.js"></script>
         <script>

@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/308</span>
+                <span class='fraction'>0/313</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/308</span>
+                <span class='fraction'>0/313</span>
             </div>
         
             
@@ -371,7 +371,17 @@
 <a name='L306'></a><a href='#L306'>306</a>
 <a name='L307'></a><a href='#L307'>307</a>
 <a name='L308'></a><a href='#L308'>308</a>
-<a name='L309'></a><a href='#L309'>309</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L309'></a><a href='#L309'>309</a>
+<a name='L310'></a><a href='#L310'>310</a>
+<a name='L311'></a><a href='#L311'>311</a>
+<a name='L312'></a><a href='#L312'>312</a>
+<a name='L313'></a><a href='#L313'>313</a>
+<a name='L314'></a><a href='#L314'>314</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -846,20 +856,21 @@
 <span class="cstat-no" title="statement not covered" >  return (</span>
 <span class="cstat-no" title="statement not covered" >    &lt;div className="min-h-screen flex flex-col bg-background"&gt;</span>
 <span class="cstat-no" title="statement not covered" >      &lt;Header /&gt;</span>
-<span class="cstat-no" title="statement not covered" >      </span>
-<span class="cstat-no" title="statement not covered" >      &lt;main className="flex-1 container mx-auto px-4 py-8"&gt;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >      &lt;main id="main-content" className="flex-1 container mx-auto px-4 py-8"&gt;</span>
 <span class="cstat-no" title="statement not covered" >        {/* Кнопка назад */}</span>
 <span class="cstat-no" title="statement not covered" >        &lt;Button</span>
 <span class="cstat-no" title="statement not covered" >          variant="ghost"</span>
 <span class="cstat-no" title="statement not covered" >          onClick={() =&gt; navigate('/projects')}</span>
 <span class="cstat-no" title="statement not covered" >          className="mb-4"</span>
+<span class="cstat-no" title="statement not covered" >          aria-label="Назад к проектам"</span>
 <span class="cstat-no" title="statement not covered" >        &gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;ArrowLeft className="h-4 w-4 mr-2" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;ArrowLeft className="h-4 w-4 mr-2" aria-hidden="true" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >          Назад к проектам</span>
 <span class="cstat-no" title="statement not covered" >        &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >        {/* Заголовок */}</span>
-<span class="cstat-no" title="statement not covered" >        &lt;div className="flex items-center justify-between mb-8"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;header className="flex items-center justify-between mb-8"&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;h1 className="text-3xl font-bold"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              {project?.name || 'Проект'}</span>
@@ -871,20 +882,20 @@
 <span class="cstat-no" title="statement not covered" >            )}</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;div className="flex gap-2"&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;Button onClick={() =&gt; setIsCreateDialogOpen(true)}&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Plus className="h-4 w-4 mr-2" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Button onClick={() =&gt; setIsCreateDialogOpen(true)} aria-label="Создать новую базу данных"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Plus className="h-4 w-4 mr-2" aria-hidden="true" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              Создать базу данных</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/Button&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;Button variant="outline" onClick={() =&gt; setIsSchemaGeneratorOpen(true)}&gt;</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Sparkles className="h-4 w-4 mr-2" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Button variant="outline" onClick={() =&gt; setIsSchemaGeneratorOpen(true)} aria-label="Открыть AI генератор схем"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Sparkles className="h-4 w-4 mr-2" aria-hidden="true" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              AI Генератор схем</span>
 <span class="cstat-no" title="statement not covered" >            &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;/header&gt;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >        {/* Tabs */}</span>
 <span class="cstat-no" title="statement not covered" >        &lt;Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6"&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;TabsList&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;TabsList role="tablist" aria-label="Разделы проекта"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TabsTrigger value="databases"&gt;Базы данных&lt;/TabsTrigger&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TabsTrigger value="composite"&gt;Составные представления&lt;/TabsTrigger&gt;</span>
 <span class="cstat-no" title="statement not covered" >            &lt;TabsTrigger value="versions"&gt;Версии схем&lt;/TabsTrigger&gt;</span>
@@ -893,42 +904,46 @@
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >          &lt;TabsContent value="databases" className="mt-6"&gt;</span>
 <span class="cstat-no" title="statement not covered" >            {/* Поиск */}</span>
-<span class="cstat-no" title="statement not covered" >            &lt;div className="mb-6"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;section className="mb-6" aria-label="Поиск баз данных"&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;div className="relative max-w-md"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                &lt;Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;Input</span>
+<span class="cstat-no" title="statement not covered" >                  type="search"</span>
 <span class="cstat-no" title="statement not covered" >                  placeholder="Поиск баз данных..."</span>
 <span class="cstat-no" title="statement not covered" >                  value={searchQuery}</span>
 <span class="cstat-no" title="statement not covered" >                  onChange={(e) =&gt; setSearchQuery(e.target.value)}</span>
 <span class="cstat-no" title="statement not covered" >                  className="pl-10"</span>
+<span class="cstat-no" title="statement not covered" >                  aria-label="Поиск баз данных по названию"</span>
 <span class="cstat-no" title="statement not covered" >                /&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
-<span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/section&gt;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >            {/* Список баз данных */}</span>
 <span class="cstat-no" title="statement not covered" >            {isLoading ? (</span>
-<span class="cstat-no" title="statement not covered" >              &lt;div className="text-center py-12"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div className="text-center py-12" role="status"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;p className="text-muted-foreground"&gt;Загрузка баз данных...&lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
 <span class="cstat-no" title="statement not covered" >            ) : filteredDatabases &amp;&amp; filteredDatabases.length &gt; 0 ? (</span>
-<span class="cstat-no" title="statement not covered" >              &lt;div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"&gt;</span>
-<span class="cstat-no" title="statement not covered" >                {filteredDatabases.map((database) =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;DatabaseCard</span>
-<span class="cstat-no" title="statement not covered" >                    key={database.id}</span>
-<span class="cstat-no" title="statement not covered" >                    database={database as any}</span>
-<span class="cstat-no" title="statement not covered" >                    onOpen={() =&gt; navigate(`/projects/${projectId}/database/${database.id}`)}</span>
-<span class="cstat-no" title="statement not covered" >                    onDelete={() =&gt; deleteDatabaseMutation.mutate(database.id)}</span>
-<span class="cstat-no" title="statement not covered" >                  /&gt;</span>
-<span class="cstat-no" title="statement not covered" >                ))}</span>
-<span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;section aria-label="Список баз данных"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" role="list"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  {filteredDatabases.map((database) =&gt; (</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;DatabaseCard</span>
+<span class="cstat-no" title="statement not covered" >                      key={database.id}</span>
+<span class="cstat-no" title="statement not covered" >                      database={database as any}</span>
+<span class="cstat-no" title="statement not covered" >                      onOpen={() =&gt; navigate(`/projects/${projectId}/database/${database.id}`)}</span>
+<span class="cstat-no" title="statement not covered" >                      onDelete={() =&gt; deleteDatabaseMutation.mutate(database.id)}</span>
+<span class="cstat-no" title="statement not covered" >                    /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  ))}</span>
+<span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/section&gt;</span>
 <span class="cstat-no" title="statement not covered" >            ) : (</span>
-<span class="cstat-no" title="statement not covered" >              &lt;div className="text-center py-12"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div className="text-center py-12" role="status"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                &lt;p className="text-muted-foreground mb-4"&gt;</span>
 <span class="cstat-no" title="statement not covered" >                  {searchQuery ? 'Базы данных не найдены' : 'В этом проекте пока нет баз данных'}</span>
 <span class="cstat-no" title="statement not covered" >                &lt;/p&gt;</span>
 <span class="cstat-no" title="statement not covered" >                {!searchQuery &amp;&amp; (</span>
-<span class="cstat-no" title="statement not covered" >                  &lt;Button onClick={() =&gt; setIsCreateDialogOpen(true)}&gt;</span>
-<span class="cstat-no" title="statement not covered" >                    &lt;Plus className="h-4 w-4 mr-2" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;Button onClick={() =&gt; setIsCreateDialogOpen(true)} aria-label="Создать первую базу данных"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                    &lt;Plus className="h-4 w-4 mr-2" aria-hidden="true" /&gt;</span>
 <span class="cstat-no" title="statement not covered" >                    Создать базу данных</span>
 <span class="cstat-no" title="statement not covered" >                  &lt;/Button&gt;</span>
 <span class="cstat-no" title="statement not covered" >                )}</span>
@@ -994,7 +1009,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-23T11:31:47.039Z
+                at 2025-10-23T19:41:28.467Z
             </div>
         <script src="../prettify.js"></script>
         <script>

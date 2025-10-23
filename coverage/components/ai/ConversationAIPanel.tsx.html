@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/648</span>
+                <span class='fraction'>0/656</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/648</span>
+                <span class='fraction'>0/656</span>
             </div>
         
             
@@ -711,7 +711,23 @@
 <a name='L646'></a><a href='#L646'>646</a>
 <a name='L647'></a><a href='#L647'>647</a>
 <a name='L648'></a><a href='#L648'>648</a>
-<a name='L649'></a><a href='#L649'>649</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L649'></a><a href='#L649'>649</a>
+<a name='L650'></a><a href='#L650'>650</a>
+<a name='L651'></a><a href='#L651'>651</a>
+<a name='L652'></a><a href='#L652'>652</a>
+<a name='L653'></a><a href='#L653'>653</a>
+<a name='L654'></a><a href='#L654'>654</a>
+<a name='L655'></a><a href='#L655'>655</a>
+<a name='L656'></a><a href='#L656'>656</a>
+<a name='L657'></a><a href='#L657'>657</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1372,7 +1388,7 @@
 <span class="cstat-no" title="statement not covered" >import { toast } from 'sonner';</span>
 <span class="cstat-no" title="statement not covered" >import { useAuth } from '@/contexts/AuthContext';</span>
 <span class="cstat-no" title="statement not covered" >import { cn } from '@/lib/utils';</span>
-<span class="cstat-no" title="statement not covered" >import { LineChart, Line, BarChart, Bar, PieChart, Pie, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';</span>
+<span class="cstat-no" title="statement not covered" >import { ChartWrapper, LazyLineChart, LazyBarChart, LazyPieChart, LazyAreaChart, Line, Bar, Pie, Area, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from '@/components/charts/LazyChart';</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >interface ConversationAIPanelProps {</span>
 <span class="cstat-no" title="statement not covered" >  open: boolean;</span>
@@ -1899,109 +1915,117 @@
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  if (config.type === 'line') {</span>
 <span class="cstat-no" title="statement not covered" >    return (</span>
-<span class="cstat-no" title="statement not covered" >      &lt;ResponsiveContainer width="100%" height={300}&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;LineChart data={chartData}&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;XAxis dataKey={config.x_column} stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Tooltip </span>
-<span class="cstat-no" title="statement not covered" >            contentStyle={{ </span>
-<span class="cstat-no" title="statement not covered" >              backgroundColor: 'hsl(var(--card))',</span>
-<span class="cstat-no" title="statement not covered" >              border: '1px solid hsl(var(--border))',</span>
-<span class="cstat-no" title="statement not covered" >              borderRadius: '8px',</span>
-<span class="cstat-no" title="statement not covered" >              fontSize: '12px'</span>
-<span class="cstat-no" title="statement not covered" >            }}</span>
-<span class="cstat-no" title="statement not covered" >          /&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Legend wrapperStyle={{ fontSize: '12px' }} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Line </span>
-<span class="cstat-no" title="statement not covered" >            type="monotone" </span>
-<span class="cstat-no" title="statement not covered" >            dataKey={config.y_column} </span>
-<span class="cstat-no" title="statement not covered" >            stroke="hsl(var(--primary))" </span>
-<span class="cstat-no" title="statement not covered" >            strokeWidth={2}</span>
-<span class="cstat-no" title="statement not covered" >            dot={{ fill: 'hsl(var(--primary))' }}</span>
-<span class="cstat-no" title="statement not covered" >          /&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;/LineChart&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;/ResponsiveContainer&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;ChartWrapper height={300}&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;ResponsiveContainer width="100%" height={300}&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;LazyLineChart data={chartData}&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;XAxis dataKey={config.x_column} stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Tooltip</span>
+<span class="cstat-no" title="statement not covered" >              contentStyle={{</span>
+<span class="cstat-no" title="statement not covered" >                backgroundColor: 'hsl(var(--card))',</span>
+<span class="cstat-no" title="statement not covered" >                border: '1px solid hsl(var(--border))',</span>
+<span class="cstat-no" title="statement not covered" >                borderRadius: '8px',</span>
+<span class="cstat-no" title="statement not covered" >                fontSize: '12px'</span>
+<span class="cstat-no" title="statement not covered" >              }}</span>
+<span class="cstat-no" title="statement not covered" >            /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Legend wrapperStyle={{ fontSize: '12px' }} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Line</span>
+<span class="cstat-no" title="statement not covered" >              type="monotone"</span>
+<span class="cstat-no" title="statement not covered" >              dataKey={config.y_column}</span>
+<span class="cstat-no" title="statement not covered" >              stroke="hsl(var(--primary))"</span>
+<span class="cstat-no" title="statement not covered" >              strokeWidth={2}</span>
+<span class="cstat-no" title="statement not covered" >              dot={{ fill: 'hsl(var(--primary))' }}</span>
+<span class="cstat-no" title="statement not covered" >            /&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;/LazyLineChart&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;/ResponsiveContainer&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;/ChartWrapper&gt;</span>
 <span class="cstat-no" title="statement not covered" >    );</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  if (config.type === 'bar') {</span>
 <span class="cstat-no" title="statement not covered" >    return (</span>
-<span class="cstat-no" title="statement not covered" >      &lt;ResponsiveContainer width="100%" height={300}&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;BarChart data={chartData}&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;XAxis dataKey={config.x_column} stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Tooltip </span>
-<span class="cstat-no" title="statement not covered" >            contentStyle={{ </span>
-<span class="cstat-no" title="statement not covered" >              backgroundColor: 'hsl(var(--card))',</span>
-<span class="cstat-no" title="statement not covered" >              border: '1px solid hsl(var(--border))',</span>
-<span class="cstat-no" title="statement not covered" >              borderRadius: '8px',</span>
-<span class="cstat-no" title="statement not covered" >              fontSize: '12px'</span>
-<span class="cstat-no" title="statement not covered" >            }}</span>
-<span class="cstat-no" title="statement not covered" >          /&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Legend wrapperStyle={{ fontSize: '12px' }} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Bar dataKey={config.y_column} fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;/BarChart&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;/ResponsiveContainer&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;ChartWrapper height={300}&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;ResponsiveContainer width="100%" height={300}&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;LazyBarChart data={chartData}&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;XAxis dataKey={config.x_column} stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Tooltip</span>
+<span class="cstat-no" title="statement not covered" >              contentStyle={{</span>
+<span class="cstat-no" title="statement not covered" >                backgroundColor: 'hsl(var(--card))',</span>
+<span class="cstat-no" title="statement not covered" >                border: '1px solid hsl(var(--border))',</span>
+<span class="cstat-no" title="statement not covered" >                borderRadius: '8px',</span>
+<span class="cstat-no" title="statement not covered" >                fontSize: '12px'</span>
+<span class="cstat-no" title="statement not covered" >              }}</span>
+<span class="cstat-no" title="statement not covered" >            /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Legend wrapperStyle={{ fontSize: '12px' }} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Bar dataKey={config.y_column} fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;/LazyBarChart&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;/ResponsiveContainer&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;/ChartWrapper&gt;</span>
 <span class="cstat-no" title="statement not covered" >    );</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  if (config.type === 'pie') {</span>
 <span class="cstat-no" title="statement not covered" >    return (</span>
-<span class="cstat-no" title="statement not covered" >      &lt;ResponsiveContainer width="100%" height={300}&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;PieChart&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Pie</span>
-<span class="cstat-no" title="statement not covered" >            data={chartData}</span>
-<span class="cstat-no" title="statement not covered" >            dataKey={config.y_column}</span>
-<span class="cstat-no" title="statement not covered" >            nameKey={config.x_column}</span>
-<span class="cstat-no" title="statement not covered" >            cx="50%"</span>
-<span class="cstat-no" title="statement not covered" >            cy="50%"</span>
-<span class="cstat-no" title="statement not covered" >            outerRadius={100}</span>
-<span class="cstat-no" title="statement not covered" >            label</span>
-<span class="cstat-no" title="statement not covered" >          &gt;</span>
-<span class="cstat-no" title="statement not covered" >            {chartData.map((entry, index) =&gt; (</span>
-<span class="cstat-no" title="statement not covered" >              &lt;Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >            ))}</span>
-<span class="cstat-no" title="statement not covered" >          &lt;/Pie&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Tooltip </span>
-<span class="cstat-no" title="statement not covered" >            contentStyle={{ </span>
-<span class="cstat-no" title="statement not covered" >              backgroundColor: 'hsl(var(--card))',</span>
-<span class="cstat-no" title="statement not covered" >              border: '1px solid hsl(var(--border))',</span>
-<span class="cstat-no" title="statement not covered" >              borderRadius: '8px',</span>
-<span class="cstat-no" title="statement not covered" >              fontSize: '12px'</span>
-<span class="cstat-no" title="statement not covered" >            }}</span>
-<span class="cstat-no" title="statement not covered" >          /&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Legend wrapperStyle={{ fontSize: '12px' }} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;/PieChart&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;/ResponsiveContainer&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;ChartWrapper height={300}&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;ResponsiveContainer width="100%" height={300}&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;LazyPieChart&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Pie</span>
+<span class="cstat-no" title="statement not covered" >              data={chartData}</span>
+<span class="cstat-no" title="statement not covered" >              dataKey={config.y_column}</span>
+<span class="cstat-no" title="statement not covered" >              nameKey={config.x_column}</span>
+<span class="cstat-no" title="statement not covered" >              cx="50%"</span>
+<span class="cstat-no" title="statement not covered" >              cy="50%"</span>
+<span class="cstat-no" title="statement not covered" >              outerRadius={100}</span>
+<span class="cstat-no" title="statement not covered" >              label</span>
+<span class="cstat-no" title="statement not covered" >            &gt;</span>
+<span class="cstat-no" title="statement not covered" >              {chartData.map((entry, index) =&gt; (</span>
+<span class="cstat-no" title="statement not covered" >                &lt;Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              ))}</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/Pie&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Tooltip</span>
+<span class="cstat-no" title="statement not covered" >              contentStyle={{</span>
+<span class="cstat-no" title="statement not covered" >                backgroundColor: 'hsl(var(--card))',</span>
+<span class="cstat-no" title="statement not covered" >                border: '1px solid hsl(var(--border))',</span>
+<span class="cstat-no" title="statement not covered" >                borderRadius: '8px',</span>
+<span class="cstat-no" title="statement not covered" >                fontSize: '12px'</span>
+<span class="cstat-no" title="statement not covered" >              }}</span>
+<span class="cstat-no" title="statement not covered" >            /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Legend wrapperStyle={{ fontSize: '12px' }} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;/LazyPieChart&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;/ResponsiveContainer&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;/ChartWrapper&gt;</span>
 <span class="cstat-no" title="statement not covered" >    );</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >  if (config.type === 'area') {</span>
 <span class="cstat-no" title="statement not covered" >    return (</span>
-<span class="cstat-no" title="statement not covered" >      &lt;ResponsiveContainer width="100%" height={300}&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;AreaChart data={chartData}&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;XAxis dataKey={config.x_column} stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Tooltip </span>
-<span class="cstat-no" title="statement not covered" >            contentStyle={{ </span>
-<span class="cstat-no" title="statement not covered" >              backgroundColor: 'hsl(var(--card))',</span>
-<span class="cstat-no" title="statement not covered" >              border: '1px solid hsl(var(--border))',</span>
-<span class="cstat-no" title="statement not covered" >              borderRadius: '8px',</span>
-<span class="cstat-no" title="statement not covered" >              fontSize: '12px'</span>
-<span class="cstat-no" title="statement not covered" >            }}</span>
-<span class="cstat-no" title="statement not covered" >          /&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Legend wrapperStyle={{ fontSize: '12px' }} /&gt;</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Area </span>
-<span class="cstat-no" title="statement not covered" >            type="monotone" </span>
-<span class="cstat-no" title="statement not covered" >            dataKey={config.y_column} </span>
-<span class="cstat-no" title="statement not covered" >            stroke="hsl(var(--primary))" </span>
-<span class="cstat-no" title="statement not covered" >            fill="hsl(var(--primary) / 0.2)"</span>
-<span class="cstat-no" title="statement not covered" >          /&gt;</span>
-<span class="cstat-no" title="statement not covered" >        &lt;/AreaChart&gt;</span>
-<span class="cstat-no" title="statement not covered" >      &lt;/ResponsiveContainer&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;ChartWrapper height={300}&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;ResponsiveContainer width="100%" height={300}&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;LazyAreaChart data={chartData}&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;XAxis dataKey={config.x_column} stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: '12px' }} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Tooltip</span>
+<span class="cstat-no" title="statement not covered" >              contentStyle={{</span>
+<span class="cstat-no" title="statement not covered" >                backgroundColor: 'hsl(var(--card))',</span>
+<span class="cstat-no" title="statement not covered" >                border: '1px solid hsl(var(--border))',</span>
+<span class="cstat-no" title="statement not covered" >                borderRadius: '8px',</span>
+<span class="cstat-no" title="statement not covered" >                fontSize: '12px'</span>
+<span class="cstat-no" title="statement not covered" >              }}</span>
+<span class="cstat-no" title="statement not covered" >            /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Legend wrapperStyle={{ fontSize: '12px' }} /&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Area</span>
+<span class="cstat-no" title="statement not covered" >              type="monotone"</span>
+<span class="cstat-no" title="statement not covered" >              dataKey={config.y_column}</span>
+<span class="cstat-no" title="statement not covered" >              stroke="hsl(var(--primary))"</span>
+<span class="cstat-no" title="statement not covered" >              fill="hsl(var(--primary) / 0.2)"</span>
+<span class="cstat-no" title="statement not covered" >            /&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;/LazyAreaChart&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;/ResponsiveContainer&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;/ChartWrapper&gt;</span>
 <span class="cstat-no" title="statement not covered" >    );</span>
 <span class="cstat-no" title="statement not covered" >  }</span>
 <span class="cstat-no" title="statement not covered" ></span>
@@ -2014,7 +2038,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-23T11:31:46.902Z
+                at 2025-10-23T19:41:28.321Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/616</span>
+                <span class='fraction'>0/627</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/616</span>
+                <span class='fraction'>0/627</span>
             </div>
         
             
@@ -678,7 +678,29 @@
 <a name='L613'></a><a href='#L613'>613</a>
 <a name='L614'></a><a href='#L614'>614</a>
 <a name='L615'></a><a href='#L615'>615</a>
-<a name='L616'></a><a href='#L616'>616</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L616'></a><a href='#L616'>616</a>
+<a name='L617'></a><a href='#L617'>617</a>
+<a name='L618'></a><a href='#L618'>618</a>
+<a name='L619'></a><a href='#L619'>619</a>
+<a name='L620'></a><a href='#L620'>620</a>
+<a name='L621'></a><a href='#L621'>621</a>
+<a name='L622'></a><a href='#L622'>622</a>
+<a name='L623'></a><a href='#L623'>623</a>
+<a name='L624'></a><a href='#L624'>624</a>
+<a name='L625'></a><a href='#L625'>625</a>
+<a name='L626'></a><a href='#L626'>626</a>
+<a name='L627'></a><a href='#L627'>627</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1308,9 +1330,10 @@
 <span class="cstat-no" title="statement not covered" >import { Alert, AlertDescription } from '@/components/ui/alert';</span>
 <span class="cstat-no" title="statement not covered" >import { Upload, File, X, AlertCircle, CheckCircle } from 'lucide-react';</span>
 <span class="cstat-no" title="statement not covered" >import { cn } from '@/lib/utils';</span>
-<span class="cstat-no" title="statement not covered" >import { parseFile, ParseResult } from '@/utils/fileParser';</span>
+<span class="cstat-no" title="statement not covered" >import type { ParseResult } from '@/utils/fileParser';</span>
 <span class="cstat-no" title="statement not covered" >import { supabase } from '@/integrations/supabase/client';</span>
 <span class="cstat-no" title="statement not covered" >import { useToast } from '@/hooks/use-toast';</span>
+<span class="cstat-no" title="statement not covered" >import { useAnnounce } from '@/components/accessibility/LiveAnnouncer';</span>
 <span class="cstat-no" title="statement not covered" >import { ImportModeSelector } from './ImportModeSelector';</span>
 <span class="cstat-no" title="statement not covered" >import { DuplicateStrategySelector } from './DuplicateStrategySelector';</span>
 <span class="cstat-no" title="statement not covered" >import { ImportPreview, ColumnDefinition } from './ImportPreview';</span>
@@ -1337,6 +1360,7 @@
 <span class="cstat-no" title="statement not covered" >  databaseId,</span>
 <span class="cstat-no" title="statement not covered" >}) =&gt; {</span>
 <span class="cstat-no" title="statement not covered" >  const { toast } = useToast();</span>
+<span class="cstat-no" title="statement not covered" >  const announce = useAnnounce();</span>
 <span class="cstat-no" title="statement not covered" >  const acceptedFormats = ['.csv', '.xlsx', '.xls'];</span>
 <span class="cstat-no" title="statement not covered" >  const maxSize = 10;</span>
 <span class="cstat-no" title="statement not covered" >  const [file, setFile] = useState&lt;File | null&gt;(null);</span>
@@ -1419,6 +1443,9 @@
 <span class="cstat-no" title="statement not covered" >    try {</span>
 <span class="cstat-no" title="statement not covered" >      console.log('Starting file parse:', file.name);</span>
 <span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >      // Lazy load fileParser only when needed</span>
+<span class="cstat-no" title="statement not covered" >      const { parseFile } = await import('@/utils/fileParser');</span>
+<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >      // Parse file</span>
 <span class="cstat-no" title="statement not covered" >      const result = await parseFile(file);</span>
 <span class="cstat-no" title="statement not covered" >      console.log('Parse result:', {</span>
@@ -1472,7 +1499,7 @@
 <span class="cstat-no" title="statement not covered" >          database_id: databaseId,</span>
 <span class="cstat-no" title="statement not covered" >          filename: parseResult.fileName,</span>
 <span class="cstat-no" title="statement not covered" >          file_type: parseResult.fileName.split('.').pop()?.toLowerCase(),</span>
-<span class="cstat-no" title="statement not covered" >          file_size: parseResult.fileSize,</span>
+<span class="cstat-no" title="statement not covered" >          file_size: file?.size || 0,</span>
 <span class="cstat-no" title="statement not covered" >          uploaded_by: user.id,</span>
 <span class="cstat-no" title="statement not covered" >          import_mode: importMode,</span>
 <span class="cstat-no" title="statement not covered" >          duplicate_strategy: duplicateStrategy,</span>
@@ -1526,6 +1553,8 @@
 <span class="cstat-no" title="statement not covered" >          title: 'Схема импортирована',</span>
 <span class="cstat-no" title="statement not covered" >          description: `Создано ${createdCount} новых колонок`,</span>
 <span class="cstat-no" title="statement not covered" >        });</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >        announce(`Схема импортирована успешно. Создано ${createdCount} новых колонок`, 'polite');</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >        // Clear state for schema-only import</span>
 <span class="cstat-no" title="statement not covered" >        setFile(null);</span>
@@ -1692,6 +1721,8 @@
 <span class="cstat-no" title="statement not covered" >          description: `Импортировано: ${rowsImported} строк${rowsSkipped &gt; 0 ? `, Пропущено: ${rowsSkipped}` : ''}${duplicatesFound &gt; 0 ? `, Дубликатов: ${duplicatesFound}` : ''}`,</span>
 <span class="cstat-no" title="statement not covered" >        });</span>
 <span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >        announce(`Импорт завершен успешно. Импортировано ${rowsImported} строк из файла ${parseResult.fileName}`, 'polite');</span>
+<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >        // Calculate duration and prepare success data</span>
 <span class="cstat-no" title="statement not covered" >        const duration = Date.now() - startTime;</span>
 <span class="cstat-no" title="statement not covered" >        const successData: ImportSuccessData = {</span>
@@ -1723,6 +1754,8 @@
 <span class="cstat-no" title="statement not covered" >        description: errorMessage,</span>
 <span class="cstat-no" title="statement not covered" >        variant: 'destructive',</span>
 <span class="cstat-no" title="statement not covered" >      });</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >      announce(`Ошибка импорта: ${errorMessage}`, 'assertive');</span>
 <span class="cstat-no" title="statement not covered" >    } finally {</span>
 <span class="cstat-no" title="statement not covered" >      setUploading(false);</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
@@ -1915,7 +1948,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-23T11:31:46.902Z
+                at 2025-10-23T19:41:28.321Z
             </div>
         <script src="../../prettify.js"></script>
         <script>
