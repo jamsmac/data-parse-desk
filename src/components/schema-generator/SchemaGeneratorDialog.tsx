@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAnnounce } from '@/components/accessibility/LiveAnnouncer';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Progress } from '@/components/ui/progress';
 import { SchemaEditor } from './SchemaEditor';
@@ -43,6 +44,7 @@ const STEPS = [
 
 export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGeneratorDialogProps) {
   const { user } = useAuth();
+  const announce = useAnnounce();
   const [step, setStep] = useState<StepId>('input');
   const [completedSteps, setCompletedSteps] = useState<StepId[]>([]);
   const [inputType, setInputType] = useState<'text' | 'json' | 'csv'>('text');
@@ -131,6 +133,7 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
   // Analyze schema with AI
   const analyzeMutation = useMutation({
     mutationFn: async (input: { type: string; data: string }) => {
+      announce('Начинается генерация схемы с помощью AI', 'polite');
       const { data, error } = await supabase.functions.invoke('ai-analyze-schema', {
         body: {
           input: input.data,
@@ -148,10 +151,11 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
       setCompletedSteps(prev => [...new Set([...prev, 'input'])]);
       setErrorDetails(null);
       toast.success('Схема сгенерирована AI');
+      announce('Схема успешно сгенерирована. Переход к просмотру результата', 'assertive');
     },
     onError: (error: any) => {
       const errorMessage = error.message || '';
-      
+
       if (errorMessage.includes('429') || errorMessage.toLowerCase().includes('rate limit')) {
         setErrorDetails({
           type: 'rate_limit',
@@ -160,6 +164,7 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
         toast.error('Слишком много запросов', {
           description: 'Превышен лимит. Подождите 60 секунд.'
         });
+        announce('Ошибка: превышен лимит запросов к AI. Подождите минуту', 'assertive');
       } else if (errorMessage.includes('402') || errorMessage.toLowerCase().includes('credits') || errorMessage.toLowerCase().includes('insufficient')) {
         const totalCredits = (credits?.free_credits || 0) + (credits?.paid_credits || 0);
         setErrorDetails({
@@ -169,6 +174,7 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
         toast.error('Недостаточно кредитов', {
           description: 'Пополните баланс для продолжения работы.'
         });
+        announce('Ошибка: недостаточно AI кредитов для генерации схемы', 'assertive');
       } else {
         setErrorDetails({
           type: 'general',
@@ -177,6 +183,7 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
         toast.error('Ошибка анализа', {
           description: errorMessage
         });
+        announce(`Ошибка при анализе схемы: ${errorMessage}`, 'assertive');
       }
     },
   });
@@ -186,6 +193,7 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
     mutationFn: async () => {
       if (!generatedSchema) throw new Error('No schema');
 
+      announce('Начинается создание таблиц в базе данных', 'polite');
       const { data, error } = await supabase.functions.invoke('ai-create-schema', {
         body: {
           projectId,
@@ -198,6 +206,7 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
     },
     onSuccess: () => {
       toast.success('Таблицы созданы успешно');
+      announce('Таблицы успешно созданы в базе данных', 'assertive');
       handleClose();
     },
     onError: (error: any) => {
@@ -205,12 +214,15 @@ export function SchemaGeneratorDialog({ open, onClose, projectId }: SchemaGenera
         toast.error('Превышен лимит запросов', {
           description: 'Слишком много запросов. Пожалуйста, попробуйте через минуту.'
         });
+        announce('Ошибка: превышен лимит запросов при создании таблиц', 'assertive');
       } else if (error.message?.includes('402') || error.message?.includes('credits')) {
         toast.error('Недостаточно кредитов', {
           description: 'Пополните баланс кредитов в настройках для продолжения работы.'
         });
+        announce('Ошибка: недостаточно кредитов для создания таблиц', 'assertive');
       } else {
         toast.error(error.message || 'Ошибка создания таблиц');
+        announce(`Ошибка при создании таблиц: ${error.message || 'Неизвестная ошибка'}`, 'assertive');
       }
     },
   });
