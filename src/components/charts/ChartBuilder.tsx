@@ -35,9 +35,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon, X } from 'lucide-react';
+import { BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon, X, Grid3x3 } from 'lucide-react';
 import { ChartConfig, ChartType, AggregationType, ChartAxis, ChartData } from '@/types/charts';
 import { TableSchema } from '@/types/database';
+import { HeatmapChart, HeatmapCell } from './HeatmapChart';
 
 export interface ChartBuilderProps {
   databaseId: string;
@@ -55,6 +56,7 @@ const CHART_TYPES: { value: ChartType; label: string; icon: any }[] = [
   { value: 'pie', label: 'Круговой', icon: PieChartIcon },
   { value: 'scatter', label: 'Точечный', icon: BarChart3 },
   { value: 'composed', label: 'Комбинированный', icon: BarChart3 },
+  { value: 'heatmap', label: 'Тепловая карта', icon: Grid3x3 },
 ];
 
 const AGGREGATIONS: { value: AggregationType; label: string }[] = [
@@ -354,6 +356,29 @@ export function ChartBuilder({
               ))}
             </ScatterChart>
           </ResponsiveContainer>
+        );
+
+      case 'heatmap':
+        // Convert chart data to heatmap cells format
+        const heatmapData: HeatmapCell[] = chartData.flatMap((item) => {
+          const xValue = item[config.xAxis!.columnName];
+          return config.yAxis.map((axis) => ({
+            x: xValue,
+            y: axis.columnName,
+            value: Number(item[axis.columnName]) || 0,
+            label: `${xValue} - ${axis.columnName}: ${item[axis.columnName]}`,
+          }));
+        });
+
+        return (
+          <HeatmapChart
+            data={heatmapData}
+            title={config.name}
+            colorScheme="blue"
+            showValues={true}
+            showLegend={config.showLegend}
+            cellSize={60}
+          />
         );
 
       default:

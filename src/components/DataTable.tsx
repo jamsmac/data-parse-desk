@@ -26,8 +26,20 @@ import { CellHistoryPanel } from '@/components/history/CellHistoryPanel';
 import { FormattingRulesPanel } from '@/components/formatting/FormattingRulesPanel';
 import { RowContextMenu } from '@/components/database/RowContextMenu';
 import { KeyboardShortcutsHelp } from '@/components/database/KeyboardShortcutsHelp';
+import { BulkActionsToolbar } from '@/components/database/BulkActionsToolbar';
+import { BulkEditDialog } from '@/components/database/BulkEditDialog';
 import { useKeyboardNavigation, CellPosition } from '@/hooks/useKeyboardNavigation';
 import { useToast } from '@/hooks/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface DataTableProps {
   data: NormalizedRow[] | GroupedData[];
@@ -43,6 +55,9 @@ interface DataTableProps {
   onRowHistory?: (rowId: string) => void;
   onInsertRowAbove?: (rowId: string) => void;
   onInsertRowBelow?: (rowId: string) => void;
+  onBulkDelete?: (rowIds: string[]) => Promise<void>;
+  onBulkDuplicate?: (rowIds: string[]) => Promise<void>;
+  onBulkEdit?: (rowIds: string[], column: string, value: any) => Promise<void>;
 }
 
 type SortDirection = 'asc' | 'desc' | null;
@@ -61,6 +76,9 @@ export function DataTable({
   onRowHistory,
   onInsertRowAbove,
   onInsertRowBelow,
+  onBulkDelete,
+  onBulkDuplicate,
+  onBulkEdit,
 }: DataTableProps) {
   const { toast } = useToast();
   const [page, setPage] = useState(0);
@@ -74,6 +92,95 @@ export function DataTable({
   const [historyCell, setHistoryCell] = useState<{ rowId: string; column: string } | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [showFormatting, setShowFormatting] = useState(false);
+
+  // Bulk selection state
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
+  const [showBulkEdit, setShowBulkEdit] = useState(false);
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = useState(false);
+
+  // Toggle row selection
+  const toggleRowSelection = (rowId: string) => {
+    setSelectedRowIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(rowId)) {
+        newSet.delete(rowId);
+      } else {
+        newSet.add(rowId);
+      }
+      return newSet;
+    });
+  };
+
+  // Select/Deselect all
+  const toggleSelectAll = () => {
+    if (selectedRowIds.size === paginatedData.length) {
+      setSelectedRowIds(new Set());
+    } else {
+      const allIds = (paginatedData as NormalizedRow[]).map(row => row.id);
+      setSelectedRowIds(new Set(allIds));
+    }
+  };
+
+  // Bulk delete handler
+  const handleBulkDelete = async () => {
+    if (!onBulkDelete || selectedRowIds.size === 0) return;
+
+    try {
+      await onBulkDelete(Array.from(selectedRowIds));
+      setSelectedRowIds(new Set());
+      setShowBulkDeleteConfirm(false);
+      toast({
+        title: 'Удалено',
+        description: `Удалено ${selectedRowIds.size} записей`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось удалить записи',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Bulk duplicate handler
+  const handleBulkDuplicate = async () => {
+    if (!onBulkDuplicate || selectedRowIds.size === 0) return;
+
+    try {
+      await onBulkDuplicate(Array.from(selectedRowIds));
+      setSelectedRowIds(new Set());
+      toast({
+        title: 'Дублировано',
+        description: `Создано ${selectedRowIds.size} копий`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось дублировать записи',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Bulk edit handler
+  const handleBulkEditSave = async (column: string, value: any) => {
+    if (!onBulkEdit || selectedRowIds.size === 0) return;
+
+    try {
+      await onBulkEdit(Array.from(selectedRowIds), column, value);
+      setSelectedRowIds(new Set());
+      toast({
+        title: 'Обновлено',
+        description: `Обновлено ${selectedRowIds.size} записей`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Ошибка',
+        description: 'Не удалось обновить записи',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const visibleHeaders = headers.filter(h => visibleColumns.has(h));
 
@@ -304,6 +411,15 @@ export function DataTable({
           <Table>
             <TableHeader className="bg-table-header sticky top-0">
               <TableRow>
+                {!isGrouped && (onBulkDelete || onBulkDuplicate || onBulkEdit) && (
+                  <TableHead className="w-12">
+                    <Checkbox
+                      checked={selectedRowIds.size === paginatedData.length && paginatedData.length > 0}
+                      onCheckedChange={toggleSelectAll}
+                      aria-label="Выбрать все"
+                    />
+                  </TableHead>
+                )}
                 {visibleHeaders.map(header => (
                   <TableHead
                     key={header}
@@ -401,6 +517,15 @@ export function DataTable({
                         style={rowFormat ? formatToStyles(rowFormat) : undefined}
                         onClick={() => setSelectedRow(row)}
                       >
+                      {(onBulkDelete || onBulkDuplicate || onBulkEdit) && (
+                        <TableCell className="w-12" onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedRowIds.has(row.id)}
+                            onCheckedChange={() => toggleRowSelection(row.id)}
+                            aria-label={`Выбрать строку ${idx + 1}`}
+                          />
+                        </TableCell>
+                      )}
                       {visibleHeaders.map((header, colIdx) => {
                         const isEditing = editingCell?.rowId === row.id && editingCell?.column === header;
                         const value = row[header];
@@ -568,6 +693,42 @@ export function DataTable({
           columns={headers}
         />
       )}
+
+      {/* Bulk Actions Toolbar */}
+      <BulkActionsToolbar
+        selectedCount={selectedRowIds.size}
+        onDelete={() => setShowBulkDeleteConfirm(true)}
+        onDuplicate={handleBulkDuplicate}
+        onEdit={() => setShowBulkEdit(true)}
+        onClear={() => setSelectedRowIds(new Set())}
+      />
+
+      {/* Bulk Edit Dialog */}
+      <BulkEditDialog
+        open={showBulkEdit}
+        onOpenChange={setShowBulkEdit}
+        columns={headers.map(h => ({ name: h, type: columnTypes[h] || 'text' }))}
+        selectedCount={selectedRowIds.size}
+        onSave={handleBulkEditSave}
+      />
+
+      {/* Bulk Delete Confirmation */}
+      <AlertDialog open={showBulkDeleteConfirm} onOpenChange={setShowBulkDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить {selectedRowIds.size} записей?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Это действие нельзя отменить. Все выбранные записи будут удалены навсегда.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction onClick={handleBulkDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

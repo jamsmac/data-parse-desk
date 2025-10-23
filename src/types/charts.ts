@@ -1,4 +1,4 @@
-export type ChartType = 'line' | 'bar' | 'area' | 'pie' | 'scatter' | 'composed';
+export type ChartType = 'line' | 'bar' | 'area' | 'pie' | 'scatter' | 'composed' | 'heatmap';
 
 export type AggregationType = 'sum' | 'avg' | 'count' | 'min' | 'max' | 'none';
 

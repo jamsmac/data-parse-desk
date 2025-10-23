@@ -11,6 +11,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/DataTable';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { TableSkeleton } from '@/components/common/TableSkeleton';
+import { CardSkeleton } from '@/components/common/CardSkeleton';
+import { KanbanSkeleton } from '@/components/common/KanbanSkeleton';
+import { Breadcrumbs } from '@/components/common/Breadcrumbs';
+import { EmptyState } from '@/components/common/EmptyState';
 import { ColumnManager } from '@/components/database/ColumnManager';
 import { UploadFileDialog, ImportSuccessData } from '@/components/import/UploadFileDialog';
 import { ImportSuccessScreen } from '@/components/import/ImportSuccessScreen';
@@ -429,6 +434,50 @@ export default function DatabaseView() {
     });
   };
 
+  // Bulk operations
+  const handleBulkDelete = async (rowIds: string[]) => {
+    try {
+      for (const rowId of rowIds) {
+        await supabase.rpc('delete_table_row', { p_id: rowId });
+      }
+      refresh();
+    } catch (error: any) {
+      throw new Error('Не удалось удалить записи');
+    }
+  };
+
+  const handleBulkDuplicate = async (rowIds: string[]) => {
+    try {
+      for (const rowId of rowIds) {
+        const row = tableData.find((r: any) => r.id === rowId);
+        if (row) {
+          await handleAddRow(row.data);
+        }
+      }
+      refresh();
+    } catch (error: any) {
+      throw new Error('Не удалось дублировать записи');
+    }
+  };
+
+  const handleBulkEdit = async (rowIds: string[], column: string, value: any) => {
+    try {
+      for (const rowId of rowIds) {
+        const row = tableData.find((r: any) => r.id === rowId);
+        if (row) {
+          const updatedData = {
+            ...row.data,
+            [column]: value,
+          };
+          await handleUpdateRow(rowId, updatedData);
+        }
+      }
+      refresh();
+    } catch (error: any) {
+      throw new Error('Не удалось обновить записи');
+    }
+  };
+
   // Helper function for Kanban columns
   const getKanbanColumns = (rows: any[]) => {
     // Find status column
@@ -487,13 +536,27 @@ export default function DatabaseView() {
     }));
   };
 
-  if (loading || dataLoading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <LoadingSpinner />
       </div>
     );
   }
+
+  // Show skeleton during data loading
+  const renderViewSkeleton = () => {
+    switch (viewType) {
+      case 'kanban':
+        return <KanbanSkeleton />;
+      case 'gallery':
+        return <CardSkeleton count={6} />;
+      case 'calendar':
+        return <CardSkeleton count={9} />;
+      default:
+        return <TableSkeleton rows={pageSize} columns={schemas.length || 5} />;
+    }
+  };
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
@@ -510,6 +573,14 @@ export default function DatabaseView() {
             <ArrowLeft className="mr-2 h-4 w-4" />
             Назад к проекту
           </Button>
+
+          <Breadcrumbs
+            items={[
+              { label: 'Проекты', href: '/' },
+              { label: database?.name || 'Загрузка...', href: `/projects/${projectId}` },
+              { label: 'Таблица' },
+            ]}
+          />
 
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -665,7 +736,18 @@ export default function DatabaseView() {
 
         {/* Conditional View Rendering */}
         <div className="mt-6">
-          {viewType === 'table' && (
+          {dataLoading ? renderViewSkeleton() :
+           !dataLoading && tableData.length === 0 ? (
+            <EmptyState
+              icon={Upload}
+              title="Нет данных"
+              description="Загрузите файл или добавьте запись вручную для начала работы"
+              action={{
+                label: 'Загрузить файл',
+                onClick: () => setIsUploadDialogOpen(true),
+              }}
+            />
+          ) : viewType === 'table' && (
             <DataTable
             data={tableData.map((row: any) => ({
               id: row.id,
@@ -709,6 +791,9 @@ export default function DatabaseView() {
             onRowHistory={handleRowHistory}
             onInsertRowAbove={handleInsertRowAbove}
             onInsertRowBelow={handleInsertRowBelow}
+            onBulkDelete={handleBulkDelete}
+            onBulkDuplicate={handleBulkDuplicate}
+            onBulkEdit={handleBulkEdit}
           />
           )}
 
