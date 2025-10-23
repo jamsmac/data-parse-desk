@@ -163,7 +163,8 @@ export default function Reports() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <main id="main-content" className="space-y-6">
+      <header className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Отчеты</h1>
           <p className="text-muted-foreground mt-2">
@@ -176,8 +177,9 @@ export default function Reports() {
             Создать шаблон
           </Button>
         )}
-      </div>
+      </header>
 
+      <section aria-label="Создание и управление отчетами">
       {isBuilderOpen ? (
         <ReportBuilder
           initialTemplate={editingTemplate || undefined}
@@ -240,9 +242,11 @@ export default function Reports() {
           </TabsContent>
         </Tabs>
       )}
+      </section>
 
       {/* Stats */}
       {!isBuilderOpen && (
+        <section aria-label="Статистика отчетов">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
           <div className="p-4 bg-primary/5 rounded-lg border">
             <div className="text-sm text-muted-foreground">Шаблонов</div>
@@ -259,7 +263,9 @@ export default function Reports() {
             <div className="text-2xl font-bold mt-1">{schedules.length}</div>
           </div>
         </div>
+        </section>
       )}
+      </main>
     </div>
   );
 }

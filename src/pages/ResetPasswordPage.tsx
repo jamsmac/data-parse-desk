@@ -80,6 +80,7 @@ export default function ResetPasswordPage() {
   if (isUpdateMode) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
+        <main id="main-content">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Обновить пароль</CardTitle>
@@ -120,12 +121,14 @@ export default function ResetPasswordPage() {
             </form>
           </CardContent>
         </Card>
+        </main>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
+      <main id="main-content">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Сброс пароля</CardTitle>
@@ -160,6 +163,7 @@ export default function ResetPasswordPage() {
           </form>
         </CardContent>
       </Card>
+      </main>
     </div>
   );
 }

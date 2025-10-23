@@ -61,8 +61,8 @@ export default function Integrations() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+      <main id="main-content" className="max-w-7xl mx-auto space-y-6">
+        <header className="flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-bold tracking-tight">Интеграции</h1>
             <p className="text-muted-foreground mt-2">
@@ -72,8 +72,9 @@ export default function Integrations() {
           <Badge variant="secondary" className="text-lg px-4 py-2">
             3 доступно
           </Badge>
-        </div>
+        </header>
 
+        <section aria-label="Настройка интеграций с внешними сервисами">
         <Tabs defaultValue="zapier" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="zapier">
@@ -228,7 +229,8 @@ export default function Integrations() {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
+        </section>
+      </main>
     </div>
   );
 }

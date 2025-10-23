@@ -75,7 +75,8 @@ export default function ApiKeys() {
 
   return (
     <div className="container mx-auto py-8 space-y-6">
-      <div className="flex justify-between items-center">
+      <main id="main-content" className="space-y-6">
+      <header className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">API Keys</h1>
           <p className="text-muted-foreground mt-1">
@@ -86,9 +87,10 @@ export default function ApiKeys() {
           <Plus className="h-4 w-4 mr-2" />
           Создать API ключ
         </Button>
-      </div>
+      </header>
 
       {/* Stats Cards */}
+      <section aria-label="Статистика API ключей">
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -142,8 +144,10 @@ export default function ApiKeys() {
           </CardContent>
         </Card>
       </div>
+      </section>
 
       {/* Tabs */}
+      <section aria-label="Управление и документация API">
       <Tabs defaultValue="keys" className="space-y-4">
         <TabsList>
           <TabsTrigger value="keys">Мои ключи</TabsTrigger>
@@ -244,11 +248,13 @@ export default function ApiKeys() {
           </Card>
         </TabsContent>
       </Tabs>
+      </section>
 
       <ApiKeyFormDialog
         open={isCreateDialogOpen}
         onOpenChange={setIsCreateDialogOpen}
       />
-    </div>
+    </main>
+  </div>
   );
 }

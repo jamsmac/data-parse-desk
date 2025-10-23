@@ -50,6 +50,7 @@ export default function InstallPWA() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-secondary/5 flex items-center justify-center p-4">
+      <main id="main-content">
       <Card className="max-w-2xl w-full">
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
@@ -153,6 +154,7 @@ export default function InstallPWA() {
           </div>
         </CardContent>
       </Card>
+      </main>
     </div>
   );
 }
