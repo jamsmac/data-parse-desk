@@ -1,31 +1,12 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { ChevronDown, ChevronUp, Eye, Download, Edit2, History, Palette } from 'lucide-react';
 import { NormalizedRow, formatAmount, GroupedData } from '@/utils/parseData';
-import { applyFormattingRules, formatToStyles, type FormattingRule } from '@/utils/conditionalFormatting';
-import { Button } from './ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Checkbox } from './ui/checkbox';
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-} from './ui/sheet';
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuTrigger,
-} from './ui/context-menu';
-import { EditableCell } from '@/components/database/EditableCell';
+import { applyFormattingRules, type FormattingRule } from '@/utils/conditionalFormatting';
+import { Table, TableBody, TableCell, TableRow } from './ui/table';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from './ui/sheet';
 import { CellHistoryPanel } from '@/components/history/CellHistoryPanel';
 import { FormattingRulesPanel } from '@/components/formatting/FormattingRulesPanel';
-import { RowContextMenu } from '@/components/database/RowContextMenu';
-import { KeyboardShortcutsHelp } from '@/components/database/KeyboardShortcutsHelp';
 import { BulkActionsToolbar } from '@/components/database/BulkActionsToolbar';
 import { BulkEditDialog } from '@/components/database/BulkEditDialog';
 import { useKeyboardNavigation, CellPosition } from '@/hooks/useKeyboardNavigation';
@@ -41,6 +22,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+// Import split components
+import { DataTableToolbar } from './DataTable/DataTableToolbar';
+import { DataTableHeader } from './DataTable/DataTableHeader';
+import { DataTableRow } from './DataTable/DataTableRow';
+import { DataTablePagination } from './DataTable/DataTablePagination';
 
 interface DataTableProps {
   data?: NormalizedRow[] | GroupedData[];
