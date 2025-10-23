@@ -91,8 +91,8 @@ export default function AdvancedAnalytics() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+      <main id="main-content" className="max-w-7xl mx-auto space-y-6">
+        <header className="flex items-center justify-between">
           <div>
             <h1 className="text-4xl font-bold tracking-tight">Advanced Analytics</h1>
             <p className="text-muted-foreground mt-2">
@@ -112,9 +112,10 @@ export default function AdvancedAnalytics() {
               ))}
             </SelectContent>
           </Select>
-        </div>
+        </header>
 
         {/* KPI Cards */}
+        <section aria-label="Ключевые показатели эффективности">
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -160,8 +161,10 @@ export default function AdvancedAnalytics() {
             </CardContent>
           </Card>
         </div>
+        </section>
 
         {/* Charts */}
+        <section aria-label="Визуализация данных">
         <Tabs defaultValue="activity" className="space-y-4">
           <TabsList>
             <TabsTrigger value="activity">Активность</TabsTrigger>
@@ -243,7 +246,8 @@ export default function AdvancedAnalytics() {
             </Card>
           </TabsContent>
         </Tabs>
-      </div>
+        </section>
+      </main>
     </div>
   );
 }
