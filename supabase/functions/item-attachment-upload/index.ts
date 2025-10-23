@@ -141,7 +141,7 @@ Deno.serve(async (req) => {
 
     // TODO: Generate thumbnail for images (future enhancement)
     // This would use sharp or similar library
-    let thumbnailPath = null;
+    const thumbnailPath = null;
 
     // Save metadata to database
     const { data: attachment, error: dbError } = await supabaseClient

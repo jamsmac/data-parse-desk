@@ -4,10 +4,17 @@
 
 import { ValidationError, ValidationWarning, ColumnType } from '@/types/database';
 
+export type ValidationRuleParams = {
+  min?: number;
+  max?: number;
+  validator?: (value: unknown) => boolean;
+  [key: string]: unknown;
+};
+
 export interface ValidationRule {
   type: 'required' | 'type' | 'format' | 'range' | 'unique' | 'reference' | 'custom';
   message: string;
-  params?: any;
+  params?: ValidationRuleParams;
 }
 
 export interface ValidationResult {
@@ -32,12 +39,12 @@ class AdvancedValidator {
    * Валидирует данные перед импортом
    */
   validate(
-    data: Record<string, any>[],
+    data: Record<string, unknown>[],
     schema: { name: string; type: ColumnType; required?: boolean; rules?: ValidationRule[] }[]
   ): ValidationResult {
     const errors: ValidationError[] = [];
     const warnings: ValidationWarning[] = [];
-    const uniqueValues = new Map<string, Set<any>>();
+    const uniqueValues = new Map<string, Set<unknown>>();
 
     // Инициализируем множества для проверки уникальности
     schema.forEach((col) => {
@@ -136,7 +143,7 @@ class AdvancedValidator {
   /**
    * Валидирует тип данных
    */
-  private validateType(value: any, type: ColumnType): string | null {
+  private validateType(value: unknown, type: ColumnType): string | null {
     switch (type) {
       case 'number':
         if (isNaN(Number(value))) {
@@ -182,7 +189,7 @@ class AdvancedValidator {
   /**
    * Валидирует формат (мягкие проверки)
    */
-  private validateFormat(value: any, type: ColumnType): string | null {
+  private validateFormat(value: unknown, type: ColumnType): string | null {
     const str = String(value);
 
     switch (type) {
@@ -216,7 +223,7 @@ class AdvancedValidator {
    * Валидирует кастомное правило
    */
   private validateRule(
-    value: any,
+    value: unknown,
     rule: ValidationRule,
     row: number,
     column: string
@@ -245,7 +252,7 @@ class AdvancedValidator {
   /**
    * Проверяет корректность даты
    */
-  private isValidDate(value: any): boolean {
+  private isValidDate(value: unknown): boolean {
     const date = new Date(value);
     return date instanceof Date && !isNaN(date.getTime());
   }
@@ -253,7 +260,7 @@ class AdvancedValidator {
   /**
    * Анализирует качество данных
    */
-  analyzeDataQuality(data: Record<string, any>[]): {
+  analyzeDataQuality(data: Record<string, unknown>[]): {
     columns: {
       name: string;
       completeness: number; // % заполненности
@@ -298,7 +305,7 @@ class AdvancedValidator {
   /**
    * Определяет тип значения
    */
-  private inferType(value: any): string {
+  private inferType(value: unknown): string {
     if (value == null) return 'null';
     if (typeof value === 'number') return 'number';
     if (typeof value === 'boolean') return 'boolean';
@@ -339,16 +346,16 @@ export const advancedValidator = new AdvancedValidator();
 
 // Экспортируем также удобные функции
 export function validateData(
-  data: Record<string, any>[],
+  data: Record<string, ColumnValue>[],
   schema: { name: string; type: ColumnType; required?: boolean }[],
-  mappings: any[]
-): any[] {
+  mappings: { sourceColumn: string; targetColumn: string }[]
+): ValidationError[] {
   const result = advancedValidator.validate(data, schema);
   return result.errors;
 }
 
 export function analyzeDataQuality(
-  data: Record<string, any>[],
+  data: Record<string, ColumnValue>[],
   columns: string[]
 ): {
   completeness: number;

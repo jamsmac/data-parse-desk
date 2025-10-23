@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/187</span>
+                <span class='fraction'>0/169</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/187</span>
+                <span class='fraction'>0/169</span>
             </div>
         
             
@@ -232,43 +232,7 @@
 <a name='L167'></a><a href='#L167'>167</a>
 <a name='L168'></a><a href='#L168'>168</a>
 <a name='L169'></a><a href='#L169'>169</a>
-<a name='L170'></a><a href='#L170'>170</a>
-<a name='L171'></a><a href='#L171'>171</a>
-<a name='L172'></a><a href='#L172'>172</a>
-<a name='L173'></a><a href='#L173'>173</a>
-<a name='L174'></a><a href='#L174'>174</a>
-<a name='L175'></a><a href='#L175'>175</a>
-<a name='L176'></a><a href='#L176'>176</a>
-<a name='L177'></a><a href='#L177'>177</a>
-<a name='L178'></a><a href='#L178'>178</a>
-<a name='L179'></a><a href='#L179'>179</a>
-<a name='L180'></a><a href='#L180'>180</a>
-<a name='L181'></a><a href='#L181'>181</a>
-<a name='L182'></a><a href='#L182'>182</a>
-<a name='L183'></a><a href='#L183'>183</a>
-<a name='L184'></a><a href='#L184'>184</a>
-<a name='L185'></a><a href='#L185'>185</a>
-<a name='L186'></a><a href='#L186'>186</a>
-<a name='L187'></a><a href='#L187'>187</a>
-<a name='L188'></a><a href='#L188'>188</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-no">&nbsp;</span>
+<a name='L170'></a><a href='#L170'>170</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -443,29 +407,13 @@
 <span class="cstat-no" title="statement not covered" > * Reduces initial bundle size by ~961KB</span>
 <span class="cstat-no" title="statement not covered" > */</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >// Type definitions for lazy-loaded libraries</span>
-<span class="cstat-no" title="statement not covered" >type XLSX = typeof import('xlsx');</span>
-<span class="cstat-no" title="statement not covered" >type Papa = typeof import('papaparse');</span>
+<span class="cstat-no" title="statement not covered" >// Type definitions for lazy-loaded libraries (use any to avoid Vite build errors)</span>
+<span class="cstat-no" title="statement not covered" >type Papa = any;</span>
+<span class="cstat-no" title="statement not covered" >type ExcelJS = any;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >// Cache for loaded libraries to avoid re-importing</span>
-<span class="cstat-no" title="statement not covered" >let xlsxCache: XLSX | null = null;</span>
 <span class="cstat-no" title="statement not covered" >let papaCache: Papa | null = null;</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >/**</span>
-<span class="cstat-no" title="statement not covered" > * Lazy load XLSX library</span>
-<span class="cstat-no" title="statement not covered" > * Only loads when Excel/XLSX files need to be parsed</span>
-<span class="cstat-no" title="statement not covered" > */</span>
-<span class="cstat-no" title="statement not covered" >export async function loadXLSX(): Promise&lt;XLSX&gt; {</span>
-<span class="cstat-no" title="statement not covered" >  if (xlsxCache) {</span>
-<span class="cstat-no" title="statement not covered" >    return xlsxCache;</span>
-<span class="cstat-no" title="statement not covered" >  }</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  console.log('[LazyLoad] Loading XLSX library...');</span>
-<span class="cstat-no" title="statement not covered" >  const xlsx = await import('xlsx');</span>
-<span class="cstat-no" title="statement not covered" >  xlsxCache = xlsx;</span>
-<span class="cstat-no" title="statement not covered" >  console.log('[LazyLoad] XLSX library loaded successfully');</span>
-<span class="cstat-no" title="statement not covered" >  return xlsx;</span>
-<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" >let excelJSCache: ExcelJS | null = null;</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >/**</span>
 <span class="cstat-no" title="statement not covered" > * Lazy load PapaParse library</span>
@@ -481,6 +429,22 @@
 <span class="cstat-no" title="statement not covered" >  papaCache = papa;</span>
 <span class="cstat-no" title="statement not covered" >  console.log('[LazyLoad] PapaParse library loaded successfully');</span>
 <span class="cstat-no" title="statement not covered" >  return papa;</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >/**</span>
+<span class="cstat-no" title="statement not covered" > * Lazy load ExcelJS library</span>
+<span class="cstat-no" title="statement not covered" > * Only loads when creating Excel files for export</span>
+<span class="cstat-no" title="statement not covered" > */</span>
+<span class="cstat-no" title="statement not covered" >export async function loadExcelJS(): Promise&lt;ExcelJS&gt; {</span>
+<span class="cstat-no" title="statement not covered" >  if (excelJSCache) {</span>
+<span class="cstat-no" title="statement not covered" >    return excelJSCache;</span>
+<span class="cstat-no" title="statement not covered" >  }</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  console.log('[LazyLoad] Loading ExcelJS library...');</span>
+<span class="cstat-no" title="statement not covered" >  const exceljs = await import('exceljs');</span>
+<span class="cstat-no" title="statement not covered" >  excelJSCache = exceljs;</span>
+<span class="cstat-no" title="statement not covered" >  console.log('[LazyLoad] ExcelJS library loaded successfully');</span>
+<span class="cstat-no" title="statement not covered" >  return exceljs;</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >/**</span>
@@ -501,43 +465,14 @@
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >/**</span>
-<span class="cstat-no" title="statement not covered" > * Parse Excel file using dynamically loaded XLSX</span>
+<span class="cstat-no" title="statement not covered" > * Parse Excel file using dynamically loaded ExcelJS</span>
+<span class="cstat-no" title="statement not covered" > * Note: This project uses ExcelJS for Excel parsing (see fileParser.ts)</span>
+<span class="cstat-no" title="statement not covered" > * This function is kept for compatibility but should use the fileParser module instead</span>
 <span class="cstat-no" title="statement not covered" > */</span>
 <span class="cstat-no" title="statement not covered" >export async function parseExcel(file: File): Promise&lt;any&gt; {</span>
-<span class="cstat-no" title="statement not covered" >  const XLSX = await loadXLSX();</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  return new Promise((resolve, reject) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    const reader = new FileReader();</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >    reader.onload = (e) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >      try {</span>
-<span class="cstat-no" title="statement not covered" >        const data = e.target?.result;</span>
-<span class="cstat-no" title="statement not covered" >        const workbook = XLSX.read(data, { type: 'binary' });</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >        // Get first sheet</span>
-<span class="cstat-no" title="statement not covered" >        const firstSheetName = workbook.SheetNames[0];</span>
-<span class="cstat-no" title="statement not covered" >        const worksheet = workbook.Sheets[firstSheetName];</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >        // Convert to JSON</span>
-<span class="cstat-no" title="statement not covered" >        const jsonData = XLSX.utils.sheet_to_json(worksheet, {</span>
-<span class="cstat-no" title="statement not covered" >          header: 1,</span>
-<span class="cstat-no" title="statement not covered" >          defval: '',</span>
-<span class="cstat-no" title="statement not covered" >          blankrows: false,</span>
-<span class="cstat-no" title="statement not covered" >        });</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >        resolve({</span>
-<span class="cstat-no" title="statement not covered" >          data: jsonData,</span>
-<span class="cstat-no" title="statement not covered" >          sheetName: firstSheetName,</span>
-<span class="cstat-no" title="statement not covered" >          allSheets: workbook.SheetNames,</span>
-<span class="cstat-no" title="statement not covered" >        });</span>
-<span class="cstat-no" title="statement not covered" >      } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >        reject(error);</span>
-<span class="cstat-no" title="statement not covered" >      }</span>
-<span class="cstat-no" title="statement not covered" >    };</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >    reader.onerror = () =&gt; reject(reader.error);</span>
-<span class="cstat-no" title="statement not covered" >    reader.readAsBinaryString(file);</span>
-<span class="cstat-no" title="statement not covered" >  });</span>
+<span class="cstat-no" title="statement not covered" >  // Delegate to fileParser.ts which properly handles ExcelJS loading</span>
+<span class="cstat-no" title="statement not covered" >  const { parseFile } = await import('./fileParser');</span>
+<span class="cstat-no" title="statement not covered" >  return parseFile(file);</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >/**</span>
@@ -607,7 +542,7 @@
 <span class="cstat-no" title="statement not covered" >  try {</span>
 <span class="cstat-no" title="statement not covered" >    console.log('[LazyLoad] Preloading file parsers...');</span>
 <span class="cstat-no" title="statement not covered" >    await Promise.all([</span>
-<span class="cstat-no" title="statement not covered" >      loadXLSX(),</span>
+<span class="cstat-no" title="statement not covered" >      loadExcelJS(),</span>
 <span class="cstat-no" title="statement not covered" >      loadPapaParse(),</span>
 <span class="cstat-no" title="statement not covered" >    ]);</span>
 <span class="cstat-no" title="statement not covered" >    console.log('[LazyLoad] File parsers preloaded successfully');</span>
@@ -620,9 +555,20 @@
 <span class="cstat-no" title="statement not covered" > * Clear parser cache (useful for testing)</span>
 <span class="cstat-no" title="statement not covered" > */</span>
 <span class="cstat-no" title="statement not covered" >export function clearParserCache(): void {</span>
-<span class="cstat-no" title="statement not covered" >  xlsxCache = null;</span>
 <span class="cstat-no" title="statement not covered" >  papaCache = null;</span>
+<span class="cstat-no" title="statement not covered" >  excelJSCache = null;</span>
 <span class="cstat-no" title="statement not covered" >  console.log('[LazyLoad] Parser cache cleared');</span>
+<span class="cstat-no" title="statement not covered" >}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >/**</span>
+<span class="cstat-no" title="statement not covered" > * Get library size estimation for logging</span>
+<span class="cstat-no" title="statement not covered" > */</span>
+<span class="cstat-no" title="statement not covered" >export function getLibrarySizeEstimation() {</span>
+<span class="cstat-no" title="statement not covered" >  return {</span>
+<span class="cstat-no" title="statement not covered" >    papaparse: '~200KB',</span>
+<span class="cstat-no" title="statement not covered" >    exceljs: '~400KB',</span>
+<span class="cstat-no" title="statement not covered" >    total: '~600KB (loaded on-demand)',</span>
+<span class="cstat-no" title="statement not covered" >  };</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;</pre></td></tr></table></pre>
 
@@ -631,7 +577,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-23T06:07:42.529Z
+                at 2025-10-23T11:31:47.039Z
             </div>
         <script src="../prettify.js"></script>
         <script>

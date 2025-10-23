@@ -98,8 +98,8 @@ export default function Analytics() {
   }, []);
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <main id="main-content" className="container mx-auto p-6 space-y-6">
+      <header className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Аналитика</h1>
           <p className="text-muted-foreground mt-2">
@@ -109,8 +109,8 @@ export default function Analytics() {
         <div className="flex gap-2">
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline">
-                <CalendarIcon className="mr-2 h-4 w-4" />
+              <Button variant="outline" aria-label="Выбрать период анализа">
+                <CalendarIcon className="mr-2 h-4 w-4" aria-hidden="true" />
                 {dateRange?.from ? (
                   dateRange.to ? (
                     <>
@@ -133,15 +133,15 @@ export default function Analytics() {
               />
             </PopoverContent>
           </Popover>
-          <Button onClick={() => handleExportPivot(mockData.map(d => Object.values(d)))}>
-            <Download className="mr-2 h-4 w-4" />
+          <Button onClick={() => handleExportPivot(mockData.map(d => Object.values(d)))} aria-label="Экспортировать данные в CSV">
+            <Download className="mr-2 h-4 w-4" aria-hidden="true" />
             Экспорт CSV
           </Button>
         </div>
-      </div>
+      </header>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-5" role="tablist" aria-label="Разделы аналитики">
           <TabsTrigger value="stats">Статистика</TabsTrigger>
           <TabsTrigger value="gallery">Галерея</TabsTrigger>
           <TabsTrigger value="builder">Конструктор графиков</TabsTrigger>
@@ -189,20 +189,21 @@ export default function Analytics() {
 
       {/* Saved Charts Summary */}
       {savedCharts.length > 0 && (
-        <div className="mt-8 p-4 bg-secondary/50 rounded-lg">
+        <section className="mt-8 p-4 bg-secondary/50 rounded-lg" aria-label="Сохраненные графики">
           <h3 className="font-semibold mb-2">Сохраненные графики ({savedCharts.length})</h3>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2" role="list">
             {savedCharts.map((chart) => (
               <div
                 key={chart.id}
                 className="px-3 py-1 bg-background rounded-md text-sm border"
+                role="listitem"
               >
                 {chart.name}
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
-    </div>
+    </main>
   );
 }

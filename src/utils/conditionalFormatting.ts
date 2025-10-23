@@ -4,6 +4,15 @@
  * Provides functions to evaluate formatting rules and apply styles to cells/rows
  */
 
+export type ConditionValue =
+  | string
+  | number
+  | boolean
+  | { min: number; max: number }
+  | string[]
+  | number[]
+  | null;
+
 export interface FormattingRule {
   id: string;
   name: string;
@@ -11,7 +20,7 @@ export interface FormattingRule {
   is_active: boolean;
   priority: number;
   condition_type: ConditionType;
-  condition_value: any;
+  condition_value: ConditionValue;
   format_config: FormatConfig;
   apply_to_row: boolean;
 }
@@ -49,9 +58,9 @@ export interface FormatConfig {
  * @returns Whether the condition is met
  */
 export function evaluateCondition(
-  value: any,
+  value: string | number | boolean | Date | null | undefined,
   conditionType: ConditionType,
-  conditionValue: any
+  conditionValue: ConditionValue
 ): boolean {
   // Handle null/undefined
   if (value === null || value === undefined) {
@@ -121,7 +130,7 @@ export function evaluateCondition(
  * @returns Object mapping column names to their formatting
  */
 export function applyFormattingRules(
-  row: Record<string, any>,
+  row: Record<string, string | number | boolean | Date | null | undefined>,
   rules: FormattingRule[]
 ): {
   cellFormats: Record<string, FormatConfig>;

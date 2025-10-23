@@ -195,24 +195,24 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="container mx-auto p-6 max-w-4xl">
+    <main id="main-content" className="container mx-auto p-6 max-w-4xl">
       <div className="space-y-6">
         {/* Header */}
-        <div>
+        <header>
           <h1 className="text-3xl font-bold">Профиль</h1>
           <p className="text-muted-foreground mt-2">
             Управление личной информацией и настройками безопасности
           </p>
-        </div>
+        </header>
 
         {/* Alerts */}
         {success && (
-          <Alert>
+          <Alert role="status">
             <AlertDescription>{success}</AlertDescription>
           </Alert>
         )}
         {error && (
-          <Alert variant="destructive">
+          <Alert variant="destructive" role="alert">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
@@ -223,12 +223,12 @@ export default function ProfilePage() {
             <div className="flex items-center gap-6">
               <div className="relative">
                 <Avatar className="h-24 w-24">
-                  <AvatarImage src={avatarUrl} />
+                  <AvatarImage src={avatarUrl} alt={`Аватар пользователя ${user.user_metadata?.full_name || user.email}`} />
                   <AvatarFallback className="text-2xl">{getInitials(user.user_metadata?.full_name as string)}</AvatarFallback>
                 </Avatar>
                 <Label htmlFor="avatar-upload" className="absolute bottom-0 right-0 cursor-pointer">
                   <div className="bg-primary text-primary-foreground rounded-full p-2 shadow-lg hover:bg-primary/90">
-                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Upload className="h-4 w-4" aria-hidden="true" />}
                   </div>
                   <Input
                     id="avatar-upload"
@@ -237,6 +237,7 @@ export default function ProfilePage() {
                     className="hidden"
                     onChange={handleAvatarUpload}
                     disabled={uploading}
+                    aria-label="Загрузить новый аватар"
                   />
                 </Label>
               </div>
@@ -245,11 +246,11 @@ export default function ProfilePage() {
                 <p className="text-sm text-muted-foreground">{user.email}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <Badge variant="secondary">
-                    <Shield className="mr-1 h-3 w-3" />
+                    <Shield className="mr-1 h-3 w-3" aria-hidden="true" />
                     Пользователь
                   </Badge>
                   <Badge variant="outline">
-                    <Calendar className="mr-1 h-3 w-3" />
+                    <Calendar className="mr-1 h-3 w-3" aria-hidden="true" />
                     С {new Date(user.created_at!).toLocaleDateString('ru-RU')}
                   </Badge>
                 </div>
@@ -260,21 +261,21 @@ export default function ProfilePage() {
 
         {/* Tabs */}
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-4" role="tablist" aria-label="Настройки профиля">
             <TabsTrigger value="profile">
-              <UserIcon className="mr-2 h-4 w-4" />
+              <UserIcon className="mr-2 h-4 w-4" aria-hidden="true" />
               Профиль
             </TabsTrigger>
             <TabsTrigger value="security">
-              <Key className="mr-2 h-4 w-4" />
+              <Key className="mr-2 h-4 w-4" aria-hidden="true" />
               Безопасность
             </TabsTrigger>
             <TabsTrigger value="subscription">
-              <CreditCard className="mr-2 h-4 w-4" />
+              <CreditCard className="mr-2 h-4 w-4" aria-hidden="true" />
               Подписка
             </TabsTrigger>
             <TabsTrigger value="notifications">
-              <Bell className="mr-2 h-4 w-4" />
+              <Bell className="mr-2 h-4 w-4" aria-hidden="true" />
               Уведомления
             </TabsTrigger>
           </TabsList>
@@ -317,15 +318,15 @@ export default function ProfilePage() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button onClick={handleProfileUpdate} disabled={isLoading}>
+                  <Button onClick={handleProfileUpdate} disabled={isLoading} aria-label="Сохранить изменения профиля">
                     {isLoading ? (
                       <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
                         Сохранение...
                       </>
                     ) : (
                       <>
-                        <Save className="mr-2 h-4 w-4" />
+                        <Save className="mr-2 h-4 w-4" aria-hidden="true" />
                         Сохранить изменения
                       </>
                     )}
@@ -422,15 +423,15 @@ export default function ProfilePage() {
                   />
                 </div>
 
-                <Button onClick={handlePasswordUpdate} disabled={isLoading}>
+                <Button onClick={handlePasswordUpdate} disabled={isLoading} aria-label="Изменить пароль">
                   {isLoading ? (
                     <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
                       Изменение...
                     </>
                   ) : (
                     <>
-                      <Key className="mr-2 h-4 w-4" />
+                      <Key className="mr-2 h-4 w-4" aria-hidden="true" />
                       Изменить пароль
                     </>
                   )}
@@ -528,6 +529,6 @@ export default function ProfilePage() {
           </TabsContent>
         </Tabs>
       </div>
-    </div>
+    </main>
   );
 }

@@ -563,14 +563,17 @@ export default function DatabaseView() {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
+        {/* Main content landmark for skip navigation */}
+        <main id="main-content">
         {/* Header */}
-        <div className="mb-6">
+        <header className="mb-6">
           <Button
             variant="ghost"
             onClick={() => navigate(`/projects/${projectId}`)}
             className="mb-4"
+            aria-label="Назад к проекту"
           >
-            <ArrowLeft className="mr-2 h-4 w-4" />
+            <ArrowLeft className="mr-2 h-4 w-4" aria-hidden="true" />
             Назад к проекту
           </Button>
 
@@ -630,7 +633,7 @@ export default function DatabaseView() {
               onDeleteDatabase={() => setShowDeleteDialog(true)}
             />
           </div>
-        </div>
+        </header>
 
         {/* Column Manager */}
         {databaseId && (
@@ -641,7 +644,7 @@ export default function DatabaseView() {
         )}
 
         {/* Search & Filters */}
-        <div className="mt-6 space-y-4">
+        <section className="mt-6 space-y-4" aria-label="Поиск и фильтрация данных">
           {/* Global Search */}
           <TableSearch
             columns={schemas.map(s => s.column_name)}
@@ -710,32 +713,32 @@ export default function DatabaseView() {
               </div>
             </CollapsibleContent>
           </Collapsible>
-        </div>
+        </section>
 
         {/* View Type Selector */}
         <Tabs value={viewType} onValueChange={(v: any) => setViewType(v)} className="mb-4">
-          <TabsList>
+          <TabsList role="tablist" aria-label="Выбор типа отображения данных">
             <TabsTrigger value="table">
-              <Table className="h-4 w-4 mr-2" />
+              <Table className="h-4 w-4 mr-2" aria-hidden="true" />
               Таблица
             </TabsTrigger>
             <TabsTrigger value="calendar">
-              <Calendar className="h-4 w-4 mr-2" />
+              <Calendar className="h-4 w-4 mr-2" aria-hidden="true" />
               Календарь
             </TabsTrigger>
             <TabsTrigger value="kanban">
-              <Columns className="h-4 w-4 mr-2" />
+              <Columns className="h-4 w-4 mr-2" aria-hidden="true" />
               Kanban
             </TabsTrigger>
             <TabsTrigger value="gallery">
-              <Image className="h-4 w-4 mr-2" />
+              <Image className="h-4 w-4 mr-2" aria-hidden="true" />
               Галерея
             </TabsTrigger>
           </TabsList>
         </Tabs>
 
         {/* Conditional View Rendering */}
-        <div className="mt-6">
+        <section className="mt-6" aria-label="Отображение данных">
           {dataLoading ? renderViewSkeleton() :
            !dataLoading && tableData.length === 0 ? (
             <EmptyState
@@ -921,7 +924,7 @@ export default function DatabaseView() {
               }}
             />
           )}
-        </div>
+        </section>
 
         {/* Clear Data Dialog */}
         <AlertDialog open={showClearDialog} onOpenChange={setShowClearDialog}>
@@ -1087,6 +1090,7 @@ export default function DatabaseView() {
             </div>
           </SheetContent>
         </Sheet>
+        </main>
       </div>
     </div>
   );

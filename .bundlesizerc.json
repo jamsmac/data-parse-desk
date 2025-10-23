@@ -1,0 +1,57 @@
+{
+  "files": [
+    {
+      "path": "./dist/assets/index-*.js",
+      "maxSize": "100 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "./dist/assets/react-vendor-*.js",
+      "maxSize": "80 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "./dist/assets/DatabaseView-*.js",
+      "maxSize": "70 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "./dist/assets/supabase-vendor-*.js",
+      "maxSize": "45 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "./dist/assets/radix-core-*.js",
+      "maxSize": "40 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "./dist/assets/chart-vendor-*.js",
+      "maxSize": "110 kB",
+      "compression": "gzip",
+      "name": "Charts (lazy loaded)"
+    },
+    {
+      "path": "./dist/assets/xlsx-parser-*.js",
+      "maxSize": "200 kB",
+      "compression": "gzip",
+      "name": "XLSX Parser (lazy loaded)"
+    },
+    {
+      "path": "./dist/assets/csv-parser-*.js",
+      "maxSize": "80 kB",
+      "compression": "gzip",
+      "name": "CSV Parser (lazy loaded)"
+    },
+    {
+      "path": "./dist/assets/zip-utils-*.js",
+      "maxSize": "60 kB",
+      "compression": "gzip",
+      "name": "ZIP Utilities (lazy loaded)"
+    }
+  ],
+  "ci": {
+    "trackBranches": ["main", "master", "develop"],
+    "repoBranchBase": "main"
+  }
+}

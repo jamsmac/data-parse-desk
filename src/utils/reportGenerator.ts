@@ -5,11 +5,13 @@
 
 import { format } from 'date-fns';
 
+export type ReportRowData = Record<string, string | number | boolean | Date | null | undefined>;
+
 export interface ReportData {
   title: string;
   description?: string;
   tableName: string;
-  data: any[];
+  data: ReportRowData[];
   columns: ReportColumn[];
   filters?: ReportFilter[];
   summary?: ReportSummary[];
@@ -20,13 +22,13 @@ export interface ReportColumn {
   key: string;
   label: string;
   type: string;
-  format?: (value: any) => string;
+  format?: (value: string | number | boolean | Date | null | undefined) => string;
 }
 
 export interface ReportFilter {
   column: string;
   operator: string;
-  value: any;
+  value: string | number | boolean | Date | null;
 }
 
 export interface ReportSummary {
@@ -38,7 +40,7 @@ export interface ReportSummary {
 export interface ReportChart {
   type: 'bar' | 'line' | 'pie';
   title: string;
-  data: any[];
+  data: ReportRowData[];
 }
 
 export interface ReportTemplate {

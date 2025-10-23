@@ -1,3 +1,5 @@
+import { ColumnValue } from './database';
+
 export type ChartType = 'line' | 'bar' | 'area' | 'pie' | 'scatter' | 'composed' | 'heatmap';
 
 export type AggregationType = 'sum' | 'avg' | 'count' | 'min' | 'max' | 'none';
@@ -25,9 +27,9 @@ export interface ChartConfig {
 export interface FilterCondition {
   columnId: string;
   operator: 'eq' | 'neq' | 'gt' | 'gte' | 'lt' | 'lte' | 'contains' | 'starts_with' | 'ends_with';
-  value: any;
+  value: ColumnValue;
 }
 
 export interface ChartData {
-  [key: string]: any;
+  [key: string]: ColumnValue;
 }

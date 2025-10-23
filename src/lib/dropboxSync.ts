@@ -245,7 +245,7 @@ export class DropboxSync {
 
     const response = await this.dbx.filesDownload({ path });
 
-    // @ts-ignore - fileBlob exists on result
+    // @ts-expect-error - fileBlob exists on result
     return response.result.fileBlob;
   }
 

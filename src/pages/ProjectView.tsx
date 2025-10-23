@@ -165,20 +165,21 @@ export default function ProjectView() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      
-      <main className="flex-1 container mx-auto px-4 py-8">
+
+      <main id="main-content" className="flex-1 container mx-auto px-4 py-8">
         {/* Кнопка назад */}
         <Button
           variant="ghost"
           onClick={() => navigate('/projects')}
           className="mb-4"
+          aria-label="Назад к проектам"
         >
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4 mr-2" aria-hidden="true" />
           Назад к проектам
         </Button>
 
         {/* Заголовок */}
-        <div className="flex items-center justify-between mb-8">
+        <header className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold">
               {project?.name || 'Проект'}
@@ -190,20 +191,20 @@ export default function ProjectView() {
             )}
           </div>
           <div className="flex gap-2">
-            <Button onClick={() => setIsCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-2" />
+            <Button onClick={() => setIsCreateDialogOpen(true)} aria-label="Создать новую базу данных">
+              <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
               Создать базу данных
             </Button>
-            <Button variant="outline" onClick={() => setIsSchemaGeneratorOpen(true)}>
-              <Sparkles className="h-4 w-4 mr-2" />
+            <Button variant="outline" onClick={() => setIsSchemaGeneratorOpen(true)} aria-label="Открыть AI генератор схем">
+              <Sparkles className="h-4 w-4 mr-2" aria-hidden="true" />
               AI Генератор схем
             </Button>
           </div>
-        </div>
+        </header>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <TabsList>
+          <TabsList role="tablist" aria-label="Разделы проекта">
             <TabsTrigger value="databases">Базы данных</TabsTrigger>
             <TabsTrigger value="composite">Составные представления</TabsTrigger>
             <TabsTrigger value="versions">Версии схем</TabsTrigger>
@@ -212,42 +213,46 @@ export default function ProjectView() {
 
           <TabsContent value="databases" className="mt-6">
             {/* Поиск */}
-            <div className="mb-6">
+            <section className="mb-6" aria-label="Поиск баз данных">
               <div className="relative max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
                 <Input
+                  type="search"
                   placeholder="Поиск баз данных..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-10"
+                  aria-label="Поиск баз данных по названию"
                 />
               </div>
-            </div>
+            </section>
 
             {/* Список баз данных */}
             {isLoading ? (
-              <div className="text-center py-12">
+              <div className="text-center py-12" role="status">
                 <p className="text-muted-foreground">Загрузка баз данных...</p>
               </div>
             ) : filteredDatabases && filteredDatabases.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredDatabases.map((database) => (
-                  <DatabaseCard
-                    key={database.id}
-                    database={database as any}
-                    onOpen={() => navigate(`/projects/${projectId}/database/${database.id}`)}
-                    onDelete={() => deleteDatabaseMutation.mutate(database.id)}
-                  />
-                ))}
-              </div>
+              <section aria-label="Список баз данных">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" role="list">
+                  {filteredDatabases.map((database) => (
+                    <DatabaseCard
+                      key={database.id}
+                      database={database as any}
+                      onOpen={() => navigate(`/projects/${projectId}/database/${database.id}`)}
+                      onDelete={() => deleteDatabaseMutation.mutate(database.id)}
+                    />
+                  ))}
+                </div>
+              </section>
             ) : (
-              <div className="text-center py-12">
+              <div className="text-center py-12" role="status">
                 <p className="text-muted-foreground mb-4">
                   {searchQuery ? 'Базы данных не найдены' : 'В этом проекте пока нет баз данных'}
                 </p>
                 {!searchQuery && (
-                  <Button onClick={() => setIsCreateDialogOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
+                  <Button onClick={() => setIsCreateDialogOpen(true)} aria-label="Создать первую базу данных">
+                    <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
                     Создать базу данных
                   </Button>
                 )}

@@ -1,7 +1,14 @@
 import { ChartConfig } from './charts';
+import { TableFilters, TableRow } from './database';
 
 export type ReportSchedule = 'daily' | 'weekly' | 'monthly' | 'custom';
 export type ReportFormat = 'pdf' | 'excel' | 'csv' | 'html';
+
+export interface ReportFilter {
+  column: string;
+  operator: 'equals' | 'contains' | 'greater_than' | 'less_than' | 'between';
+  value: string | number | boolean | Date | [number | Date, number | Date];
+}
 
 export interface ReportSection {
   id: string;
@@ -18,7 +25,7 @@ export interface ReportTemplate {
   description?: string;
   category: 'sales' | 'financial' | 'analytics' | 'inventory' | 'custom';
   sections: ReportSection[];
-  filters?: any[];
+  filters?: ReportFilter[];
   dateRange?: {
     start: string;
     end: string;
@@ -45,7 +52,7 @@ export interface ReportConfig {
   id: string;
   name: string;
   template?: ReportTemplate;
-  data: any[];
+  data: TableRow[];
   generatedAt: string;
   format: ReportFormat;
 }

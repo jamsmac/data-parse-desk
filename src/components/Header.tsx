@@ -101,9 +101,17 @@ export function Header() {
   if (!user) {
     return (
       <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+        {/* Skip navigation link for accessibility */}
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:shadow-lg"
+        >
+          Перейти к основному содержимому
+        </a>
+
         <div className="container flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-2">
-            <Database className="h-6 w-6 text-primary" />
+            <Database className="h-6 w-6 text-primary" aria-hidden="true" />
             <div>
               <h1 className="text-xl font-bold text-foreground">VHData</h1>
             </div>
@@ -123,11 +131,19 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
+      {/* Skip navigation link for accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:rounded-md focus:shadow-lg"
+      >
+        Перейти к основному содержимому
+      </a>
+
       <div className="container flex h-16 items-center justify-between px-4">
         {/* Logo & Brand */}
         <div className="flex items-center gap-6">
-          <Link to="/dashboard" className="flex items-center gap-2">
-            <Database className="h-6 w-6 text-primary" />
+          <Link to="/dashboard" className="flex items-center gap-2" aria-label="VHData Home">
+            <Database className="h-6 w-6 text-primary" aria-hidden="true" />
             <div>
               <h1 className="text-xl font-bold text-foreground">VHData</h1>
               <p className="text-xs text-muted-foreground">Data Management Platform</p>
@@ -135,7 +151,7 @@ export function Header() {
           </Link>
 
           {/* Navigation */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-1" aria-label="Main navigation">
             {navigationItems.map((item) => (
               <Button
                 key={item.path}
@@ -144,8 +160,8 @@ export function Header() {
                 asChild
                 className="gap-2"
               >
-                <Link to={item.path}>
-                  <item.icon className="h-4 w-4" />
+                <Link to={item.path} aria-current={isActive(item.path) ? 'page' : undefined}>
+                  <item.icon className="h-4 w-4" aria-hidden="true" />
                   {item.name}
                 </Link>
               </Button>

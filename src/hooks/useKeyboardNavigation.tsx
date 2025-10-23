@@ -63,7 +63,7 @@ export function useKeyboardNavigation({
     }
 
     const { rowIndex, columnIndex } = focusedCell;
-    let newPosition = { ...focusedCell };
+    const newPosition = { ...focusedCell };
 
     switch (direction) {
       case 'up':

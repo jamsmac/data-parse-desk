@@ -1,87 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
+import { SCHEMA_ANALYZER_PROMPT, getModelConfig, callAIWithRetry } from '../_shared/prompts.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const SCHEMA_ANALYZER_PROMPT = `You are an expert database architect. Analyze the provided input and generate a normalized database schema.
-
-INPUT FORMATS YOU SUPPORT:
-1. Natural language description (any language, RU/EN)
-2. JSON data structures
-3. CSV data
-
-YOUR TASK:
-1. ENTITY EXTRACTION:
-   - Identify all entities (tables)
-   - Suggest meaningful table names (singular, snake_case)
-   - Determine primary keys
-
-2. ATTRIBUTE EXTRACTION:
-   - List all attributes (columns) for each entity
-   - Infer data types: text, number, boolean, date, timestamp, json
-   - Determine nullable vs required
-   - Suggest default values where appropriate
-
-3. RELATIONSHIP DETECTION:
-   - Identify foreign key relationships
-   - Determine relationship types: one-to-one, one-to-many, many-to-many
-   - Suggest junction tables for many-to-many
-   - Name relationships clearly
-
-4. NORMALIZATION:
-   - Apply 3NF (Third Normal Form)
-   - Eliminate redundancy
-   - Suggest separate tables where needed
-   - Preserve data integrity
-
-5. CONSTRAINTS & INDEXES:
-   - Suggest UNIQUE constraints
-   - Recommend indexes for frequent queries
-   - Add CHECK constraints for validation
-
-OUTPUT FORMAT (JSON):
-{
-  "entities": [
-    {
-      "name": "table_name",
-      "confidence": 95,
-      "reasoning": "Explanation for this entity",
-      "columns": [
-        {
-          "name": "id",
-          "type": "uuid",
-          "primary_key": true,
-          "nullable": false,
-          "default": "gen_random_uuid()"
-        }
-      ]
-    }
-  ],
-  "relationships": [
-    {
-      "from": "orders",
-      "to": "customers",
-      "type": "many-to-one",
-      "on": "orders.customer_id = customers.id",
-      "confidence": 98
-    }
-  ],
-  "indexes": [
-    {
-      "table": "orders",
-      "columns": ["customer_id"],
-      "reason": "Frequent JOIN operations"
-    }
-  ],
-  "warnings": [
-    "Consider adding created_at timestamp to all tables"
-  ]
-}
-
-IMPORTANT: Return ONLY valid JSON, no markdown formatting.`;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -129,35 +54,22 @@ serve(async (req) => {
 
     console.log('Calling Lovable AI for schema analysis...');
 
-    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+    const modelConfig = getModelConfig('schema');
+
+    const aiResponse = await callAIWithRetry(
+      'https://ai.gateway.lovable.dev/v1/chat/completions',
+      LOVABLE_API_KEY,
+      {
+        model: modelConfig.model,
         messages: [
           { role: 'system', content: SCHEMA_ANALYZER_PROMPT },
           { role: 'user', content: preparedInput }
         ],
-        temperature: 0.3,
-      }),
-    });
+        temperature: modelConfig.temperature,
+        max_tokens: modelConfig.maxOutputTokens,
+      }
+    );
 
-    if (!aiResponse.ok) {
-      const errorText = await aiResponse.text();
-      console.error('AI Gateway error:', aiResponse.status, errorText);
-      
-      if (aiResponse.status === 429) {
-        throw new Error('Rate limit exceeded. Please try again later.');
-      }
-      if (aiResponse.status === 402) {
-        throw new Error('Payment required. Please add credits to your Lovable AI workspace.');
-      }
-      
-      throw new Error(`AI Gateway error: ${aiResponse.status}`);
-    }
 
     const aiData = await aiResponse.json();
     const content = aiData.choices?.[0]?.message?.content;
@@ -188,7 +100,7 @@ serve(async (req) => {
         user_id: user.id,
         input_type: inputType,
         schema: schema,
-        ai_model: 'google/gemini-2.5-flash',
+        ai_model: modelConfig.model,
       });
     } catch (insertError) {
       console.error('Failed to save schema analysis:', insertError);

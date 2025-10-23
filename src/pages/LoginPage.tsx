@@ -91,21 +91,21 @@ export default function LoginPage() {
   const isValid = credentials.email && credentials.password;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
+    <main id="main-content" className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
             <div className="p-3 bg-primary/10 rounded-full">
-              <Database className="h-8 w-8 text-primary" />
+              <Database className="h-8 w-8 text-primary" aria-hidden="true" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">Вход в VHData</CardTitle>
+          <CardTitle className="text-2xl text-center" id="login-title">Вход в VHData</CardTitle>
           <CardDescription className="text-center">
             Введите свои учетные данные для входа
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" aria-labelledby="login-title">
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>

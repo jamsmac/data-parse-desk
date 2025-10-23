@@ -1,12 +1,13 @@
 import { supabase } from '@/integrations/supabase/client';
 import { offlineStorage } from './offlineStorage';
+import { TableRow } from '@/types/database';
 
 interface SyncOperation {
   id: string;
   operation: 'insert' | 'update' | 'delete';
   table: string;
-  data: any;
-  originalData?: any;
+  data: TableRow;
+  originalData?: TableRow;
   timestamp: number;
 }
 
@@ -84,11 +85,12 @@ export class SyncQueueManager {
           await offlineStorage.deletePendingChange(change.id);
           result.syncedCount++;
           console.log(`SyncQueue: Synced change ${change.id}`);
-        } catch (error: any) {
+        } catch (error: unknown) {
           result.failedCount++;
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
           result.errors.push({
             id: change.id,
-            error: error.message || 'Unknown error',
+            error: errorMessage,
           });
           console.error(`SyncQueue: Failed to sync change ${change.id}:`, error);
         }
@@ -143,7 +145,7 @@ export class SyncQueueManager {
   /**
    * Sync INSERT operation
    */
-  private async syncInsert(table: string, data: any): Promise<void> {
+  private async syncInsert(table: string, data: TableRow): Promise<void> {
     const { error } = await supabase.from(table).insert(data);
 
     if (error) {
@@ -154,7 +156,7 @@ export class SyncQueueManager {
   /**
    * Sync UPDATE operation
    */
-  private async syncUpdate(table: string, data: any, originalData?: any): Promise<void> {
+  private async syncUpdate(table: string, data: TableRow, originalData?: TableRow): Promise<void> {
     if (!data.id) {
       throw new Error('Update requires id field');
     }
@@ -198,7 +200,7 @@ export class SyncQueueManager {
   /**
    * Sync DELETE operation
    */
-  private async syncDelete(table: string, data: any): Promise<void> {
+  private async syncDelete(table: string, data: TableRow): Promise<void> {
     if (!data.id) {
       throw new Error('Delete requires id field');
     }
@@ -221,8 +223,8 @@ export class SyncQueueManager {
   async queueChange(
     operation: 'insert' | 'update' | 'delete',
     table: string,
-    data: any,
-    originalData?: any
+    data: Record<string, unknown>,
+    originalData?: Record<string, unknown>
   ): Promise<string> {
     const changeId = await offlineStorage.addPendingChange({
       operation,

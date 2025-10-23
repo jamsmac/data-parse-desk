@@ -43,7 +43,7 @@ export interface TableSchema {
   column_name: string;
   column_type: ColumnType;
   is_required: boolean;
-  default_value?: any;
+  default_value?: ColumnValue;
   position: number;
   created_at: string;
   updated_at: string;
@@ -64,7 +64,7 @@ export interface ColumnSchema {
   name: string;
   type: ColumnType;
   required?: boolean;
-  defaultValue?: any;
+  defaultValue?: ColumnValue;
 }
 
 // Конфигурация связи
@@ -167,9 +167,29 @@ export interface UploadHistory {
   completed_at?: string;
 }
 
+// Типы значений для разных типов колонок
+export type ColumnValue =
+  | string
+  | number
+  | boolean
+  | Date
+  | null
+  | string[]
+  | number[]
+  | File
+  | File[];
+
+// Строка данных таблицы (запись)
+export interface TableRow {
+  id: string;
+  [columnName: string]: ColumnValue | string; // string для id
+}
+
 // Типы для фильтрации и сортировки
+export type FilterValue = string | number | boolean | Date | null | string[] | number[];
+
 export interface TableFilters {
-  [columnName: string]: any;
+  [columnName: string]: FilterValue;
 }
 
 export interface TableSorting {
@@ -206,14 +226,14 @@ export interface ValidationResult {
 export interface ValidationError {
   row: number;
   column: string;
-  value: any;
+  value: ColumnValue;
   message: string;
 }
 
 export interface ValidationWarning {
   row: number;
   column: string;
-  value: any;
+  value: ColumnValue;
   message: string;
 }
 
@@ -228,14 +248,25 @@ export interface ChartConfig {
 }
 
 // Типы для автоматизации
+export type TriggerConfig =
+  | { type: 'schedule'; cron: string }
+  | { type: 'webhook'; url: string; method: string }
+  | { type: 'data_change'; table: string; operation: 'insert' | 'update' | 'delete' };
+
 export interface WorkflowTrigger {
   type: 'schedule' | 'webhook' | 'data_change';
-  config: any;
+  config: TriggerConfig;
 }
+
+export type ActionConfig =
+  | { type: 'send_email'; to: string; subject: string; body: string }
+  | { type: 'update_row'; table: string; rowId: string; updates: TableRow }
+  | { type: 'create_row'; table: string; data: TableRow }
+  | { type: 'http_request'; url: string; method: string; body?: Record<string, unknown> };
 
 export interface WorkflowAction {
   type: 'send_email' | 'update_row' | 'create_row' | 'http_request';
-  config: any;
+  config: ActionConfig;
 }
 
 export interface Workflow {

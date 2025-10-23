@@ -5,28 +5,12 @@
  */
 
 // Type definitions for lazy-loaded libraries
-type XLSX = typeof import('xlsx');
 type Papa = typeof import('papaparse');
+type ExcelJS = typeof import('exceljs');
 
 // Cache for loaded libraries to avoid re-importing
-let xlsxCache: XLSX | null = null;
 let papaCache: Papa | null = null;
-
-/**
- * Lazy load XLSX library
- * Only loads when Excel/XLSX files need to be parsed
- */
-export async function loadXLSX(): Promise<XLSX> {
-  if (xlsxCache) {
-    return xlsxCache;
-  }
-
-  console.log('[LazyLoad] Loading XLSX library...');
-  const xlsx = await import('xlsx');
-  xlsxCache = xlsx;
-  console.log('[LazyLoad] XLSX library loaded successfully');
-  return xlsx;
-}
+let excelJSCache: ExcelJS | null = null;
 
 /**
  * Lazy load PapaParse library
@@ -45,9 +29,38 @@ export async function loadPapaParse(): Promise<Papa> {
 }
 
 /**
+ * Lazy load ExcelJS library
+ * Only loads when creating Excel files for export
+ */
+export async function loadExcelJS(): Promise<ExcelJS> {
+  if (excelJSCache) {
+    return excelJSCache;
+  }
+
+  console.log('[LazyLoad] Loading ExcelJS library...');
+  const exceljs = await import('exceljs');
+  excelJSCache = exceljs;
+  console.log('[LazyLoad] ExcelJS library loaded successfully');
+  return exceljs;
+}
+
+export type ParsedCSVData = {
+  data: Record<string, string | number>[];
+  errors: unknown[];
+  meta: {
+    delimiter: string;
+    linebreak: string;
+    aborted: boolean;
+    truncated: boolean;
+    cursor: number;
+    fields?: string[];
+  };
+};
+
+/**
  * Parse CSV file using dynamically loaded PapaParse
  */
-export async function parseCSV(file: File): Promise<any> {
+export async function parseCSV(file: File): Promise<ParsedCSVData> {
   const Papa = await loadPapaParse();
 
   return new Promise((resolve, reject) => {
@@ -61,55 +74,34 @@ export async function parseCSV(file: File): Promise<any> {
   });
 }
 
+export type ParsedExcelData = {
+  data: (string | number)[][];
+  headers: string[];
+  rowCount: number;
+};
+
 /**
- * Parse Excel file using dynamically loaded XLSX
+ * Parse Excel file using dynamically loaded ExcelJS
+ * Note: This project uses ExcelJS for Excel parsing (see fileParser.ts)
+ * This function is kept for compatibility but should use the fileParser module instead
  */
-export async function parseExcel(file: File): Promise<any> {
-  const XLSX = await loadXLSX();
-
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-
-    reader.onload = (e) => {
-      try {
-        const data = e.target?.result;
-        const workbook = XLSX.read(data, { type: 'binary' });
-
-        // Get first sheet
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-
-        // Convert to JSON
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-          header: 1,
-          defval: '',
-          blankrows: false,
-        });
-
-        resolve({
-          data: jsonData,
-          sheetName: firstSheetName,
-          allSheets: workbook.SheetNames,
-        });
-      } catch (error) {
-        reject(error);
-      }
-    };
-
-    reader.onerror = () => reject(reader.error);
-    reader.readAsBinaryString(file);
-  });
+export async function parseExcel(file: File): Promise<ParsedExcelData> {
+  // Delegate to fileParser.ts which properly handles ExcelJS loading
+  const { parseFile } = await import('./fileParser');
+  return parseFile(file);
 }
+
+export type ParsedFileData = {
+  data: Record<string, string | number | boolean | Date | null>[];
+  headers: string[];
+  rowCount: number;
+  fileType: 'csv' | 'excel' | 'json';
+};
 
 /**
  * Auto-detect file type and parse accordingly
  */
-export async function parseFile(file: File): Promise<{
-  data: any[];
-  headers: string[];
-  rowCount: number;
-  fileType: 'csv' | 'excel' | 'json';
-}> {
+export async function parseFile(file: File): Promise<ParsedFileData> {
   const fileName = file.name.toLowerCase();
 
   try {
@@ -127,8 +119,8 @@ export async function parseFile(file: File): Promise<{
       const data = result.data.slice(1);
 
       return {
-        data: data.map((row: any[]) => {
-          const obj: any = {};
+        data: data.map((row: (string | number)[]) => {
+          const obj: Record<string, string | number> = {};
           headers.forEach((header: string, index: number) => {
             obj[header] = row[index];
           });
@@ -168,7 +160,7 @@ export async function preloadFileParsers(): Promise<void> {
   try {
     console.log('[LazyLoad] Preloading file parsers...');
     await Promise.all([
-      loadXLSX(),
+      loadExcelJS(),
       loadPapaParse(),
     ]);
     console.log('[LazyLoad] File parsers preloaded successfully');
@@ -181,7 +173,18 @@ export async function preloadFileParsers(): Promise<void> {
  * Clear parser cache (useful for testing)
  */
 export function clearParserCache(): void {
-  xlsxCache = null;
   papaCache = null;
+  excelJSCache = null;
   console.log('[LazyLoad] Parser cache cleared');
+}
+
+/**
+ * Get library size estimation for logging
+ */
+export function getLibrarySizeEstimation() {
+  return {
+    papaparse: '~200KB',
+    exceljs: '~400KB',
+    total: '~600KB (loaded on-demand)',
+  };
 }

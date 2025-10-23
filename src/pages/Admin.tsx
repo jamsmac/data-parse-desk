@@ -6,19 +6,19 @@ import { Shield } from "lucide-react";
 
 export default function Admin() {
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="mb-8">
+    <main id="main-content" className="container mx-auto py-8 px-4">
+      <header className="mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <Shield className="h-8 w-8 text-primary" />
+          <Shield className="h-8 w-8 text-primary" aria-hidden="true" />
           <h1 className="text-3xl font-bold">Панель Администратора</h1>
         </div>
         <p className="text-muted-foreground">
           Управление пользователями, кредитами и системной статистикой
         </p>
-      </div>
+      </header>
 
       <Tabs defaultValue="dashboard" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-3 lg:w-[600px]">
+        <TabsList className="grid w-full grid-cols-3 lg:w-[600px]" role="tablist" aria-label="Разделы панели администратора">
           <TabsTrigger value="dashboard">Статистика</TabsTrigger>
           <TabsTrigger value="users">Пользователи</TabsTrigger>
           <TabsTrigger value="logs">Логи</TabsTrigger>
@@ -36,6 +36,6 @@ export default function Admin() {
           <SystemLogsTable />
         </TabsContent>
       </Tabs>
-    </div>
+    </main>
   );
 }

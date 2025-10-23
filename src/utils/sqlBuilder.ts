@@ -24,12 +24,17 @@ export type FilterOperator =
   | 'endsWith';  // заканчивается на
 
 /**
+ * Возможные типы значений для SQL параметров
+ */
+export type SQLValue = string | number | boolean | Date | null | string[] | number[];
+
+/**
  * Расширенный фильтр с оператором
  */
 export interface ExtendedFilter {
   column: string;
   operator: FilterOperator;
-  value: any;
+  value: SQLValue;
 }
 
 /**
@@ -67,12 +72,12 @@ export class SQLBuilder {
   /**
    * Строит WHERE условие для фильтров
    */
-  buildWhereClause(): { sql: string; params: any[] } {
+  buildWhereClause(): { sql: string; params: SQLValue[] } {
     if (!this.config.filters) {
       return { sql: '', params: [] };
     }
 
-    const params: any[] = [];
+    const params: SQLValue[] = [];
     const conditions: string[] = [];
 
     // Простые фильтры (объект)
@@ -107,7 +112,7 @@ export class SQLBuilder {
   /**
    * Строит условие для одного фильтра
    */
-  private buildFilterCondition(filter: ExtendedFilter, params: any[]): string | null {
+  private buildFilterCondition(filter: ExtendedFilter, params: SQLValue[]): string | null {
     const column = this.escapeIdentifier(filter.column);
 
     switch (filter.operator) {
@@ -253,7 +258,7 @@ export class SQLBuilder {
   /**
    * Строит полный SELECT запрос
    */
-  buildSelectQuery(): { sql: string; params: any[] } {
+  buildSelectQuery(): { sql: string; params: SQLValue[] } {
     const select = this.buildSelectClause();
     const from = this.escapeIdentifier(this.config.tableName);
     const joins = this.buildJoinClauses();
@@ -279,7 +284,7 @@ export class SQLBuilder {
   /**
    * Строит COUNT запрос для получения общего количества
    */
-  buildCountQuery(): { sql: string; params: any[] } {
+  buildCountQuery(): { sql: string; params: SQLValue[] } {
     const from = this.escapeIdentifier(this.config.tableName);
     const joins = this.buildJoinClauses();
     const { sql: where, params } = this.buildWhereClause();
@@ -373,8 +378,8 @@ export function validateQueryConfig(config: QueryConfig): {
  */
 export function buildInsertQuery(
   tableName: string,
-  data: Record<string, any>
-): { sql: string; params: any[] } {
+  data: Record<string, SQLValue>
+): { sql: string; params: SQLValue[] } {
   const columns = Object.keys(data);
   const params = Object.values(data);
 
@@ -393,10 +398,10 @@ export function buildInsertQuery(
 export function buildUpdateQuery(
   tableName: string,
   id: string,
-  data: Record<string, any>
-): { sql: string; params: any[] } {
+  data: Record<string, SQLValue>
+): { sql: string; params: SQLValue[] } {
   const updates: string[] = [];
-  const params: any[] = [];
+  const params: SQLValue[] = [];
 
   for (const [column, value] of Object.entries(data)) {
     params.push(value);
@@ -417,7 +422,7 @@ export function buildUpdateQuery(
 export function buildDeleteQuery(
   tableName: string,
   id: string
-): { sql: string; params: any[] } {
+): { sql: string; params: SQLValue[] } {
   return {
     sql: `DELETE FROM "${tableName.replace(/"/g, '""')}" WHERE id = $1`,
     params: [id],
@@ -429,14 +434,14 @@ export function buildDeleteQuery(
  */
 export function buildBulkInsertQuery(
   tableName: string,
-  data: Record<string, any>[]
-): { sql: string; params: any[] } {
+  data: Record<string, SQLValue>[]
+): { sql: string; params: SQLValue[] } {
   if (data.length === 0) {
     throw new Error('Нет данных для вставки');
   }
 
   const columns = Object.keys(data[0]);
-  const params: any[] = [];
+  const params: SQLValue[] = [];
   const valueSets: string[] = [];
 
   for (const row of data) {

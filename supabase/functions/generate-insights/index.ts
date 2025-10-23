@@ -1,10 +1,14 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
+import { INSIGHTS_GENERATION_PROMPT, getModelConfig, callAIWithRetry } from '../_shared/prompts.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+const AI_API_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 
 interface Insight {
   type: 'trend' | 'anomaly' | 'suggestion' | 'reminder';
@@ -191,6 +195,76 @@ serve(async (req) => {
           totalRecords,
         },
       });
+    }
+
+    // Generate AI-powered insights if we have enough data
+    if (LOVABLE_API_KEY && tableData.length >= 10) {
+      try {
+        console.log('[Insights] Generating AI-powered insights...');
+
+        // Prepare data summary for AI
+        const dataSummary = {
+          totalRecords: totalRecords,
+          recentRecords: recentRecords.length,
+          columnsAnalyzed: numericColumns.length,
+          sampleData: tableData.slice(0, 20).map(row => row.data),
+          schema: database.table_schemas.map((schema: any) => ({
+            name: schema.column_name,
+            type: schema.data_type,
+          })),
+        };
+
+        const modelConfig = getModelConfig('insights');
+
+        const aiResponse = await callAIWithRetry(
+          AI_API_URL,
+          LOVABLE_API_KEY,
+          {
+            model: modelConfig.model,
+            messages: [
+              { role: 'system', content: INSIGHTS_GENERATION_PROMPT },
+              {
+                role: 'user',
+                content: `Analyze this database and provide insights:\n\n${JSON.stringify(dataSummary, null, 2)}`,
+              },
+            ],
+            temperature: modelConfig.temperature,
+            max_tokens: modelConfig.maxOutputTokens,
+          }
+        );
+
+        const aiResult = await aiResponse.json();
+        const aiContent = aiResult.choices?.[0]?.message?.content || '';
+
+        // Parse AI insights
+        try {
+          const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
+          if (jsonMatch) {
+            const aiInsights = JSON.parse(jsonMatch[0]);
+
+            // Add AI insights to the list
+            if (aiInsights.insights && Array.isArray(aiInsights.insights)) {
+              aiInsights.insights.forEach((aiInsight: any) => {
+                insights.push({
+                  type: aiInsight.type || 'suggestion',
+                  severity: aiInsight.severity || 'medium',
+                  title: aiInsight.title || 'AI Insight',
+                  description: aiInsight.description || '',
+                  action: aiInsight.action,
+                  metadata: aiInsight.metadata,
+                });
+              });
+
+              console.log('[Insights] Added', aiInsights.insights.length, 'AI-powered insights');
+            }
+          }
+        } catch (parseError) {
+          console.warn('[Insights] Could not parse AI response:', parseError);
+        }
+      } catch (aiError) {
+        console.warn('[Insights] AI insights generation failed:', aiError);
+        // Continue with rule-based insights only
+      }
     }
 
     // Save insights to database

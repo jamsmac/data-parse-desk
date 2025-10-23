@@ -78,21 +78,21 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <main id="main-content" className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md animate-fade-in">
         <CardHeader className="space-y-1">
           <div className="flex items-center justify-center mb-4">
             <div className="p-3 bg-primary/10 rounded-full">
-              <Database className="h-8 w-8 text-primary" />
+              <Database className="h-8 w-8 text-primary" aria-hidden="true" />
             </div>
           </div>
-          <CardTitle className="text-2xl text-center">Регистрация в VHData</CardTitle>
+          <CardTitle className="text-2xl text-center" id="register-title">Регистрация в VHData</CardTitle>
           <CardDescription className="text-center">
             Создайте аккаунт для доступа к платформе
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" aria-labelledby="register-title">
             {error && (
               <Alert variant="destructive">
                 <AlertDescription>{error}</AlertDescription>
@@ -155,18 +155,22 @@ export default function RegisterPage() {
                   ) : (
                     <Eye className="h-4 w-4 text-muted-foreground" />
                   )}
+                  <span className="sr-only">
+                    {showPassword ? 'Скрыть пароль' : 'Показать пароль'}
+                  </span>
                 </Button>
               </div>
 
               {/* Password Requirements */}
               {formData.password && (
-                <div className="space-y-1 mt-2">
+                <div className="space-y-1 mt-2" role="status" aria-label="Требования к паролю">
                   {passwordRequirements.map((req, index) => (
                     <div key={index} className="flex items-center gap-2 text-xs">
                       <CheckCircle2
                         className={`h-3 w-3 ${
                           req.valid ? 'text-green-500' : 'text-muted-foreground'
                         }`}
+                        aria-hidden="true"
                       />
                       <span className={req.valid ? 'text-green-600' : 'text-muted-foreground'}>
                         {req.label}
@@ -247,6 +251,6 @@ export default function RegisterPage() {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </main>
   );
 }

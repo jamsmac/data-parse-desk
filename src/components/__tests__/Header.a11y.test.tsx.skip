@@ -1,0 +1,151 @@
+/**
+ * Accessibility tests for Header component
+ * Tests WCAG 2.1 AA compliance using axe-core
+ */
+
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render } from '@testing-library/react';
+import { axe } from 'vitest-axe';
+import { BrowserRouter } from 'react-router-dom';
+import Header from '../Header';
+
+// Mock AuthContext
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: {
+      id: '1',
+      email: 'test@example.com',
+      role: 'user',
+    },
+    session: { access_token: 'token' },
+    signOut: vi.fn(),
+  }),
+}));
+
+// Mock Supabase
+vi.mock('@/integrations/supabase/client', () => ({
+  supabase: {
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => Promise.resolve({ data: [], error: null })),
+      })),
+    })),
+  },
+}));
+
+// Wrapper with necessary providers
+const Wrapper = ({ children }: { children: React.ReactNode }) => (
+  <BrowserRouter>{children}</BrowserRouter>
+);
+
+describe('Header Accessibility', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should have no accessibility violations', async () => {
+    const { container } = render(
+      <Wrapper>
+        <Header />
+      </Wrapper>
+    );
+
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
+  it('should have proper heading hierarchy', async () => {
+    const { container } = render(
+      <Wrapper>
+        <Header />
+      </Wrapper>
+    );
+
+    // Check that headings exist and are properly ordered
+    const headings = container.querySelectorAll('h1, h2, h3, h4, h5, h6');
+    expect(headings.length).toBeGreaterThan(0);
+
+    // Run axe specifically for heading-order rule
+    const results = await axe(container, {
+      rules: {
+        'heading-order': { enabled: true },
+      },
+    });
+
+    expect(results).toHaveNoViolations();
+  });
+
+  it('should have accessible interactive elements', async () => {
+    const { container } = render(
+      <Wrapper>
+        <Header />
+      </Wrapper>
+    );
+
+    // Check all buttons and links are accessible
+    const results = await axe(container, {
+      rules: {
+        'button-name': { enabled: true },
+        'link-name': { enabled: true },
+      },
+    });
+
+    expect(results).toHaveNoViolations();
+  });
+
+  it('should have proper ARIA labels', async () => {
+    const { container } = render(
+      <Wrapper>
+        <Header />
+      </Wrapper>
+    );
+
+    // Check ARIA attributes are valid and used correctly
+    const results = await axe(container, {
+      rules: {
+        'aria-required-attr': { enabled: true },
+        'aria-valid-attr': { enabled: true },
+        'aria-valid-attr-value': { enabled: true },
+      },
+    });
+
+    expect(results).toHaveNoViolations();
+  });
+
+  it('should be keyboard navigable', async () => {
+    const { container } = render(
+      <Wrapper>
+        <Header />
+      </Wrapper>
+    );
+
+    // Check keyboard accessibility
+    const results = await axe(container, {
+      rules: {
+        'keyboard': { enabled: true },
+        'focus-order-semantics': { enabled: true },
+      },
+    });
+
+    expect(results).toHaveNoViolations();
+  });
+
+  it('should meet color contrast requirements', async () => {
+    const { container } = render(
+      <Wrapper>
+        <Header />
+      </Wrapper>
+    );
+
+    // Check color contrast meets WCAG AA (4.5:1 for normal text)
+    const results = await axe(container, {
+      rules: {
+        'color-contrast': { enabled: true },
+      },
+    });
+
+    // Note: This might have violations if actual colors don't meet standards
+    // Color contrast violations should be fixed in CSS
+    expect(results).toHaveNoViolations();
+  });
+});

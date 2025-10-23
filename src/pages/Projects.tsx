@@ -92,42 +92,45 @@ export default function Projects() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      
-      <main className="flex-1 container mx-auto px-4 py-8">
+
+      <main id="main-content" className="flex-1 container mx-auto px-4 py-8">
         {/* Заголовок */}
-        <div className="flex items-center justify-between mb-8">
+        <header className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold">Проекты</h1>
             <p className="text-muted-foreground mt-1">
               Управляйте своими проектами и базами данных
             </p>
           </div>
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button onClick={() => setIsCreateDialogOpen(true)} aria-label="Создать новый проект">
+            <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
             Создать проект
           </Button>
-        </div>
+        </header>
 
         {/* Поиск */}
-        <div className="mb-6">
+        <section className="mb-6" aria-label="Поиск проектов">
           <div className="relative max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" aria-hidden="true" />
             <Input
+              type="search"
               placeholder="Поиск проектов..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
+              aria-label="Поиск проектов по названию"
             />
           </div>
-        </div>
+        </section>
 
         {/* Список проектов */}
+        <section aria-label="Список проектов">
         {isLoading ? (
           <div className="text-center py-12">
             <p className="text-muted-foreground">Загрузка проектов...</p>
           </div>
         ) : filteredProjects && filteredProjects.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" role="list">
             {filteredProjects.map((project) => (
               <ProjectCard
                 key={project.id}
@@ -144,18 +147,19 @@ export default function Projects() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-12">
+          <div className="text-center py-12" role="status">
             <p className="text-muted-foreground mb-4">
               {searchQuery ? 'Проекты не найдены' : 'У вас пока нет проектов'}
             </p>
             {!searchQuery && (
-              <Button onClick={() => setIsCreateDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
+              <Button onClick={() => setIsCreateDialogOpen(true)} aria-label="Создать первый проект">
+                <Plus className="h-4 w-4 mr-2" aria-hidden="true" />
                 Создать первый проект
               </Button>
             )}
           </div>
         )}
+        </section>
       </main>
 
       {/* Диалог создания проекта */}

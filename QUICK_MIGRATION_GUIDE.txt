@@ -1,0 +1,50 @@
+═══════════════════════════════════════════════════════════════════
+   БЫСТРАЯ ИНСТРУКЦИЯ: ПРИМЕНЕНИЕ МИГРАЦИИ БД
+═══════════════════════════════════════════════════════════════════
+
+📍 ШАГ 1: Открыть Supabase
+   → https://supabase.com/dashboard/project/puavudiivxuknvtbnotv
+   → SQL Editor (левое меню)
+   → New query
+
+📍 ШАГ 2: Скопировать файл
+   → Путь: supabase/migrations/20251023000001_add_performance_indexes.sql
+   → Или использовать SQL ниже
+
+📍 ШАГ 3: Вставить и запустить
+   → Ctrl+V / Cmd+V
+   → Нажать "Run" (или F5)
+   → Ждать 5-10 минут
+
+📍 ШАГ 4: Проверить (через 5 минут)
+   SELECT count(*) FROM pg_indexes
+   WHERE schemaname = 'public' AND indexname LIKE 'idx_%';
+
+   Ожидается: count = 6 (или больше)
+
+═══════════════════════════════════════════════════════════════════
+
+✅ РЕЗУЛЬТАТ:
+   • 6 новых индексов
+   • 50-90% ускорение запросов
+   • Zero downtime
+   • 5-10 минут на создание
+
+═══════════════════════════════════════════════════════════════════
+
+❌ ОТКАТ (если нужен):
+   DROP INDEX CONCURRENTLY IF EXISTS idx_table_data_db_time;
+   DROP INDEX CONCURRENTLY IF EXISTS idx_table_data_json;
+   DROP INDEX CONCURRENTLY IF EXISTS idx_project_members_composite;
+   DROP INDEX CONCURRENTLY IF EXISTS idx_api_usage_time;
+   DROP INDEX CONCURRENTLY IF EXISTS idx_comments_database;
+   DROP INDEX CONCURRENTLY IF EXISTS idx_webhooks_user_active;
+
+═══════════════════════════════════════════════════════════════════
+
+📚 ПОЛНАЯ ДОКУМЕНТАЦИЯ:
+   • MIGRATION_APPLY_NOW.md - Подробная инструкция
+   • DEPLOYMENT_INSTRUCTIONS.md - Все методы деплоя
+   • DEPLOY_CHECKLIST.md - Быстрый чеклист
+
+═══════════════════════════════════════════════════════════════════

@@ -10,10 +10,12 @@ interface MappingSuggestion {
   reason: string;
 }
 
+export type ColumnValue = string | number | boolean | Date | null | undefined;
+
 interface ColumnAnalysis {
   name: string;
   type: 'text' | 'number' | 'date' | 'boolean' | 'email' | 'phone' | 'url';
-  samples: any[];
+  samples: ColumnValue[];
   nullCount: number;
   uniqueCount: number;
   patterns: string[];
@@ -66,7 +68,7 @@ export class MLMapper {
   /**
    * Анализирует колонку и определяет её тип и характеристики
    */
-  analyzeColumn(columnName: string, values: any[]): ColumnAnalysis {
+  analyzeColumn(columnName: string, values: ColumnValue[]): ColumnAnalysis {
     const samples = values.slice(0, 100); // Берём первые 100 значений
     const nonNullSamples = samples.filter((v) => v != null && v !== '');
     
@@ -191,7 +193,7 @@ export class MLMapper {
    * Генерирует предложения по маппингу
    */
   suggestMappings(
-    sourceColumns: { name: string; values: any[] }[],
+    sourceColumns: { name: string; values: ColumnValue[] }[],
     targetColumns: { name: string; type: string }[]
   ): MappingSuggestion[] {
     const suggestions: MappingSuggestion[] = [];
@@ -408,12 +410,12 @@ export class MLMapper {
   advancedMatch(
     source: {
       name: string;
-      value: any;
+      value: ColumnValue;
       type: string;
     },
     target: {
       name: string;
-      value: any;
+      value: ColumnValue;
       type: string;
     },
     options?: {

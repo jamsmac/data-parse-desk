@@ -3,6 +3,8 @@
  * Stores data, pending changes, and sync queue for offline mode
  */
 
+import { TableRow, Database, TableSchema } from '@/types/database';
+
 const DB_NAME = 'DataParseDeskOffline';
 const DB_VERSION = 1;
 
@@ -20,20 +22,20 @@ interface PendingChange {
   timestamp: number;
   operation: 'insert' | 'update' | 'delete';
   table: string;
-  data: any;
-  originalData?: any;
+  data: TableRow;
+  originalData?: TableRow;
   synced: boolean;
   error?: string;
 }
 
-interface SyncQueueItem {
+interface SyncQueueItem<T = unknown> {
   id: string;
   timestamp: number;
   priority: number;
   retryCount: number;
   maxRetries: number;
-  operation: () => Promise<any>;
-  onSuccess?: (result: any) => void;
+  operation: () => Promise<T>;
+  onSuccess?: (result: T) => void;
   onError?: (error: Error) => void;
 }
 
@@ -116,7 +118,7 @@ class OfflineStorage {
   /**
    * Cache table data for offline access
    */
-  async cacheTableData(databaseId: string, rows: any[]): Promise<void> {
+  async cacheTableData(databaseId: string, rows: TableRow[]): Promise<void> {
     await this.init();
     const store = this.getStore(STORES.TABLE_DATA, 'readwrite');
 
@@ -140,7 +142,7 @@ class OfflineStorage {
   /**
    * Get cached table data
    */
-  async getCachedTableData(databaseId: string): Promise<any[]> {
+  async getCachedTableData(databaseId: string): Promise<TableRow[]> {
     await this.init();
     const store = this.getStore(STORES.TABLE_DATA);
     const index = store.index('database_id');
@@ -180,7 +182,7 @@ class OfflineStorage {
   /**
    * Cache database metadata
    */
-  async cacheDatabases(databases: any[]): Promise<void> {
+  async cacheDatabases(databases: Database[]): Promise<void> {
     await this.init();
     const store = this.getStore(STORES.DATABASES, 'readwrite');
 
@@ -203,7 +205,7 @@ class OfflineStorage {
   /**
    * Get cached databases
    */
-  async getCachedDatabases(): Promise<any[]> {
+  async getCachedDatabases(): Promise<Database[]> {
     await this.init();
     const store = this.getStore(STORES.DATABASES);
     const request = store.getAll();
@@ -219,7 +221,7 @@ class OfflineStorage {
   /**
    * Cache table schemas
    */
-  async cacheSchemas(databaseId: string, schemas: any[]): Promise<void> {
+  async cacheSchemas(databaseId: string, schemas: TableSchema[]): Promise<void> {
     await this.init();
     const store = this.getStore(STORES.SCHEMAS, 'readwrite');
 
@@ -243,7 +245,7 @@ class OfflineStorage {
   /**
    * Get cached schemas
    */
-  async getCachedSchemas(databaseId: string): Promise<any[]> {
+  async getCachedSchemas(databaseId: string): Promise<TableSchema[]> {
     await this.init();
     const store = this.getStore(STORES.SCHEMAS);
     const index = store.index('database_id');

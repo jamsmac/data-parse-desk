@@ -143,20 +143,20 @@ export default function Settings() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      
-      <main className="flex-1 container mx-auto px-4 py-8">
-        <div className="mb-8">
+
+      <main id="main-content" className="flex-1 container mx-auto px-4 py-8">
+        <header className="mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <SettingsIcon className="h-8 w-8 text-primary" />
+            <SettingsIcon className="h-8 w-8 text-primary" aria-hidden="true" />
             <h1 className="text-3xl font-bold">Настройки</h1>
           </div>
           <p className="text-muted-foreground">
             Управляйте кредитами, хранилищами и интеграциями
           </p>
-        </div>
+        </header>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-4" role="tablist" aria-label="Разделы настроек">
             <TabsTrigger value="credits">Кредиты</TabsTrigger>
             <TabsTrigger value="storage">Хранилища</TabsTrigger>
             <TabsTrigger value="integrations">Интеграции</TabsTrigger>

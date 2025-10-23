@@ -35,7 +35,7 @@ export function ButtonCell({ value, config, rowData, onAction }: ButtonCellProps
         case 'send_email':
           if (config.email_template) {
             // Заменить плейсхолдеры
-            let subject = 'Email from Data Parse Desk';
+            const subject = 'Email from Data Parse Desk';
             let body = config.email_template;
             if (rowData) {
               Object.keys(rowData).forEach((key) => {
@@ -67,15 +67,31 @@ export function ButtonCell({ value, config, rowData, onAction }: ButtonCellProps
   const getIcon = () => {
     switch (config.action) {
       case 'open_url':
-        return <ExternalLink className="h-4 w-4 mr-2" />;
+        return <ExternalLink className="h-4 w-4 mr-2" aria-hidden="true" />;
       case 'send_email':
-        return <Mail className="h-4 w-4 mr-2" />;
+        return <Mail className="h-4 w-4 mr-2" aria-hidden="true" />;
       case 'run_formula':
-        return <Zap className="h-4 w-4 mr-2" />;
+        return <Zap className="h-4 w-4 mr-2" aria-hidden="true" />;
       case 'custom':
-        return <Play className="h-4 w-4 mr-2" />;
+        return <Play className="h-4 w-4 mr-2" aria-hidden="true" />;
       default:
         return null;
+    }
+  };
+
+  const getAriaLabel = () => {
+    const label = config.label || 'Action';
+    switch (config.action) {
+      case 'open_url':
+        return `${label}: Open URL in new tab`;
+      case 'send_email':
+        return `${label}: Send email`;
+      case 'run_formula':
+        return `${label}: Run formula`;
+      case 'custom':
+        return `${label}: Execute custom action`;
+      default:
+        return label;
     }
   };
 
@@ -85,9 +101,11 @@ export function ButtonCell({ value, config, rowData, onAction }: ButtonCellProps
       size="sm"
       onClick={handleClick}
       className="h-8"
+      aria-label={getAriaLabel()}
+      title={getAriaLabel()}
     >
       {getIcon()}
-      {config.label || 'Action'}
+      <span>{config.label || 'Action'}</span>
     </Button>
   );
 }

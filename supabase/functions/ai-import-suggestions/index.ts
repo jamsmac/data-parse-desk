@@ -1,9 +1,10 @@
 // AI-powered import suggestions for column type detection and mapping
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { IMPORT_SUGGESTIONS_PROMPT, getModelConfig, callAIWithRetry } from '../_shared/prompts.ts';
 
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY');
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+const AI_API_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 
 interface Column {
   name: string;
@@ -86,112 +87,42 @@ serve(async (req) => {
 
     const tableNames = existingTables?.map((t) => t.display_name || t.name) || [];
 
-    // Build prompt for Gemini
-    const prompt = `You are an expert data analyst helping to categorize columns in a CSV/Excel import.
-
-Analyze the following columns and their sample data, then suggest the most appropriate column type for each.
-
-**Available Column Types:**
-- text: General text data
-- number: Numeric values (integers, floats, currency)
-- date: Date or datetime values
-- boolean: True/false values
-- email: Email addresses
-- phone: Phone numbers
-- url: Web URLs
-- select: Categorical data with limited options (suggest the options if applicable)
-- relation: Foreign key to another table (if pattern suggests it)
-
-**Existing Tables in Database:**
-${tableNames.length > 0 ? tableNames.join(', ') : 'None'}
-
-**Columns and Sample Data:**
-${columns.map((col, i) => {
-  const samples = sampleData.map(row => row[col.name]).filter(v => v != null).slice(0, 5);
-  return `
-Column: ${col.name}
-Current Type: ${col.type}
-Sample Values: ${JSON.stringify(samples)}
-`;
-}).join('\n')}
-
-**Instructions:**
-1. Analyze the column name and sample values
-2. Suggest the most appropriate type
-3. Provide confidence level (0.0 to 1.0)
-4. Explain your reasoning briefly
-5. If type is "select", provide the unique options found
-6. If type is "relation", suggest which existing table it might relate to
-
-**Response Format (JSON):**
-Return a JSON object with a "suggestions" array containing objects with these fields:
-- column: string (column name)
-- suggestedType: string (one of the available types)
-- confidence: number (0.0 to 1.0)
-- reasoning: string (brief explanation)
-- selectOptions: string[] (only if suggestedType is "select")
-- relationSuggestion: { targetTable: string, reason: string } (only if suggestedType is "relation")
-
-**Example Response:**
-{
-  "suggestions": [
-    {
-      "column": "email",
-      "suggestedType": "email",
-      "confidence": 0.95,
-      "reasoning": "All samples match email format pattern"
-    },
-    {
-      "column": "status",
-      "suggestedType": "select",
-      "confidence": 0.9,
-      "reasoning": "Limited categorical values detected",
-      "selectOptions": ["active", "pending", "completed"]
-    },
-    {
-      "column": "customer_id",
-      "suggestedType": "relation",
-      "confidence": 0.85,
-      "reasoning": "Column name suggests foreign key to customers table",
-      "relationSuggestion": {
-        "targetTable": "Customers",
-        "reason": "Name pattern matches existing table"
-      }
-    }
-  ]
-}
-
-Respond with ONLY valid JSON, no additional text.`;
-
-    // Call Gemini API
-    const geminiResponse = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: prompt,
-          }],
-        }],
-        generationConfig: {
-          temperature: 0.2,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 2048,
-        },
-      }),
+    // Build structured data for AI
+    const columnsData = columns.map((col) => {
+      const samples = sampleData.map(row => row[col.name]).filter(v => v != null).slice(0, 5);
+      return {
+        name: col.name,
+        currentType: col.type,
+        samples: samples
+      };
     });
 
-    if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text();
-      console.error('Gemini API error:', errorText);
-      throw new Error('Failed to get AI suggestions');
+    const prompt = IMPORT_SUGGESTIONS_PROMPT(tableNames);
+    const dataContext = `\n\nCOLUMNS TO ANALYZE:\n${JSON.stringify(columnsData, null, 2)}`;
+
+    // Call Lovable AI with retry logic
+    const modelConfig = getModelConfig('classification');
+
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
     }
 
-    const geminiData = await geminiResponse.json();
-    const responseText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+    const aiResponse = await callAIWithRetry(
+      AI_API_URL,
+      LOVABLE_API_KEY,
+      {
+        model: modelConfig.model,
+        messages: [
+          { role: 'system', content: prompt },
+          { role: 'user', content: dataContext }
+        ],
+        temperature: modelConfig.temperature,
+        max_tokens: modelConfig.maxOutputTokens,
+      }
+    );
+
+    const aiData = await aiResponse.json();
+    const responseText = aiData.choices?.[0]?.message?.content;
 
     if (!responseText) {
       throw new Error('No response from AI model');
@@ -242,7 +173,7 @@ Respond with ONLY valid JSON, no additional text.`;
       output_data: {
         suggestionCount: suggestions.length,
       },
-      model: 'gemini-2.0-flash-exp',
+      model: modelConfig.model,
       tokens_used: responseText.length, // Approximate
       status: 'completed',
     });
@@ -253,7 +184,7 @@ Respond with ONLY valid JSON, no additional text.`;
         metadata: {
           columnsAnalyzed: columns.length,
           suggestionsGenerated: suggestions.length,
-          model: 'gemini-2.0-flash-exp',
+          model: modelConfig.model,
         },
       }),
       {

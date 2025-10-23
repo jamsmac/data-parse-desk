@@ -3,15 +3,15 @@
 <html lang="en">
 
 <head>
-    <title>Code coverage report for hooks/useUndoRedo.ts</title>
+    <title>Code coverage report for components/export/ExportDataDialog.tsx</title>
     <meta charset="utf-8" />
-    <link rel="stylesheet" href="../prettify.css" />
-    <link rel="stylesheet" href="../base.css" />
-    <link rel="shortcut icon" type="image/x-icon" href="../favicon.png" />
+    <link rel="stylesheet" href="../../prettify.css" />
+    <link rel="stylesheet" href="../../base.css" />
+    <link rel="shortcut icon" type="image/x-icon" href="../../favicon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <style type='text/css'>
         .coverage-summary .sorter {
-            background-image: url(../sort-arrow-sprite.png);
+            background-image: url(../../sort-arrow-sprite.png);
         }
     </style>
 </head>
@@ -19,13 +19,13 @@
 <body>
 <div class='wrapper'>
     <div class='pad1'>
-        <h1><a href="../index.html">All files</a> / <a href="index.html">hooks</a> useUndoRedo.ts</h1>
+        <h1><a href="../../index.html">All files</a> / <a href="index.html">components/export</a> ExportDataDialog.tsx</h1>
         <div class='clearfix'>
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/257</span>
+                <span class='fraction'>0/270</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/257</span>
+                <span class='fraction'>0/270</span>
             </div>
         
             
@@ -320,7 +320,20 @@
 <a name='L255'></a><a href='#L255'>255</a>
 <a name='L256'></a><a href='#L256'>256</a>
 <a name='L257'></a><a href='#L257'>257</a>
-<a name='L258'></a><a href='#L258'>258</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L258'></a><a href='#L258'>258</a>
+<a name='L259'></a><a href='#L259'>259</a>
+<a name='L260'></a><a href='#L260'>260</a>
+<a name='L261'></a><a href='#L261'>261</a>
+<a name='L262'></a><a href='#L262'>262</a>
+<a name='L263'></a><a href='#L263'>263</a>
+<a name='L264'></a><a href='#L264'>264</a>
+<a name='L265'></a><a href='#L265'>265</a>
+<a name='L266'></a><a href='#L266'>266</a>
+<a name='L267'></a><a href='#L267'>267</a>
+<a name='L268'></a><a href='#L268'>268</a>
+<a name='L269'></a><a href='#L269'>269</a>
+<a name='L270'></a><a href='#L270'>270</a>
+<a name='L271'></a><a href='#L271'>271</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -577,263 +590,289 @@
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
-<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { useState, useEffect, useCallback } from 'react';</span></span></span>
-<span class="cstat-no" title="statement not covered" >import { supabase } from '@/integrations/supabase/client';</span>
-<span class="cstat-no" title="statement not covered" >import { useToast } from '@/hooks/use-toast';</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js"><span class="cstat-no" title="statement not covered" ><span class="fstat-no" title="function not covered" ><span class="branch-0 cbranch-no" title="branch not covered" >import { useState } from 'react';</span></span></span>
+<span class="cstat-no" title="statement not covered" >import { Download, FileJson, FileText, Loader2 } from 'lucide-react';</span>
+<span class="cstat-no" title="statement not covered" >import {</span>
+<span class="cstat-no" title="statement not covered" >  Dialog,</span>
+<span class="cstat-no" title="statement not covered" >  DialogContent,</span>
+<span class="cstat-no" title="statement not covered" >  DialogDescription,</span>
+<span class="cstat-no" title="statement not covered" >  DialogFooter,</span>
+<span class="cstat-no" title="statement not covered" >  DialogHeader,</span>
+<span class="cstat-no" title="statement not covered" >  DialogTitle,</span>
+<span class="cstat-no" title="statement not covered" >} from '@/components/ui/dialog';</span>
 <span class="cstat-no" title="statement not covered" >import { Button } from '@/components/ui/button';</span>
+<span class="cstat-no" title="statement not covered" >import { Label } from '@/components/ui/label';</span>
+<span class="cstat-no" title="statement not covered" >import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';</span>
+<span class="cstat-no" title="statement not covered" >import { Checkbox } from '@/components/ui/checkbox';</span>
+<span class="cstat-no" title="statement not covered" >import { useToast } from '@/hooks/use-toast';</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >export interface HistoryEntry {</span>
-<span class="cstat-no" title="statement not covered" >  id: string;</span>
-<span class="cstat-no" title="statement not covered" >  action: 'update' | 'delete' | 'create';</span>
-<span class="cstat-no" title="statement not covered" >  tableName: string;</span>
-<span class="cstat-no" title="statement not covered" >  rowId: string;</span>
-<span class="cstat-no" title="statement not covered" >  columnName?: string;</span>
-<span class="cstat-no" title="statement not covered" >  before: any;</span>
-<span class="cstat-no" title="statement not covered" >  after: any;</span>
-<span class="cstat-no" title="statement not covered" >  timestamp: number;</span>
+<span class="cstat-no" title="statement not covered" >export type ExportFormat = 'csv' | 'json';</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >interface ExportDataDialogProps {</span>
+<span class="cstat-no" title="statement not covered" >  open: boolean;</span>
+<span class="cstat-no" title="statement not covered" >  onOpenChange: (open: boolean) =&gt; void;</span>
+<span class="cstat-no" title="statement not covered" >  data: Record&lt;string, unknown&gt;[];</span>
+<span class="cstat-no" title="statement not covered" >  filename: string;</span>
+<span class="cstat-no" title="statement not covered" >  columns?: string[];</span>
 <span class="cstat-no" title="statement not covered" >}</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >const MAX_HISTORY_SIZE = 50;</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >export const useUndoRedo = (databaseId?: string) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >  const [history, setHistory] = useState&lt;HistoryEntry[]&gt;([]);</span>
-<span class="cstat-no" title="statement not covered" >  const [currentIndex, setCurrentIndex] = useState(-1);</span>
+<span class="cstat-no" title="statement not covered" >export function ExportDataDialog({</span>
+<span class="cstat-no" title="statement not covered" >  open,</span>
+<span class="cstat-no" title="statement not covered" >  onOpenChange,</span>
+<span class="cstat-no" title="statement not covered" >  data,</span>
+<span class="cstat-no" title="statement not covered" >  filename,</span>
+<span class="cstat-no" title="statement not covered" >  columns,</span>
+<span class="cstat-no" title="statement not covered" >}: ExportDataDialogProps) {</span>
 <span class="cstat-no" title="statement not covered" >  const { toast } = useToast();</span>
+<span class="cstat-no" title="statement not covered" >  const [format, setFormat] = useState&lt;ExportFormat&gt;('csv');</span>
+<span class="cstat-no" title="statement not covered" >  const [includeHeaders, setIncludeHeaders] = useState(true);</span>
+<span class="cstat-no" title="statement not covered" >  const [selectedColumns, setSelectedColumns] = useState&lt;string[]&gt;(</span>
+<span class="cstat-no" title="statement not covered" >    columns || Object.keys(data[0] || {})</span>
+<span class="cstat-no" title="statement not covered" >  );</span>
+<span class="cstat-no" title="statement not covered" >  const [isExporting, setIsExporting] = useState(false);</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  // Load history from localStorage on mount</span>
-<span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    if (!databaseId) return;</span>
+<span class="cstat-no" title="statement not covered" >  const availableColumns = columns || Object.keys(data[0] || {});</span>
 <span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >    const storageKey = `undo_history_${databaseId}`;</span>
-<span class="cstat-no" title="statement not covered" >    const stored = localStorage.getItem(storageKey);</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >    if (stored) {</span>
-<span class="cstat-no" title="statement not covered" >      try {</span>
-<span class="cstat-no" title="statement not covered" >        const parsed = JSON.parse(stored);</span>
-<span class="cstat-no" title="statement not covered" >        setHistory(parsed.history || []);</span>
-<span class="cstat-no" title="statement not covered" >        setCurrentIndex(parsed.currentIndex ?? -1);</span>
-<span class="cstat-no" title="statement not covered" >      } catch (error) {</span>
-<span class="cstat-no" title="statement not covered" >        console.error('Failed to parse undo history:', error);</span>
-<span class="cstat-no" title="statement not covered" >      }</span>
-<span class="cstat-no" title="statement not covered" >    }</span>
-<span class="cstat-no" title="statement not covered" >  }, [databaseId]);</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  // Save history to localStorage on changes</span>
-<span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    if (!databaseId || history.length === 0) return;</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >    const storageKey = `undo_history_${databaseId}`;</span>
-<span class="cstat-no" title="statement not covered" >    localStorage.setItem(</span>
-<span class="cstat-no" title="statement not covered" >      storageKey,</span>
-<span class="cstat-no" title="statement not covered" >      JSON.stringify({</span>
-<span class="cstat-no" title="statement not covered" >        history,</span>
-<span class="cstat-no" title="statement not covered" >        currentIndex,</span>
-<span class="cstat-no" title="statement not covered" >      })</span>
+<span class="cstat-no" title="statement not covered" >  const toggleColumn = (column: string) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    setSelectedColumns((prev) =&gt;</span>
+<span class="cstat-no" title="statement not covered" >      prev.includes(column)</span>
+<span class="cstat-no" title="statement not covered" >        ? prev.filter((c) =&gt; c !== column)</span>
+<span class="cstat-no" title="statement not covered" >        : [...prev, column]</span>
 <span class="cstat-no" title="statement not covered" >    );</span>
-<span class="cstat-no" title="statement not covered" >  }, [history, currentIndex, databaseId]);</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  const addToHistory = useCallback((entry: Omit&lt;HistoryEntry, 'id' | 'timestamp'&gt;) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    const newEntry: HistoryEntry = {</span>
-<span class="cstat-no" title="statement not covered" >      ...entry,</span>
-<span class="cstat-no" title="statement not covered" >      id: crypto.randomUUID(),</span>
-<span class="cstat-no" title="statement not covered" >      timestamp: Date.now(),</span>
-<span class="cstat-no" title="statement not covered" >    };</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >    setHistory((prev) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >      // Remove any entries after current index (when adding new action after undo)</span>
-<span class="cstat-no" title="statement not covered" >      const newHistory = prev.slice(0, currentIndex + 1);</span>
-<span class="cstat-no" title="statement not covered" >      newHistory.push(newEntry);</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >      // Keep only last MAX_HISTORY_SIZE entries</span>
-<span class="cstat-no" title="statement not covered" >      if (newHistory.length &gt; MAX_HISTORY_SIZE) {</span>
-<span class="cstat-no" title="statement not covered" >        return newHistory.slice(-MAX_HISTORY_SIZE);</span>
-<span class="cstat-no" title="statement not covered" >      }</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >      return newHistory;</span>
-<span class="cstat-no" title="statement not covered" >    });</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >    setCurrentIndex((prev) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >      const newIndex = prev + 1;</span>
-<span class="cstat-no" title="statement not covered" >      return newIndex &gt;= MAX_HISTORY_SIZE ? MAX_HISTORY_SIZE - 1 : newIndex;</span>
-<span class="cstat-no" title="statement not covered" >    });</span>
-<span class="cstat-no" title="statement not covered" >  }, [currentIndex]);</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  const undo = useCallback(async () =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    if (currentIndex &lt; 0 || !history[currentIndex]) {</span>
-<span class="cstat-no" title="statement not covered" >      toast({</span>
-<span class="cstat-no" title="statement not covered" >        title: 'Нечего отменять',</span>
-<span class="cstat-no" title="statement not covered" >        variant: 'destructive',</span>
-<span class="cstat-no" title="statement not covered" >      });</span>
-<span class="cstat-no" title="statement not covered" >      return;</span>
-<span class="cstat-no" title="statement not covered" >    }</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >    const entry = history[currentIndex];</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >    try {</span>
-<span class="cstat-no" title="statement not covered" >      // Perform undo operation based on action type</span>
-<span class="cstat-no" title="statement not covered" >      switch (entry.action) {</span>
-<span class="cstat-no" title="statement not covered" >        case 'update':</span>
-<span class="cstat-no" title="statement not covered" >          await supabase.rpc('update_table_row', {</span>
-<span class="cstat-no" title="statement not covered" >            p_id: entry.rowId,</span>
-<span class="cstat-no" title="statement not covered" >            p_data: entry.before,</span>
-<span class="cstat-no" title="statement not covered" >          });</span>
-<span class="cstat-no" title="statement not covered" >          break;</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >        case 'delete':</span>
-<span class="cstat-no" title="statement not covered" >          // Restore deleted row</span>
-<span class="cstat-no" title="statement not covered" >          await supabase.rpc('insert_table_row', {</span>
-<span class="cstat-no" title="statement not covered" >            p_database_id: entry.tableName,</span>
-<span class="cstat-no" title="statement not covered" >            p_data: entry.before,</span>
-<span class="cstat-no" title="statement not covered" >          });</span>
-<span class="cstat-no" title="statement not covered" >          break;</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >        case 'create':</span>
-<span class="cstat-no" title="statement not covered" >          // Delete created row</span>
-<span class="cstat-no" title="statement not covered" >          await supabase.rpc('delete_table_row', {</span>
-<span class="cstat-no" title="statement not covered" >            p_id: entry.rowId,</span>
-<span class="cstat-no" title="statement not covered" >          });</span>
-<span class="cstat-no" title="statement not covered" >          break;</span>
-<span class="cstat-no" title="statement not covered" >      }</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >      setCurrentIndex((prev) =&gt; prev - 1);</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >      // Show toast with redo option</span>
-<span class="cstat-no" title="statement not covered" >      const actionText = {</span>
-<span class="cstat-no" title="statement not covered" >        update: 'Изменение отменено',</span>
-<span class="cstat-no" title="statement not covered" >        delete: 'Удаление отменено',</span>
-<span class="cstat-no" title="statement not covered" >        create: 'Создание отменено',</span>
-<span class="cstat-no" title="statement not covered" >      }[entry.action];</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >      toast({</span>
-<span class="cstat-no" title="statement not covered" >        title: actionText,</span>
-<span class="cstat-no" title="statement not covered" >        description: entry.columnName</span>
-<span class="cstat-no" title="statement not covered" >          ? `${entry.columnName}: ${JSON.stringify(entry.after)} → ${JSON.stringify(entry.before)}`</span>
-<span class="cstat-no" title="statement not covered" >          : undefined,</span>
-<span class="cstat-no" title="statement not covered" >        action: (</span>
-<span class="cstat-no" title="statement not covered" >          &lt;Button variant="outline" size="sm" onClick={redo}&gt;</span>
-<span class="cstat-no" title="statement not covered" >            Вернуть</span>
-<span class="cstat-no" title="statement not covered" >          &lt;/Button&gt;</span>
-<span class="cstat-no" title="statement not covered" >        ),</span>
-<span class="cstat-no" title="statement not covered" >      });</span>
-<span class="cstat-no" title="statement not covered" >    } catch (error: any) {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Undo failed:', error);</span>
-<span class="cstat-no" title="statement not covered" >      toast({</span>
-<span class="cstat-no" title="statement not covered" >        title: 'Ошибка отмены',</span>
-<span class="cstat-no" title="statement not covered" >        description: error.message,</span>
-<span class="cstat-no" title="statement not covered" >        variant: 'destructive',</span>
-<span class="cstat-no" title="statement not covered" >      });</span>
-<span class="cstat-no" title="statement not covered" >    }</span>
-<span class="cstat-no" title="statement not covered" >  }, [currentIndex, history, toast]);</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  const redo = useCallback(async () =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    if (currentIndex &gt;= history.length - 1) {</span>
-<span class="cstat-no" title="statement not covered" >      toast({</span>
-<span class="cstat-no" title="statement not covered" >        title: 'Нечего возвращать',</span>
-<span class="cstat-no" title="statement not covered" >        variant: 'destructive',</span>
-<span class="cstat-no" title="statement not covered" >      });</span>
-<span class="cstat-no" title="statement not covered" >      return;</span>
-<span class="cstat-no" title="statement not covered" >    }</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >    const entry = history[currentIndex + 1];</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >    try {</span>
-<span class="cstat-no" title="statement not covered" >      // Perform redo operation</span>
-<span class="cstat-no" title="statement not covered" >      switch (entry.action) {</span>
-<span class="cstat-no" title="statement not covered" >        case 'update':</span>
-<span class="cstat-no" title="statement not covered" >          await supabase.rpc('update_table_row', {</span>
-<span class="cstat-no" title="statement not covered" >            p_id: entry.rowId,</span>
-<span class="cstat-no" title="statement not covered" >            p_data: entry.after,</span>
-<span class="cstat-no" title="statement not covered" >          });</span>
-<span class="cstat-no" title="statement not covered" >          break;</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >        case 'delete':</span>
-<span class="cstat-no" title="statement not covered" >          // Re-delete row</span>
-<span class="cstat-no" title="statement not covered" >          await supabase.rpc('delete_table_row', {</span>
-<span class="cstat-no" title="statement not covered" >            p_id: entry.rowId,</span>
-<span class="cstat-no" title="statement not covered" >          });</span>
-<span class="cstat-no" title="statement not covered" >          break;</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >        case 'create':</span>
-<span class="cstat-no" title="statement not covered" >          // Re-create row</span>
-<span class="cstat-no" title="statement not covered" >          await supabase.rpc('insert_table_row', {</span>
-<span class="cstat-no" title="statement not covered" >            p_database_id: entry.tableName,</span>
-<span class="cstat-no" title="statement not covered" >            p_data: entry.after,</span>
-<span class="cstat-no" title="statement not covered" >          });</span>
-<span class="cstat-no" title="statement not covered" >          break;</span>
-<span class="cstat-no" title="statement not covered" >      }</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >      setCurrentIndex((prev) =&gt; prev + 1);</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >      const actionText = {</span>
-<span class="cstat-no" title="statement not covered" >        update: 'Изменение возвращено',</span>
-<span class="cstat-no" title="statement not covered" >        delete: 'Удаление возвращено',</span>
-<span class="cstat-no" title="statement not covered" >        create: 'Создание возвращено',</span>
-<span class="cstat-no" title="statement not covered" >      }[entry.action];</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >      toast({</span>
-<span class="cstat-no" title="statement not covered" >        title: actionText,</span>
-<span class="cstat-no" title="statement not covered" >        description: entry.columnName</span>
-<span class="cstat-no" title="statement not covered" >          ? `${entry.columnName}: ${JSON.stringify(entry.before)} → ${JSON.stringify(entry.after)}`</span>
-<span class="cstat-no" title="statement not covered" >          : undefined,</span>
-<span class="cstat-no" title="statement not covered" >      });</span>
-<span class="cstat-no" title="statement not covered" >    } catch (error: any) {</span>
-<span class="cstat-no" title="statement not covered" >      console.error('Redo failed:', error);</span>
-<span class="cstat-no" title="statement not covered" >      toast({</span>
-<span class="cstat-no" title="statement not covered" >        title: 'Ошибка возврата',</span>
-<span class="cstat-no" title="statement not covered" >        description: error.message,</span>
-<span class="cstat-no" title="statement not covered" >        variant: 'destructive',</span>
-<span class="cstat-no" title="statement not covered" >      });</span>
-<span class="cstat-no" title="statement not covered" >    }</span>
-<span class="cstat-no" title="statement not covered" >  }, [currentIndex, history, toast]);</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  const clearHistory = useCallback(() =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    setHistory([]);</span>
-<span class="cstat-no" title="statement not covered" >    setCurrentIndex(-1);</span>
-<span class="cstat-no" title="statement not covered" >    if (databaseId) {</span>
-<span class="cstat-no" title="statement not covered" >      localStorage.removeItem(`undo_history_${databaseId}`);</span>
-<span class="cstat-no" title="statement not covered" >    }</span>
-<span class="cstat-no" title="statement not covered" >  }, [databaseId]);</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  // Keyboard shortcuts</span>
-<span class="cstat-no" title="statement not covered" >  useEffect(() =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >    const handleKeyboard = (e: KeyboardEvent) =&gt; {</span>
-<span class="cstat-no" title="statement not covered" >      // Check if we're in an input/textarea</span>
-<span class="cstat-no" title="statement not covered" >      const target = e.target as HTMLElement;</span>
-<span class="cstat-no" title="statement not covered" >      if (</span>
-<span class="cstat-no" title="statement not covered" >        target.tagName === 'INPUT' ||</span>
-<span class="cstat-no" title="statement not covered" >        target.tagName === 'TEXTAREA' ||</span>
-<span class="cstat-no" title="statement not covered" >        target.isContentEditable</span>
-<span class="cstat-no" title="statement not covered" >      ) {</span>
-<span class="cstat-no" title="statement not covered" >        return;</span>
-<span class="cstat-no" title="statement not covered" >      }</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >      if ((e.ctrlKey || e.metaKey) &amp;&amp; !e.shiftKey &amp;&amp; e.key === 'z') {</span>
-<span class="cstat-no" title="statement not covered" >        e.preventDefault();</span>
-<span class="cstat-no" title="statement not covered" >        undo();</span>
-<span class="cstat-no" title="statement not covered" >      } else if (</span>
-<span class="cstat-no" title="statement not covered" >        (e.ctrlKey || e.metaKey) &amp;&amp;</span>
-<span class="cstat-no" title="statement not covered" >        (e.key === 'y' || (e.shiftKey &amp;&amp; e.key === 'z'))</span>
-<span class="cstat-no" title="statement not covered" >      ) {</span>
-<span class="cstat-no" title="statement not covered" >        e.preventDefault();</span>
-<span class="cstat-no" title="statement not covered" >        redo();</span>
-<span class="cstat-no" title="statement not covered" >      }</span>
-<span class="cstat-no" title="statement not covered" >    };</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >    window.addEventListener('keydown', handleKeyboard);</span>
-<span class="cstat-no" title="statement not covered" >    return () =&gt; window.removeEventListener('keydown', handleKeyboard);</span>
-<span class="cstat-no" title="statement not covered" >  }, [undo, redo]);</span>
-<span class="cstat-no" title="statement not covered" ></span>
-<span class="cstat-no" title="statement not covered" >  return {</span>
-<span class="cstat-no" title="statement not covered" >    undo,</span>
-<span class="cstat-no" title="statement not covered" >    redo,</span>
-<span class="cstat-no" title="statement not covered" >    addToHistory,</span>
-<span class="cstat-no" title="statement not covered" >    clearHistory,</span>
-<span class="cstat-no" title="statement not covered" >    canUndo: currentIndex &gt;= 0,</span>
-<span class="cstat-no" title="statement not covered" >    canRedo: currentIndex &lt; history.length - 1,</span>
-<span class="cstat-no" title="statement not covered" >    historyLength: history.length,</span>
-<span class="cstat-no" title="statement not covered" >    currentIndex,</span>
 <span class="cstat-no" title="statement not covered" >  };</span>
-<span class="cstat-no" title="statement not covered" >};</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  const toggleAllColumns = () =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    setSelectedColumns(</span>
+<span class="cstat-no" title="statement not covered" >      selectedColumns.length === availableColumns.length ? [] : availableColumns</span>
+<span class="cstat-no" title="statement not covered" >    );</span>
+<span class="cstat-no" title="statement not covered" >  };</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  const filterData = (rows: Record&lt;string, unknown&gt;[]) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    return rows.map((row) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >      const filtered: Record&lt;string, unknown&gt; = {};</span>
+<span class="cstat-no" title="statement not covered" >      selectedColumns.forEach((col) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >        filtered[col] = row[col];</span>
+<span class="cstat-no" title="statement not covered" >      });</span>
+<span class="cstat-no" title="statement not covered" >      return filtered;</span>
+<span class="cstat-no" title="statement not covered" >    });</span>
+<span class="cstat-no" title="statement not covered" >  };</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  const exportToCSV = () =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    const filteredData = filterData(data);</span>
+<span class="cstat-no" title="statement not covered" >    const headers = selectedColumns;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >    let csvContent = '';</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >    if (includeHeaders) {</span>
+<span class="cstat-no" title="statement not covered" >      csvContent += headers.map((h) =&gt; `"${h}"`).join(',') + '\n';</span>
+<span class="cstat-no" title="statement not covered" >    }</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >    filteredData.forEach((row) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >      const values = headers.map((header) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >        const value = row[header];</span>
+<span class="cstat-no" title="statement not covered" >        if (value === null || value === undefined) return '""';</span>
+<span class="cstat-no" title="statement not covered" >        const stringValue = String(value).replace(/"/g, '""');</span>
+<span class="cstat-no" title="statement not covered" >        return `"${stringValue}"`;</span>
+<span class="cstat-no" title="statement not covered" >      });</span>
+<span class="cstat-no" title="statement not covered" >      csvContent += values.join(',') + '\n';</span>
+<span class="cstat-no" title="statement not covered" >    });</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });</span>
+<span class="cstat-no" title="statement not covered" >    const link = document.createElement('a');</span>
+<span class="cstat-no" title="statement not covered" >    const url = URL.createObjectURL(blob);</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >    link.setAttribute('href', url);</span>
+<span class="cstat-no" title="statement not covered" >    link.setAttribute('download', `${filename}.csv`);</span>
+<span class="cstat-no" title="statement not covered" >    link.style.visibility = 'hidden';</span>
+<span class="cstat-no" title="statement not covered" >    document.body.appendChild(link);</span>
+<span class="cstat-no" title="statement not covered" >    link.click();</span>
+<span class="cstat-no" title="statement not covered" >    document.body.removeChild(link);</span>
+<span class="cstat-no" title="statement not covered" >  };</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  const exportToJSON = () =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    const filteredData = filterData(data);</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >    const jsonString = JSON.stringify(filteredData, null, 2);</span>
+<span class="cstat-no" title="statement not covered" >    const blob = new Blob([jsonString], { type: 'application/json' });</span>
+<span class="cstat-no" title="statement not covered" >    const link = document.createElement('a');</span>
+<span class="cstat-no" title="statement not covered" >    const url = URL.createObjectURL(blob);</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >    link.setAttribute('href', url);</span>
+<span class="cstat-no" title="statement not covered" >    link.setAttribute('download', `${filename}.json`);</span>
+<span class="cstat-no" title="statement not covered" >    link.style.visibility = 'hidden';</span>
+<span class="cstat-no" title="statement not covered" >    document.body.appendChild(link);</span>
+<span class="cstat-no" title="statement not covered" >    link.click();</span>
+<span class="cstat-no" title="statement not covered" >    document.body.removeChild(link);</span>
+<span class="cstat-no" title="statement not covered" >  };</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  const handleExport = async () =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >    if (selectedColumns.length === 0) {</span>
+<span class="cstat-no" title="statement not covered" >      toast({</span>
+<span class="cstat-no" title="statement not covered" >        title: 'Ошибка',</span>
+<span class="cstat-no" title="statement not covered" >        description: 'Выберите хотя бы одну колонку для экспорта',</span>
+<span class="cstat-no" title="statement not covered" >        variant: 'destructive',</span>
+<span class="cstat-no" title="statement not covered" >      });</span>
+<span class="cstat-no" title="statement not covered" >      return;</span>
+<span class="cstat-no" title="statement not covered" >    }</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >    if (data.length === 0) {</span>
+<span class="cstat-no" title="statement not covered" >      toast({</span>
+<span class="cstat-no" title="statement not covered" >        title: 'Ошибка',</span>
+<span class="cstat-no" title="statement not covered" >        description: 'Нет данных для экспорта',</span>
+<span class="cstat-no" title="statement not covered" >        variant: 'destructive',</span>
+<span class="cstat-no" title="statement not covered" >      });</span>
+<span class="cstat-no" title="statement not covered" >      return;</span>
+<span class="cstat-no" title="statement not covered" >    }</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >    setIsExporting(true);</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >    try {</span>
+<span class="cstat-no" title="statement not covered" >      switch (format) {</span>
+<span class="cstat-no" title="statement not covered" >        case 'csv':</span>
+<span class="cstat-no" title="statement not covered" >          exportToCSV();</span>
+<span class="cstat-no" title="statement not covered" >          break;</span>
+<span class="cstat-no" title="statement not covered" >        case 'json':</span>
+<span class="cstat-no" title="statement not covered" >          exportToJSON();</span>
+<span class="cstat-no" title="statement not covered" >          break;</span>
+<span class="cstat-no" title="statement not covered" >      }</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >      toast({</span>
+<span class="cstat-no" title="statement not covered" >        title: 'Успешно',</span>
+<span class="cstat-no" title="statement not covered" >        description: `Данные экспортированы в формате ${format.toUpperCase()}`,</span>
+<span class="cstat-no" title="statement not covered" >      });</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >      onOpenChange(false);</span>
+<span class="cstat-no" title="statement not covered" >    } catch (error) {</span>
+<span class="cstat-no" title="statement not covered" >      toast({</span>
+<span class="cstat-no" title="statement not covered" >        title: 'Ошибка экспорта',</span>
+<span class="cstat-no" title="statement not covered" >        description: error instanceof Error ? error.message : 'Неизвестная ошибка',</span>
+<span class="cstat-no" title="statement not covered" >        variant: 'destructive',</span>
+<span class="cstat-no" title="statement not covered" >      });</span>
+<span class="cstat-no" title="statement not covered" >    } finally {</span>
+<span class="cstat-no" title="statement not covered" >      setIsExporting(false);</span>
+<span class="cstat-no" title="statement not covered" >    }</span>
+<span class="cstat-no" title="statement not covered" >  };</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >  return (</span>
+<span class="cstat-no" title="statement not covered" >    &lt;Dialog open={open} onOpenChange={onOpenChange}&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;DialogContent className="max-w-2xl"&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;DialogHeader&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;DialogTitle&gt;Экспорт данных&lt;/DialogTitle&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;DialogDescription&gt;</span>
+<span class="cstat-no" title="statement not covered" >            Выберите формат и колонки для экспорта ({data.length} записей)</span>
+<span class="cstat-no" title="statement not covered" >          &lt;/DialogDescription&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;/DialogHeader&gt;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >        &lt;div className="space-y-6 py-4"&gt;</span>
+<span class="cstat-no" title="statement not covered" >          {/* Format Selection */}</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="space-y-3"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;Label&gt;Формат экспорта&lt;/Label&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;RadioGroup value={format} onValueChange={(v) =&gt; setFormat(v as ExportFormat)}&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div className="flex items-center space-x-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;RadioGroupItem value="csv" id="csv" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;Label htmlFor="csv" className="flex items-center gap-2 cursor-pointer"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;FileText className="h-4 w-4" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  CSV (Comma-Separated Values)</span>
+<span class="cstat-no" title="statement not covered" >                &lt;/Label&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;div className="flex items-center space-x-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;RadioGroupItem value="json" id="json" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;Label htmlFor="json" className="flex items-center gap-2 cursor-pointer"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;FileJson className="h-4 w-4" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  JSON (JavaScript Object Notation)</span>
+<span class="cstat-no" title="statement not covered" >                &lt;/Label&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/RadioGroup&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >          {/* Include Headers */}</span>
+<span class="cstat-no" title="statement not covered" >          {format === 'csv' &amp;&amp; (</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className="flex items-center space-x-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Checkbox</span>
+<span class="cstat-no" title="statement not covered" >                id="headers"</span>
+<span class="cstat-no" title="statement not covered" >                checked={includeHeaders}</span>
+<span class="cstat-no" title="statement not covered" >                onCheckedChange={(checked) =&gt; setIncludeHeaders(checked as boolean)}</span>
+<span class="cstat-no" title="statement not covered" >              /&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Label htmlFor="headers" className="cursor-pointer"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                Включить заголовки колонок</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/Label&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >          )}</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >          {/* Column Selection */}</span>
+<span class="cstat-no" title="statement not covered" >          &lt;div className="space-y-3"&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className="flex items-center justify-between"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Label&gt;Выберите колонки&lt;/Label&gt;</span>
+<span class="cstat-no" title="statement not covered" >              &lt;Button</span>
+<span class="cstat-no" title="statement not covered" >                variant="ghost"</span>
+<span class="cstat-no" title="statement not covered" >                size="sm"</span>
+<span class="cstat-no" title="statement not covered" >                onClick={toggleAllColumns}</span>
+<span class="cstat-no" title="statement not covered" >              &gt;</span>
+<span class="cstat-no" title="statement not covered" >                {selectedColumns.length === availableColumns.length</span>
+<span class="cstat-no" title="statement not covered" >                  ? 'Снять все'</span>
+<span class="cstat-no" title="statement not covered" >                  : 'Выбрать все'}</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >            &lt;div className="border rounded-lg p-4 max-h-60 overflow-y-auto space-y-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              {availableColumns.map((column) =&gt; (</span>
+<span class="cstat-no" title="statement not covered" >                &lt;div key={column} className="flex items-center space-x-2"&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;Checkbox</span>
+<span class="cstat-no" title="statement not covered" >                    id={`col-${column}`}</span>
+<span class="cstat-no" title="statement not covered" >                    checked={selectedColumns.includes(column)}</span>
+<span class="cstat-no" title="statement not covered" >                    onCheckedChange={() =&gt; toggleColumn(column)}</span>
+<span class="cstat-no" title="statement not covered" >                  /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;Label</span>
+<span class="cstat-no" title="statement not covered" >                    htmlFor={`col-${column}`}</span>
+<span class="cstat-no" title="statement not covered" >                    className="cursor-pointer font-normal"</span>
+<span class="cstat-no" title="statement not covered" >                  &gt;</span>
+<span class="cstat-no" title="statement not covered" >                    {column}</span>
+<span class="cstat-no" title="statement not covered" >                  &lt;/Label&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >              ))}</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >            &lt;p className="text-sm text-muted-foreground"&gt;</span>
+<span class="cstat-no" title="statement not covered" >              Выбрано: {selectedColumns.length} из {availableColumns.length}</span>
+<span class="cstat-no" title="statement not covered" >            &lt;/p&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;/div&gt;</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >        &lt;DialogFooter&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;Button variant="outline" onClick={() =&gt; onOpenChange(false)}&gt;</span>
+<span class="cstat-no" title="statement not covered" >            Отмена</span>
+<span class="cstat-no" title="statement not covered" >          &lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >          &lt;Button onClick={handleExport} disabled={isExporting || selectedColumns.length === 0}&gt;</span>
+<span class="cstat-no" title="statement not covered" >            {isExporting ? (</span>
+<span class="cstat-no" title="statement not covered" >              &lt;&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;Loader2 className="mr-2 h-4 w-4 animate-spin" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                Экспорт...</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/&gt;</span>
+<span class="cstat-no" title="statement not covered" >            ) : (</span>
+<span class="cstat-no" title="statement not covered" >              &lt;&gt;</span>
+<span class="cstat-no" title="statement not covered" >                &lt;Download className="mr-2 h-4 w-4" /&gt;</span>
+<span class="cstat-no" title="statement not covered" >                Экспортировать</span>
+<span class="cstat-no" title="statement not covered" >              &lt;/&gt;</span>
+<span class="cstat-no" title="statement not covered" >            )}</span>
+<span class="cstat-no" title="statement not covered" >          &lt;/Button&gt;</span>
+<span class="cstat-no" title="statement not covered" >        &lt;/DialogFooter&gt;</span>
+<span class="cstat-no" title="statement not covered" >      &lt;/DialogContent&gt;</span>
+<span class="cstat-no" title="statement not covered" >    &lt;/Dialog&gt;</span>
+<span class="cstat-no" title="statement not covered" >  );</span>
+<span class="cstat-no" title="statement not covered" >}</span>
 &nbsp;</pre></td></tr></table></pre>
 
                 <div class='push'></div><!-- for sticky footer -->
@@ -841,16 +880,16 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-23T06:07:42.529Z
+                at 2025-10-23T11:31:47.039Z
             </div>
-        <script src="../prettify.js"></script>
+        <script src="../../prettify.js"></script>
         <script>
             window.onload = function () {
                 prettyPrint();
             };
         </script>
-        <script src="../sorter.js"></script>
-        <script src="../block-navigation.js"></script>
+        <script src="../../sorter.js"></script>
+        <script src="../../block-navigation.js"></script>
     </body>
 </html>
     

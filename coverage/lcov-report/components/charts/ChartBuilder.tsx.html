@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>0/602</span>
+                <span class='fraction'>0/627</span>
             </div>
         
             
@@ -46,7 +46,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">0% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>0/602</span>
+                <span class='fraction'>0/627</span>
             </div>
         
             
@@ -665,7 +665,57 @@
 <a name='L600'></a><a href='#L600'>600</a>
 <a name='L601'></a><a href='#L601'>601</a>
 <a name='L602'></a><a href='#L602'>602</a>
-<a name='L603'></a><a href='#L603'>603</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<a name='L603'></a><a href='#L603'>603</a>
+<a name='L604'></a><a href='#L604'>604</a>
+<a name='L605'></a><a href='#L605'>605</a>
+<a name='L606'></a><a href='#L606'>606</a>
+<a name='L607'></a><a href='#L607'>607</a>
+<a name='L608'></a><a href='#L608'>608</a>
+<a name='L609'></a><a href='#L609'>609</a>
+<a name='L610'></a><a href='#L610'>610</a>
+<a name='L611'></a><a href='#L611'>611</a>
+<a name='L612'></a><a href='#L612'>612</a>
+<a name='L613'></a><a href='#L613'>613</a>
+<a name='L614'></a><a href='#L614'>614</a>
+<a name='L615'></a><a href='#L615'>615</a>
+<a name='L616'></a><a href='#L616'>616</a>
+<a name='L617'></a><a href='#L617'>617</a>
+<a name='L618'></a><a href='#L618'>618</a>
+<a name='L619'></a><a href='#L619'>619</a>
+<a name='L620'></a><a href='#L620'>620</a>
+<a name='L621'></a><a href='#L621'>621</a>
+<a name='L622'></a><a href='#L622'>622</a>
+<a name='L623'></a><a href='#L623'>623</a>
+<a name='L624'></a><a href='#L624'>624</a>
+<a name='L625'></a><a href='#L625'>625</a>
+<a name='L626'></a><a href='#L626'>626</a>
+<a name='L627'></a><a href='#L627'>627</a>
+<a name='L628'></a><a href='#L628'>628</a></td><td class="line-coverage quiet"><span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
+<span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
 <span class="cline-any cline-no">&nbsp;</span>
@@ -1304,9 +1354,10 @@
 <span class="cstat-no" title="statement not covered" >import { Badge } from '@/components/ui/badge';</span>
 <span class="cstat-no" title="statement not covered" >import { Switch } from '@/components/ui/switch';</span>
 <span class="cstat-no" title="statement not covered" >import { ScrollArea } from '@/components/ui/scroll-area';</span>
-<span class="cstat-no" title="statement not covered" >import { BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon, X } from 'lucide-react';</span>
+<span class="cstat-no" title="statement not covered" >import { BarChart3, LineChart as LineChartIcon, PieChart as PieChartIcon, X, Grid3x3 } from 'lucide-react';</span>
 <span class="cstat-no" title="statement not covered" >import { ChartConfig, ChartType, AggregationType, ChartAxis, ChartData } from '@/types/charts';</span>
 <span class="cstat-no" title="statement not covered" >import { TableSchema } from '@/types/database';</span>
+<span class="cstat-no" title="statement not covered" >import { HeatmapChart, HeatmapCell } from './HeatmapChart';</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >export interface ChartBuilderProps {</span>
 <span class="cstat-no" title="statement not covered" >  databaseId: string;</span>
@@ -1324,6 +1375,7 @@
 <span class="cstat-no" title="statement not covered" >  { value: 'pie', label: 'Круговой', icon: PieChartIcon },</span>
 <span class="cstat-no" title="statement not covered" >  { value: 'scatter', label: 'Точечный', icon: BarChart3 },</span>
 <span class="cstat-no" title="statement not covered" >  { value: 'composed', label: 'Комбинированный', icon: BarChart3 },</span>
+<span class="cstat-no" title="statement not covered" >  { value: 'heatmap', label: 'Тепловая карта', icon: Grid3x3 },</span>
 <span class="cstat-no" title="statement not covered" >];</span>
 <span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >const AGGREGATIONS: { value: AggregationType; label: string }[] = [</span>
@@ -1625,6 +1677,29 @@
 <span class="cstat-no" title="statement not covered" >          &lt;/ResponsiveContainer&gt;</span>
 <span class="cstat-no" title="statement not covered" >        );</span>
 <span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >      case 'heatmap':</span>
+<span class="cstat-no" title="statement not covered" >        // Convert chart data to heatmap cells format</span>
+<span class="cstat-no" title="statement not covered" >        const heatmapData: HeatmapCell[] = chartData.flatMap((item) =&gt; {</span>
+<span class="cstat-no" title="statement not covered" >          const xValue = item[config.xAxis!.columnName];</span>
+<span class="cstat-no" title="statement not covered" >          return config.yAxis.map((axis) =&gt; ({</span>
+<span class="cstat-no" title="statement not covered" >            x: xValue,</span>
+<span class="cstat-no" title="statement not covered" >            y: axis.columnName,</span>
+<span class="cstat-no" title="statement not covered" >            value: Number(item[axis.columnName]) || 0,</span>
+<span class="cstat-no" title="statement not covered" >            label: `${xValue} - ${axis.columnName}: ${item[axis.columnName]}`,</span>
+<span class="cstat-no" title="statement not covered" >          }));</span>
+<span class="cstat-no" title="statement not covered" >        });</span>
+<span class="cstat-no" title="statement not covered" ></span>
+<span class="cstat-no" title="statement not covered" >        return (</span>
+<span class="cstat-no" title="statement not covered" >          &lt;HeatmapChart</span>
+<span class="cstat-no" title="statement not covered" >            data={heatmapData}</span>
+<span class="cstat-no" title="statement not covered" >            title={config.name}</span>
+<span class="cstat-no" title="statement not covered" >            colorScheme="blue"</span>
+<span class="cstat-no" title="statement not covered" >            showValues={true}</span>
+<span class="cstat-no" title="statement not covered" >            showLegend={config.showLegend}</span>
+<span class="cstat-no" title="statement not covered" >            cellSize={60}</span>
+<span class="cstat-no" title="statement not covered" >          /&gt;</span>
+<span class="cstat-no" title="statement not covered" >        );</span>
+<span class="cstat-no" title="statement not covered" ></span>
 <span class="cstat-no" title="statement not covered" >      default:</span>
 <span class="cstat-no" title="statement not covered" >        return null;</span>
 <span class="cstat-no" title="statement not covered" >    }</span>
@@ -1876,7 +1951,7 @@
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-10-23T06:07:42.529Z
+                at 2025-10-23T11:31:47.039Z
             </div>
         <script src="../../prettify.js"></script>
         <script>

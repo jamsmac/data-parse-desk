@@ -333,7 +333,7 @@ Use the available tools to help users with their data analysis tasks.`
         }
 
         let fullContent = '';
-        let toolCalls: any[] = [];
+        const toolCalls: any[] = [];
 
         try {
           const decoder = new TextDecoder();

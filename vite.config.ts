@@ -143,12 +143,20 @@ export default defineConfig(({ mode }) => ({
             return 'chart-vendor';
           }
 
-          // File parsing libraries - lazy load (CRITICAL: 961KB)
-          if (id.includes('xlsx') ||
-              id.includes('papaparse') ||
-              id.includes('file-saver') ||
-              id.includes('jszip')) {
-            return 'file-parser';
+          // File parsing libraries - SPLIT for lazy loading (was 950KB in one chunk)
+          // XLSX parser - largest, ~600KB (loaded only when Excel file selected)
+          if (id.includes('xlsx') || id.includes('exceljs')) {
+            return 'xlsx-parser';
+          }
+
+          // CSV parser - ~200KB (loaded only when CSV file selected)
+          if (id.includes('papaparse')) {
+            return 'csv-parser';
+          }
+
+          // ZIP utilities - ~150KB (loaded only when export/compress)
+          if (id.includes('jszip') || id.includes('file-saver')) {
+            return 'zip-utils';
           }
 
           // Date utilities

@@ -1,5 +1,5 @@
-import * as ExcelJS from 'exceljs';
 import { detectColumns, normalizeRow, NormalizedRow } from './parseData';
+import { loadExcelJS } from './lazyFileParser';
 
 export interface ParseResult {
   data: NormalizedRow[];
@@ -44,7 +44,7 @@ async function parseCSV(file: File, fileName: string): Promise<ParseResult> {
     const values = lines[i].split(delimiter).map(v => v.trim().replace(/^["']|["']$/g, ''));
     if (values.length !== headers.length) continue;
 
-    const row: any = {};
+    const row: Record<string, string> = {};
     headers.forEach((header, index) => {
       row[header] = values[index];
     });
@@ -64,6 +64,9 @@ async function parseCSV(file: File, fileName: string): Promise<ParseResult> {
 }
 
 async function parseExcel(file: File, fileName: string): Promise<ParseResult> {
+  // Lazy load ExcelJS only when Excel file is being parsed
+  const ExcelJS = await loadExcelJS();
+
   const buffer = await file.arrayBuffer();
   const workbook = new ExcelJS.Workbook();
   await workbook.xlsx.load(buffer);
@@ -85,18 +88,18 @@ async function parseExcel(file: File, fileName: string): Promise<ParseResult> {
   const { dateColumns, amountColumns } = detectColumns(headers);
 
   // Parse data rows
-  const jsonData: any[] = [];
+  const jsonData: Record<string, string>[] = [];
   worksheet.eachRow((row, rowNumber) => {
     if (rowNumber === 1) return; // Skip header row
-    
-    const rowData: any = {};
+
+    const rowData: Record<string, string> = {};
     row.eachCell((cell, colNumber) => {
       const header = headers[colNumber - 1];
       if (header) {
         rowData[header] = cell.value !== null ? String(cell.value) : '';
       }
     });
-    
+
     if (Object.keys(rowData).length > 0) {
       jsonData.push(rowData);
     }

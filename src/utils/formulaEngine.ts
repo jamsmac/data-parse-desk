@@ -15,6 +15,16 @@ type Token = {
 };
 
 /**
+ * Возможные типы значений формул
+ */
+type FormulaValue = string | number | boolean | Date | null | undefined;
+
+/**
+ * Контекст выполнения формулы (данные строки)
+ */
+type FormulaContext = Record<string, FormulaValue>;
+
+/**
  * Математические функции
  */
 const mathFunctions: Record<string, (...args: number[]) => number> = {
@@ -33,11 +43,11 @@ const mathFunctions: Record<string, (...args: number[]) => number> = {
 /**
  * Строковые функции
  */
-const stringFunctions: Record<string, ((...args: any[]) => string)> = {
-  upper: (str: string) => String(str).toUpperCase(),
-  lower: (str: string) => String(str).toLowerCase(),
-  trim: (str: string) => String(str).trim(),
-  concat: (...args: any[]) => args.map(String).join(''),
+const stringFunctions: Record<string, ((...args: FormulaValue[]) => string)> = {
+  upper: (str: FormulaValue) => String(str).toUpperCase(),
+  lower: (str: FormulaValue) => String(str).toLowerCase(),
+  trim: (str: FormulaValue) => String(str).trim(),
+  concat: (...args: FormulaValue[]) => args.map(String).join(''),
   substring: (str: string, start: number, end?: number) => 
     String(str).substring(start, end),
   replace: (str: string, search: string, replace: string) => {
@@ -53,7 +63,7 @@ const stringFunctions: Record<string, ((...args: any[]) => string)> = {
 /**
  * Функции для работы с датами
  */
-const dateFunctions: Record<string, ((...args: any[]) => any)> = {
+const dateFunctions: Record<string, ((...args: FormulaValue[]) => Date | number | string)> = {
   now: () => new Date(),
   today: () => {
     const date = new Date();
@@ -95,13 +105,13 @@ const dateFunctions: Record<string, ((...args: any[]) => any)> = {
 /**
  * Логические функции
  */
-const logicalFunctions: Record<string, ((...args: any[]) => any)> = {
-  if: (condition: boolean, ifTrue: any, ifFalse: any) => condition ? ifTrue : ifFalse,
-  and: (...args: boolean[]) => args.every(Boolean),
-  or: (...args: boolean[]) => args.some(Boolean),
-  not: (value: boolean) => !value,
-  isNull: (value: any) => value == null,
-  isEmpty: (value: any) => value == null || value === '' || (Array.isArray(value) && value.length === 0),
+const logicalFunctions: Record<string, ((...args: FormulaValue[]) => FormulaValue)> = {
+  if: (condition: FormulaValue, ifTrue: FormulaValue, ifFalse: FormulaValue) => condition ? ifTrue : ifFalse,
+  and: (...args: FormulaValue[]) => args.every(Boolean),
+  or: (...args: FormulaValue[]) => args.some(Boolean),
+  not: (value: FormulaValue) => !value,
+  isNull: (value: FormulaValue) => value == null,
+  isEmpty: (value: FormulaValue) => value == null || value === '' || (Array.isArray(value) && value.length === 0),
 };
 
 /**
@@ -216,8 +226,8 @@ function tokenize(expression: string): Token[] {
  */
 export function evaluateFormula(
   expression: string,
-  context: Record<string, any>
-): any {
+  context: FormulaContext
+): FormulaValue {
   try {
     const tokens = tokenize(expression);
     return evaluateTokens(tokens, context);
@@ -230,7 +240,7 @@ export function evaluateFormula(
 /**
  * Вычисляет токены
  */
-function evaluateTokens(tokens: Token[], context: Record<string, any>): any {
+function evaluateTokens(tokens: Token[], context: FormulaContext): FormulaValue {
   if (tokens.length === 0) return null;
 
   // Простые случаи
@@ -254,7 +264,7 @@ function evaluateTokens(tokens: Token[], context: Record<string, any>): any {
     }
 
     // Извлекаем аргументы из скобок
-    const args: any[] = [];
+    const args: FormulaValue[] = [];
     let depth = 0;
     const currentArg: Token[] = [];
 
@@ -291,11 +301,11 @@ function evaluateTokens(tokens: Token[], context: Record<string, any>): any {
 /**
  * Вычисляет выражение с операторами
  */
-function evaluateExpression(tokens: Token[], context: Record<string, any>): any {
+function evaluateExpression(tokens: Token[], context: FormulaContext): FormulaValue {
   // Простая реализация для базовых операций
   // TODO: Полная реализация парсера с приоритетами операторов
 
-  let result: any = null;
+  let result: FormulaValue = null;
   let operator: string | null = null;
 
   for (let i = 0; i < tokens.length; i++) {
@@ -327,7 +337,7 @@ function evaluateExpression(tokens: Token[], context: Record<string, any>): any 
 /**
  * Применяет оператор к двум значениям
  */
-function applyOperator(left: any, right: any, operator: string): any {
+function applyOperator(left: FormulaValue, right: FormulaValue, operator: string): FormulaValue {
   switch (operator) {
     case '+':
       return left + right;

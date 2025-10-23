@@ -1,9 +1,13 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { VOICE_TRANSCRIPTION_PROMPT, getModelConfig, callAIWithRetry } from '../_shared/prompts.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+const AI_API_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
 
 /**
  * Transcribe audio using OpenAI Whisper API
@@ -51,25 +55,23 @@ async function transcribeWithWhisper(audioData: string, format: string): Promise
  * Transcribe audio using Gemini (fallback)
  */
 async function transcribeWithGemini(audioData: string, format: string): Promise<string> {
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
   if (!LOVABLE_API_KEY) {
     throw new Error('LOVABLE_API_KEY not configured');
   }
 
   console.log('[Gemini] Starting transcription (fallback), format:', format);
 
-  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
+  const modelConfig = getModelConfig('voice');
+
+  const response = await callAIWithRetry(
+    AI_API_URL,
+    LOVABLE_API_KEY,
+    {
+      model: modelConfig.model,
       messages: [
         {
           role: 'system',
-          content: 'You are a voice transcription assistant. Transcribe the audio accurately and return only the transcribed text.',
+          content: VOICE_TRANSCRIPTION_PROMPT,
         },
         {
           role: 'user',
@@ -87,14 +89,10 @@ async function transcribeWithGemini(audioData: string, format: string): Promise<
           ],
         },
       ],
-    }),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('[Gemini] Error:', response.status, errorText);
-    throw new Error(`Gemini API failed: ${response.status}`);
-  }
+      temperature: modelConfig.temperature,
+      max_tokens: modelConfig.maxOutputTokens,
+    }
+  );
 
   const result = await response.json();
   const transcription = result.choices[0]?.message?.content || '';

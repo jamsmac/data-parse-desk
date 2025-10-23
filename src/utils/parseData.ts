@@ -45,11 +45,16 @@ const DATE_FORMATS = [
 ];
 
 /**
+ * Типы значений в строке данных
+ */
+export type RowValue = string | number | boolean | Date | null | undefined;
+
+/**
  * Represents a normalized data row with parsed date and amount fields
  */
 export interface NormalizedRow {
   /** Dynamic properties from the original data */
-  [key: string]: any;
+  [key: string]: RowValue;
   /** ISO 8601 formatted date string */
   date_iso?: string;
   /** Date-only string (YYYY-MM-DD) */
@@ -61,7 +66,7 @@ export interface NormalizedRow {
   /** Hash for duplicate detection */
   row_hash?: string;
   /** Original raw data before normalization */
-  _rawData: any;
+  _rawData: Record<string, RowValue>;
   /** Source file name */
   _fileName: string;
 }
@@ -78,7 +83,7 @@ export interface NormalizedRow {
  * // Returns something like "1a2b3c4d"
  * ```
  */
-export function createRowHash(row: any): string {
+export function createRowHash(row: Record<string, RowValue>): string {
   const sortedKeys = Object.keys(row).sort();
   const values = sortedKeys.map(key => String(row[key] ?? ''));
   const hashString = values.join('|');
@@ -151,7 +156,7 @@ export function detectColumns(headers: string[]): {
  * // }
  * ```
  */
-export function normalizeDate(value: any): {
+export function normalizeDate(value: RowValue): {
   date_iso: string | null;
   date_only: string | null;
   epoch_ms: number | null;
@@ -193,7 +198,7 @@ export function normalizeDate(value: any): {
   };
 }
 
-export function normalizeAmount(value: any): {
+export function normalizeAmount(value: RowValue): {
   amount_num: number | null;
   error?: string;
 } {
@@ -235,7 +240,7 @@ export function normalizeAmount(value: any): {
 }
 
 export function normalizeRow(
-  row: any,
+  row: Record<string, RowValue>,
   dateColumns: string[],
   amountColumns: string[],
   fileName: string
