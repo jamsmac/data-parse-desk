@@ -10,6 +10,8 @@ interface VirtualTableProps<T> {
   }>;
   rowHeight?: number;
   overscan?: number;
+  ariaLabel?: string;
+  caption?: string;
 }
 
 export function VirtualTable<T extends Record<string, any>>({
@@ -17,6 +19,8 @@ export function VirtualTable<T extends Record<string, any>>({
   columns,
   rowHeight = 50,
   overscan = 5,
+  ariaLabel = 'Data table',
+  caption,
 }: VirtualTableProps<T>) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -32,25 +36,35 @@ export function VirtualTable<T extends Record<string, any>>({
       ref={parentRef}
       className="h-[600px] overflow-auto border rounded-lg"
       role="region"
-      aria-label="Data table"
+      aria-label={ariaLabel}
       aria-describedby="virtual-table-description"
+      tabIndex={0}
     >
       {/* Hidden description for screen readers */}
       <span id="virtual-table-description" className="sr-only">
         Virtual scrolling table with {data.length} rows and {columns.length} columns.
-        Use arrow keys to navigate cells.
+        Use arrow keys to navigate between cells. Press Tab to move to the next interactive element.
+        Rows are virtualized for performance - scroll to view more data.
       </span>
 
       <div
         role="table"
         aria-rowcount={data.length + 1}
         aria-colcount={columns.length}
+        aria-label={caption}
         style={{
           height: `${rowVirtualizer.getTotalSize()}px`,
           width: '100%',
           position: 'relative',
         }}
       >
+        {/* Optional table caption */}
+        {caption && (
+          <div role="caption" className="sr-only">
+            {caption}
+          </div>
+        )}
+
         {/* Table Header */}
         <div
           role="rowgroup"
