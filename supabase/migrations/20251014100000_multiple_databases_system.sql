@@ -44,10 +44,21 @@ CREATE TABLE IF NOT EXISTS public.table_schemas (
   default_value TEXT,
   validation_rules JSONB,
   display_order INTEGER DEFAULT 0,
+  relation_config JSONB,
+  rollup_config JSONB,
+  formula_config JSONB,
+  lookup_config JSONB,
+  button_config JSONB,
+  user_config JSONB,
+  rating_config JSONB,
+  duration_config JSONB,
+  percent_config JSONB,
+  barcode_config JSONB,
+  qr_config JSONB,
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   UNIQUE(database_id, column_name),
-  CONSTRAINT valid_data_type CHECK (data_type IN ('text', 'number', 'date', 'datetime', 'boolean', 'json', 'relation', 'rollup', 'formula', 'lookup'))
+  CONSTRAINT valid_data_type CHECK (data_type IN ('text', 'number', 'date', 'datetime', 'boolean', 'json', 'relation', 'rollup', 'formula', 'lookup', 'button', 'user', 'rating', 'duration', 'percent', 'barcode', 'qr', 'select', 'multi_select', 'email', 'url', 'phone', 'file'))
 );
 
 -- ============================================================================

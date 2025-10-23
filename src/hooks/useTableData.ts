@@ -10,6 +10,8 @@ interface UseTableDataOptions {
   pageSize: number;
   filters: Filter[];
   sort: SortConfig;
+  search?: string; // Search query
+  searchColumns?: string[]; // Columns to search in
   includeRelations?: boolean; // Auto-resolve relations (default: true)
   includeComputedColumns?: boolean; // Auto-compute lookup/rollup columns (default: true)
 }
@@ -20,6 +22,8 @@ export function useTableData({
   pageSize,
   filters,
   sort,
+  search = '',
+  searchColumns = [],
   includeRelations = true,
   includeComputedColumns = true
 }: UseTableDataOptions) {
@@ -31,7 +35,7 @@ export function useTableData({
 
   useEffect(() => {
     loadData();
-  }, [databaseId, page, pageSize, filters, sort]);
+  }, [databaseId, page, pageSize, filters, sort, search, searchColumns]);
 
   const loadData = async () => {
     try {
@@ -66,17 +70,29 @@ export function useTableData({
         page,
         pageSize,
         sort,
-        filterCount: Object.keys(filterObj).length
+        filterCount: Object.keys(filterObj).length,
+        search,
+        searchColumnsCount: searchColumns.length
       });
 
-      const { data: rows, error } = await supabase.rpc('get_table_data', {
+      // Use search-specific RPC if search is active
+      const rpcFunction = search && searchColumns.length > 0 ? 'search_table_data' : 'get_table_data';
+      const rpcParams: any = {
         p_database_id: databaseId,
         p_limit: pageSize,
         p_offset: (page - 1) * pageSize,
         p_sort_column: sort.column || null,
         p_sort_direction: sort.direction || 'asc',
         p_filters: Object.keys(filterObj).length > 0 ? filterObj : null,
-      });
+      };
+
+      // Add search params if searching
+      if (search && searchColumns.length > 0) {
+        rpcParams.p_search_query = search;
+        rpcParams.p_search_columns = searchColumns;
+      }
+
+      const { data: rows, error } = await supabase.rpc(rpcFunction, rpcParams);
 
       if (error) throw error;
 
@@ -153,14 +169,7 @@ export function useTableData({
             });
 
             // Refetch data to get updated computed values
-            const { data: refreshedRows } = await supabase.rpc('get_table_data', {
-              p_database_id: databaseId,
-              p_limit: pageSize,
-              p_offset: (page - 1) * pageSize,
-              p_sort_column: sort.column || null,
-              p_sort_direction: sort.direction || 'asc',
-              p_filters: Object.keys(filterObj).length > 0 ? filterObj : null,
-            });
+            const { data: refreshedRows } = await supabase.rpc(rpcFunction, rpcParams);
 
             if (refreshedRows && refreshedRows.length > 0) {
               processedRows = refreshedRows;

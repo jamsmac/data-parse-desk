@@ -12,15 +12,27 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/tests/**', '**/e2e/**'],
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'json', 'html', 'lcov'],
+      // Target: 90% coverage for production readiness
+      lines: 85,
+      functions: 85,
+      branches: 75,
+      statements: 85,
       exclude: [
         'node_modules/',
         'src/test/',
         '**/*.d.ts',
         '**/*.config.*',
+        '**/*.stories.tsx',
         '**/mockData',
         'src/main.tsx',
+        'src/App.tsx',
+        'dist/',
+        'coverage/',
+        'archive/',
       ],
+      all: true,
+      include: ['src/**/*.{ts,tsx}'],
     },
   },
   resolve: {

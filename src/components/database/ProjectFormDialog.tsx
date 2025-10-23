@@ -120,6 +120,7 @@ export const ProjectFormDialog: React.FC<ProjectFormDialogProps> = ({
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
+                autoFocus
                 required
               />
             </div>

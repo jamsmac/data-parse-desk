@@ -12,6 +12,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Comment, User } from '@/types/auth';
 
 export interface CommentsPanelProps {
@@ -38,6 +48,8 @@ export function CommentsPanel({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
 
   const handleSubmit = async () => {
     if (!newComment.trim()) return;
@@ -69,14 +81,21 @@ export function CommentsPanel({
     }
   };
 
-  const handleDelete = async (commentId: string) => {
-    if (!confirm('Удалить комментарий?')) return;
+  const handleDelete = async () => {
+    if (!commentToDelete) return;
 
     try {
-      await onDeleteComment(commentId);
+      await onDeleteComment(commentToDelete);
+      setDeleteDialogOpen(false);
+      setCommentToDelete(null);
     } catch (error) {
       console.error('Failed to delete comment:', error);
     }
+  };
+
+  const openDeleteDialog = (commentId: string) => {
+    setCommentToDelete(commentId);
+    setDeleteDialogOpen(true);
   };
 
   const startEdit = (comment: Comment) => {
@@ -197,7 +216,7 @@ export function CommentsPanel({
                                 Редактировать
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() => handleDelete(comment.id)}
+                                onClick={() => openDeleteDialog(comment.id)}
                                 className="text-destructive"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
@@ -274,7 +293,7 @@ export function CommentsPanel({
                                   variant="ghost"
                                   size="sm"
                                   className="h-6 w-6 p-0"
-                                  onClick={() => handleDelete(reply.id)}
+                                  onClick={() => openDeleteDialog(reply.id)}
                                 >
                                   <Trash2 className="h-3 w-3" />
                                 </Button>
@@ -298,6 +317,24 @@ export function CommentsPanel({
           </div>
         )}
       </CardContent>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить комментарий?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Это действие нельзя отменить. Комментарий будет удалён навсегда.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

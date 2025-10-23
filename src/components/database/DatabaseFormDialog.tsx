@@ -246,6 +246,7 @@ export const DatabaseFormDialog: React.FC<DatabaseFormDialogProps> = ({
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
+                autoFocus
                 required
               />
             </div>

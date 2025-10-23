@@ -8,10 +8,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/DataTable';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 import { ColumnManager } from '@/components/database/ColumnManager';
-import { UploadFileDialog } from '@/components/import/UploadFileDialog';
+import { UploadFileDialog, ImportSuccessData } from '@/components/import/UploadFileDialog';
+import { ImportSuccessScreen } from '@/components/import/ImportSuccessScreen';
 import { ExportButton } from '@/components/database/ExportButton';
 import { PaginationControls } from '@/components/database/PaginationControls';
 import { FilterBuilder, type Filter } from '@/components/database/FilterBuilder';
@@ -19,6 +21,12 @@ import { SortControls, type SortConfig } from '@/components/database/SortControl
 import { useTableData } from '@/hooks/useTableData';
 import { useViewPreferences } from '@/hooks/useViewPreferences';
 import { useComments } from '@/hooks/useComments';
+import { useUndoRedo } from '@/hooks/useUndoRedo';
+import { useDebounce } from '@/hooks/useDebounce';
+import { UndoRedoToolbar } from '@/components/database/UndoRedoToolbar';
+import { TableSearch } from '@/components/database/TableSearch';
+import { ActionBar } from '@/components/database/ActionBar';
+import { MobileActionBar } from '@/components/database/MobileActionBar';
 import { ConversationAIPanel } from '@/components/ai/ConversationAIPanel';
 import { AIChatPanel } from '@/components/ai/AIChatPanel';
 import { InsightsPanel } from '@/components/insights/InsightsPanel';
@@ -28,6 +36,7 @@ import { Collapsible, CollapsibleContent } from '@/components/ui/collapsible';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import type { Database, TableSchema } from '@/types/database';
 
 export default function DatabaseView() {
@@ -41,12 +50,17 @@ export default function DatabaseView() {
   const [showClearDialog, setShowClearDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [showSuccessScreen, setShowSuccessScreen] = useState(false);
+  const [importSuccessData, setImportSuccessData] = useState<ImportSuccessData | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showAIAssistant, setShowAIAssistant] = useState(false);
   const [showAIChat, setShowAIChat] = useState(false);
   const [showInsights, setShowInsights] = useState(false);
   const [showCollabPanel, setShowCollabPanel] = useState(false);
   const [viewType, setViewType] = useState<'table' | 'calendar' | 'kanban' | 'gallery'>('table');
+
+  // Initialize Undo/Redo
+  const { addToHistory } = useUndoRedo(databaseId);
 
   // Load comments for the database (not tied to specific row)
   const {
@@ -72,6 +86,13 @@ export default function DatabaseView() {
   const [filters, setFilters] = useState<Filter[]>(preferences.filters);
   const [sort, setSort] = useState<SortConfig>(preferences.sort);
 
+  // Debounce filters to avoid too many API calls while user is typing
+  const debouncedFilters = useDebounce(filters, 500);
+
+  // Search state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchColumns, setSearchColumns] = useState<string[]>([]);
+
   // Update local state when preferences load
   useEffect(() => {
     if (!preferencesLoading) {
@@ -81,13 +102,22 @@ export default function DatabaseView() {
     }
   }, [preferencesLoading, preferences]);
 
+  // Save debounced filters to preferences
+  useEffect(() => {
+    if (!preferencesLoading && debouncedFilters !== preferences.filters) {
+      updateFilters(debouncedFilters);
+    }
+  }, [debouncedFilters]);
+
   // Use new hook for data fetching with filters & sorting
   const { data: tableData, totalCount, loading: dataLoading, refresh } = useTableData({
     databaseId: databaseId || '',
     page,
     pageSize,
-    filters,
+    filters: debouncedFilters,
     sort,
+    search: searchQuery,
+    searchColumns,
   });
 
   useEffect(() => {
@@ -218,6 +248,25 @@ export default function DatabaseView() {
         .eq('id', rowId)
         .single();
 
+      // Add to undo/redo history BEFORE making changes
+      if (currentRow?.data && databaseId) {
+        const changedColumns = Object.keys(updates).filter(
+          key => JSON.stringify(currentRow.data[key]) !== JSON.stringify(updates[key])
+        );
+
+        // Add each changed column to history
+        changedColumns.forEach(columnName => {
+          addToHistory({
+            action: 'update',
+            tableName: databaseId,
+            rowId,
+            columnName,
+            before: { [columnName]: currentRow.data[columnName] },
+            after: { [columnName]: updates[columnName] },
+          });
+        });
+      }
+
       // Update the row
       const { error } = await supabase.rpc('update_table_row', {
         p_id: rowId,
@@ -306,6 +355,78 @@ export default function DatabaseView() {
         description: error.message,
       });
     }
+  };
+
+  const handleDuplicateRow = async (rowId: string) => {
+    try {
+      // Find the row to duplicate
+      const row = tableData.find((r: any) => r.id === rowId);
+      if (!row) return;
+
+      // Insert a new row with the same data
+      await handleAddRow(row.data);
+
+      toast({
+        title: 'Запись дублирована',
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка',
+        description: error.message,
+      });
+    }
+  };
+
+  const handleInsertRowAbove = async (rowId: string) => {
+    try {
+      await handleAddRow({});
+      toast({
+        title: 'Новая строка добавлена выше',
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка',
+        description: error.message,
+      });
+    }
+  };
+
+  const handleInsertRowBelow = async (rowId: string) => {
+    try {
+      await handleAddRow({});
+      toast({
+        title: 'Новая строка добавлена ниже',
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка',
+        description: error.message,
+      });
+    }
+  };
+
+  const handleRowView = (rowId: string) => {
+    const row = tableData.find((r: any) => r.id === rowId);
+    if (row) {
+      // TODO: Open row detail view/modal
+      console.log('View row:', row);
+      toast({
+        title: 'Просмотр записи',
+        description: 'Функция просмотра в разработке',
+      });
+    }
+  };
+
+  const handleRowHistory = (rowId: string) => {
+    // TODO: Open row history panel
+    console.log('Show history for row:', rowId);
+    toast({
+      title: 'История изменений',
+      description: 'Функция истории в разработке',
+    });
   };
 
   // Helper function for Kanban columns
@@ -406,60 +527,37 @@ export default function DatabaseView() {
               </div>
             </div>
 
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowAIChat(true)}
-              >
-                <Sparkles className="mr-2 h-4 w-4" />
-                AI Помощник
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowInsights(true)}
-              >
-                <Lightbulb className="mr-2 h-4 w-4" />
-                Рекомендации
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowCollabPanel(true)}
-              >
-                <MessageSquare className="mr-2 h-4 w-4" />
-                Активность {comments.length > 0 && `(${comments.length})`}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => navigate(`/projects/${projectId}/database/${databaseId}/import-history`)}
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                История импортов
-              </Button>
-              <ExportButton
-                data={tableData}
-                fileName={database?.name || 'export'}
-              />
-              <Button variant="outline" size="sm" onClick={() => setIsUploadDialogOpen(true)}>
-                <Upload className="mr-2 h-4 w-4" />
-                Загрузить файл
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => handleAddRow({})}>
-                <Plus className="mr-2 h-4 w-4" />
-                Добавить запись
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => setShowClearDialog(true)}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                Очистить данные
-              </Button>
-              <Button variant="destructive" size="sm" onClick={() => setShowDeleteDialog(true)}>
-                <Trash2 className="mr-2 h-4 w-4" />
-                Удалить БД
-              </Button>
-            </div>
+            {/* Desktop ActionBar */}
+            <ActionBar
+              className="hidden md:flex"
+              databaseName={database?.name}
+              tableData={tableData}
+              commentsCount={comments.length}
+              onUploadFile={() => setIsUploadDialogOpen(true)}
+              onAddRecord={() => handleAddRow({})}
+              onAIAssistant={() => setShowAIChat(true)}
+              onInsights={() => setShowInsights(true)}
+              onImportHistory={() => navigate(`/projects/${projectId}/database/${databaseId}/import-history`)}
+              onComments={() => setShowCollabPanel(true)}
+              onClearData={() => setShowClearDialog(true)}
+              onDeleteDatabase={() => setShowDeleteDialog(true)}
+            />
+
+            {/* Mobile ActionBar */}
+            <MobileActionBar
+              className="md:hidden"
+              databaseName={database?.name}
+              commentsCount={comments.length}
+              onUploadFile={() => setIsUploadDialogOpen(true)}
+              onAddRecord={() => handleAddRow({})}
+              onAIAssistant={() => setShowAIChat(true)}
+              onInsights={() => setShowInsights(true)}
+              onImportHistory={() => navigate(`/projects/${projectId}/database/${databaseId}/import-history`)}
+              onComments={() => setShowCollabPanel(true)}
+              onExport={() => {/* TODO: trigger export */}}
+              onClearData={() => setShowClearDialog(true)}
+              onDeleteDatabase={() => setShowDeleteDialog(true)}
+            />
           </div>
         </div>
 
@@ -471,19 +569,38 @@ export default function DatabaseView() {
           />
         )}
 
-        {/* Filters & Sorting */}
+        {/* Search & Filters */}
         <div className="mt-6 space-y-4">
+          {/* Global Search */}
+          <TableSearch
+            columns={schemas.map(s => s.column_name)}
+            onSearch={(query, cols) => {
+              setSearchQuery(query);
+              setSearchColumns(cols);
+              setPage(1); // Reset pagination on search
+            }}
+          />
+
+          {/* Filters & Sorting */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
+              {/* Undo/Redo Toolbar */}
+              <UndoRedoToolbar databaseId={databaseId} />
+
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setShowFilters(!showFilters)}
               >
                 <FilterIcon className="h-4 w-4 mr-2" />
-                Filters {filters.length > 0 && `(${filters.length})`}
+                Filters
+                {filters.length > 0 && (
+                  <Badge variant="secondary" className="ml-2">
+                    {filters.length}
+                  </Badge>
+                )}
               </Button>
-              
+
               <SortControls
                 columns={schemas.map(s => ({ name: s.column_name, type: s.column_type }))}
                 sort={sort}
@@ -516,7 +633,7 @@ export default function DatabaseView() {
                   filters={filters}
                   onChange={(newFilters) => {
                     setFilters(newFilters);
-                    updateFilters(newFilters);
+                    setPage(1); // Reset to first page when filters change
                   }}
                 />
               </div>
@@ -576,6 +693,22 @@ export default function DatabaseView() {
               acc[s.column_name] = s.column_type;
               return acc;
             }, {} as Record<string, string>)}
+            onRowView={handleRowView}
+            onRowEdit={(rowId) => {
+              // TODO: Open edit modal
+              const row = tableData.find((r: any) => r.id === rowId);
+              if (row) {
+                toast({
+                  title: 'Редактирование записи',
+                  description: 'Дважды кликните на ячейку для редактирования',
+                });
+              }
+            }}
+            onRowDuplicate={handleDuplicateRow}
+            onRowDelete={handleDeleteRow}
+            onRowHistory={handleRowHistory}
+            onInsertRowAbove={handleInsertRowAbove}
+            onInsertRowBelow={handleInsertRowBelow}
           />
           )}
 
@@ -620,7 +753,7 @@ export default function DatabaseView() {
                 id: row.id,
                 ...row.data,
               })))}
-              onCardMove={(cardId, fromColumnId, toColumnId) => {
+              onCardMove={async (cardId, fromColumnId, toColumnId) => {
                 console.log('Card moved:', cardId, 'from', fromColumnId, 'to', toColumnId);
 
                 // Find the status column
@@ -633,12 +766,50 @@ export default function DatabaseView() {
                   // Find the row
                   const row = tableData.find((r: any) => r.id === cardId);
                   if (row) {
+                    const previousStatus = row.data[statusColumn.column_name];
+
                     // Update the status
                     const updatedData = {
                       ...row.data,
                       [statusColumn.column_name]: toColumnId,
                     };
-                    handleUpdateRow(cardId, updatedData);
+
+                    try {
+                      await handleUpdateRow(cardId, updatedData);
+
+                      // Show toast with undo button
+                      toast({
+                        title: 'Статус изменён',
+                        description: `"${row.data.name || row.data.title || 'Карточка'}" перемещена в "${toColumnId}"`,
+                        action: (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={async () => {
+                              // Undo: restore previous status
+                              const revertData = {
+                                ...row.data,
+                                [statusColumn.column_name]: previousStatus,
+                              };
+                              await handleUpdateRow(cardId, revertData);
+                              toast({
+                                title: 'Отменено',
+                                description: 'Статус восстановлен',
+                              });
+                            }}
+                          >
+                            Отменить
+                          </Button>
+                        ),
+                      });
+                    } catch (error) {
+                      console.error('Failed to move card:', error);
+                      toast({
+                        title: 'Ошибка',
+                        description: 'Не удалось переместить карточку',
+                        variant: 'destructive',
+                      });
+                    }
                   }
                 }
               }}
@@ -710,7 +881,7 @@ export default function DatabaseView() {
           <UploadFileDialog
             open={isUploadDialogOpen}
             onOpenChange={setIsUploadDialogOpen}
-            onSuccess={async () => {
+            onSuccess={async (successData) => {
               console.log('UploadFileDialog onSuccess called - refreshing data...');
               setIsUploadDialogOpen(false);
 
@@ -721,10 +892,41 @@ export default function DatabaseView() {
               refresh();
               loadSchemas();
 
+              // Show success screen if data import was successful
+              if (successData) {
+                setImportSuccessData(successData);
+                setShowSuccessScreen(true);
+              }
+
               console.log('Refresh triggered successfully');
             }}
             databaseId={databaseId}
           />
+        )}
+
+        {/* Import Success Screen */}
+        {showSuccessScreen && importSuccessData && database && (
+          <Dialog open={showSuccessScreen} onOpenChange={setShowSuccessScreen}>
+            <DialogContent className="max-w-3xl p-0 overflow-hidden">
+              <ImportSuccessScreen
+                databaseName={database.name}
+                fileName={importSuccessData.fileName}
+                recordsImported={importSuccessData.recordsImported}
+                columnsDetected={importSuccessData.columnsDetected}
+                duration={importSuccessData.duration}
+                importedAt={importSuccessData.importedAt}
+                onViewData={() => {
+                  setShowSuccessScreen(false);
+                  setImportSuccessData(null);
+                }}
+                onImportMore={() => {
+                  setShowSuccessScreen(false);
+                  setImportSuccessData(null);
+                  setIsUploadDialogOpen(true);
+                }}
+              />
+            </DialogContent>
+          </Dialog>
         )}
 
         {/* AI Assistant Panel (Old) */}

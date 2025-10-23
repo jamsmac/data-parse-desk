@@ -24,6 +24,10 @@ import {
 import { EditableCell } from '@/components/database/EditableCell';
 import { CellHistoryPanel } from '@/components/history/CellHistoryPanel';
 import { FormattingRulesPanel } from '@/components/formatting/FormattingRulesPanel';
+import { RowContextMenu } from '@/components/database/RowContextMenu';
+import { KeyboardShortcutsHelp } from '@/components/database/KeyboardShortcutsHelp';
+import { useKeyboardNavigation, CellPosition } from '@/hooks/useKeyboardNavigation';
+import { useToast } from '@/hooks/use-toast';
 
 interface DataTableProps {
   data: NormalizedRow[] | GroupedData[];
@@ -32,11 +36,33 @@ interface DataTableProps {
   onCellUpdate?: (rowId: string, column: string, value: any) => Promise<void>;
   columnTypes?: Record<string, string>;
   databaseId?: string;
+  onRowEdit?: (rowId: string) => void;
+  onRowView?: (rowId: string) => void;
+  onRowDuplicate?: (rowId: string) => void;
+  onRowDelete?: (rowId: string) => void;
+  onRowHistory?: (rowId: string) => void;
+  onInsertRowAbove?: (rowId: string) => void;
+  onInsertRowBelow?: (rowId: string) => void;
 }
 
 type SortDirection = 'asc' | 'desc' | null;
 
-export function DataTable({ data, headers, isGrouped, onCellUpdate, columnTypes = {}, databaseId }: DataTableProps) {
+export function DataTable({
+  data,
+  headers,
+  isGrouped,
+  onCellUpdate,
+  columnTypes = {},
+  databaseId,
+  onRowEdit,
+  onRowView,
+  onRowDuplicate,
+  onRowDelete,
+  onRowHistory,
+  onInsertRowAbove,
+  onInsertRowBelow,
+}: DataTableProps) {
+  const { toast } = useToast();
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(50);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -99,6 +125,60 @@ export function DataTable({ data, headers, isGrouped, onCellUpdate, columnTypes 
   }, [sortedData, page, pageSize]);
 
   const totalPages = Math.ceil(sortedData.length / pageSize);
+
+  // Keyboard navigation
+  const {
+    containerRef,
+    focusedCell,
+    handleCellClick,
+    isCellFocused,
+    isCellSelected,
+  } = useKeyboardNavigation({
+    rowCount: paginatedData.length,
+    columnCount: visibleHeaders.length,
+    isEditing: !!editingCell,
+    onCellEdit: (position) => {
+      const row = paginatedData[position.rowIndex] as NormalizedRow;
+      const column = visibleHeaders[position.columnIndex];
+      if (row && column) {
+        handleCellDoubleClick(row.id, column);
+      }
+    },
+    onCancelEdit: () => {
+      setEditingCell(null);
+    },
+    onCopy: (position) => {
+      const row = paginatedData[position.rowIndex] as NormalizedRow;
+      const column = visibleHeaders[position.columnIndex];
+      if (row && column) {
+        const value = row[column];
+        toast({
+          title: 'Скопировано',
+          description: `Значение: ${formatCellValue(value, column)}`,
+        });
+      }
+    },
+    onPaste: async (position, data) => {
+      const row = paginatedData[position.rowIndex] as NormalizedRow;
+      const column = visibleHeaders[position.columnIndex];
+      if (row && column && onCellUpdate) {
+        try {
+          await onCellUpdate(row.id, column, data);
+          toast({
+            title: 'Вставлено',
+            description: `Значение вставлено в ${column}`,
+          });
+        } catch (error) {
+          toast({
+            title: 'Ошибка',
+            description: 'Не удалось вставить значение',
+            variant: 'destructive',
+          });
+        }
+      }
+    },
+    enabled: !isGrouped,
+  });
 
   const handleSort = (column: string) => {
     if (sortColumn === column) {
@@ -166,10 +246,11 @@ export function DataTable({ data, headers, isGrouped, onCellUpdate, columnTypes 
   };
 
   return (
-    <div className="container px-4 py-6">
+    <div className="container px-4 py-6" ref={containerRef}>
       {/* Controls */}
       <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-4">
+          <KeyboardShortcutsHelp />
           <Select value={String(pageSize)} onValueChange={(val) => {
             setPageSize(Number(val));
             setPage(0);
@@ -305,22 +386,41 @@ export function DataTable({ data, headers, isGrouped, onCellUpdate, columnTypes 
                     : { cellFormats: {}, rowFormat: null };
 
                   return (
-                    <TableRow
+                    <RowContextMenu
                       key={idx}
-                      className="cursor-pointer hover:bg-table-row-hover"
-                      style={rowFormat ? formatToStyles(rowFormat) : undefined}
-                      onClick={() => setSelectedRow(row)}
+                      onEdit={() => onRowEdit?.(row.id)}
+                      onView={() => onRowView?.(row.id)}
+                      onDuplicate={() => onRowDuplicate?.(row.id)}
+                      onDelete={() => onRowDelete?.(row.id)}
+                      onHistory={() => onRowHistory?.(row.id)}
+                      onInsertAbove={() => onInsertRowAbove?.(row.id)}
+                      onInsertBelow={() => onInsertRowBelow?.(row.id)}
                     >
-                      {visibleHeaders.map(header => {
+                      <TableRow
+                        className="cursor-pointer hover:bg-table-row-hover"
+                        style={rowFormat ? formatToStyles(rowFormat) : undefined}
+                        onClick={() => setSelectedRow(row)}
+                      >
+                      {visibleHeaders.map((header, colIdx) => {
                         const isEditing = editingCell?.rowId === row.id && editingCell?.column === header;
                         const value = row[header];
                         const cellFormat = cellFormats[header];
+                        const cellPosition = { rowIndex: idx, columnIndex: colIdx };
+                        const isFocused = isCellFocused(cellPosition);
+                        const isSelected = isCellSelected(cellPosition);
 
                         return (
                           <TableCell
                             key={header}
+                            data-row={idx}
+                            data-col={colIdx}
+                            data-table-cell="true"
+                            tabIndex={isFocused ? 0 : -1}
                             onDoubleClick={() => handleCellDoubleClick(row.id, header)}
-                            className="cursor-pointer hover:bg-accent/50 transition-colors"
+                            onClick={() => handleCellClick(cellPosition)}
+                            className={`cursor-pointer hover:bg-accent/50 transition-colors ${
+                              isFocused ? 'ring-2 ring-primary ring-inset' : ''
+                            } ${isSelected ? 'bg-primary/10' : ''}`}
                             style={cellFormat ? formatToStyles(cellFormat) : undefined}
                           >
                           {isEditing ? (
@@ -358,9 +458,10 @@ export function DataTable({ data, headers, isGrouped, onCellUpdate, columnTypes 
                         </TableCell>
                       );
                     })}
-                  </TableRow>
-                );
-              })
+                      </TableRow>
+                    </RowContextMenu>
+                  );
+                })
               )}
             </TableBody>
           </Table>

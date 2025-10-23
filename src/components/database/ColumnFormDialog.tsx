@@ -104,6 +104,7 @@ export function ColumnFormDialog({
                 onChange={(e) =>
                   setFormData({ ...formData, column_name: e.target.value })
                 }
+                autoFocus
                 required
               />
             </div>

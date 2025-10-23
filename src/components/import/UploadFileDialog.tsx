@@ -20,10 +20,18 @@ import { ImportModeSelector } from './ImportModeSelector';
 import { DuplicateStrategySelector } from './DuplicateStrategySelector';
 import { ImportPreview, ColumnDefinition } from './ImportPreview';
 
+export interface ImportSuccessData {
+  fileName: string;
+  recordsImported: number;
+  columnsDetected: number;
+  duration: number;
+  importedAt: Date;
+}
+
 export interface UploadFileDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess: () => void;
+  onSuccess: (data?: ImportSuccessData) => void;
   databaseId: string;
 }
 
@@ -151,6 +159,7 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
     if (!parseResult) return;
 
     setUploading(true);
+    const startTime = Date.now();
 
     try {
 
@@ -222,6 +231,14 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
           title: 'Схема импортирована',
           description: `Создано ${createdCount} новых колонок`,
         });
+
+        // Clear state for schema-only import
+        setFile(null);
+        setParseResult(null);
+        setShowPreview(false);
+
+        // Trigger UI refresh without success screen
+        onSuccess();
       } else {
         // Import data with batch processing
         console.log('Starting data import...');
@@ -379,15 +396,25 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
           title: 'Данные успешно импортированы!',
           description: `Импортировано: ${rowsImported} строк${rowsSkipped > 0 ? `, Пропущено: ${rowsSkipped}` : ''}${duplicatesFound > 0 ? `, Дубликатов: ${duplicatesFound}` : ''}`,
         });
+
+        // Calculate duration and prepare success data
+        const duration = Date.now() - startTime;
+        const successData: ImportSuccessData = {
+          fileName: parseResult.fileName,
+          recordsImported: rowsImported,
+          columnsDetected: columns.length,
+          duration,
+          importedAt: new Date(),
+        };
+
+        // Clear state
+        setFile(null);
+        setParseResult(null);
+        setShowPreview(false);
+
+        // Trigger UI refresh with success data
+        onSuccess(successData);
       }
-
-      // Clear state
-      setFile(null);
-      setParseResult(null);
-      setShowPreview(false);
-
-      // Trigger UI refresh and close preview
-      onSuccess();
 
       console.log('Upload process completed');
     } catch (err) {

@@ -213,6 +213,7 @@ export function WebhookFormDialog({ open, onClose, webhook, onSuccess }: Webhook
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="My Webhook"
+                autoFocus
               />
             </div>
 

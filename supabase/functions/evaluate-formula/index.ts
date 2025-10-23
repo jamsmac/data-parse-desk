@@ -173,7 +173,8 @@ function evaluateFormula(expression: string, context: Record<string, any>): any 
 }
 
 /**
- * Safe mathematical expression evaluator
+ * Safe mathematical expression evaluator using whitelist approach
+ * SECURITY: No eval() or Function() - only predefined operations
  */
 function evaluateMathExpression(expr: string): number | string | boolean {
   // Remove quotes for string results
@@ -185,21 +186,93 @@ function evaluateMathExpression(expr: string): number | string | boolean {
   if (expr === 'true') return true;
   if (expr === 'false') return false;
 
-  // Try to evaluate as number
+  // Try to evaluate as number using safe parser
   try {
-    // Only allow safe mathematical operations
-    const safeExpr = expr.replace(/[^0-9+\-*/.() ]/g, '');
-    if (safeExpr !== expr && !expr.includes('"')) {
+    // Validate expression contains only safe characters
+    const safeChars = /^[0-9+\-*/.() ]+$/;
+    if (!safeChars.test(expr)) {
       throw new Error('Invalid characters in mathematical expression');
     }
 
-    // Use Function constructor (safer than eval)
-    const result = new Function(`return ${safeExpr}`)();
+    // Parse and evaluate using manual tokenizer (safe approach)
+    const result = safeEval(expr);
     return result;
-  } catch {
-    // If not a number, return as string
+  } catch (error) {
+    // If not a valid expression, return as string
     return expr;
   }
+}
+
+/**
+ * Safe evaluation using recursive descent parser
+ * Supports: +, -, *, /, (), numbers
+ * NO code execution - pure mathematical parsing
+ */
+function safeEval(expr: string): number {
+  expr = expr.replace(/\s+/g, ''); // Remove whitespace
+
+  let pos = 0;
+
+  function parseNumber(): number {
+    let num = '';
+    while (pos < expr.length && (expr[pos].match(/[0-9.]/) || expr[pos] === '-' && num === '')) {
+      num += expr[pos++];
+    }
+    if (num === '' || num === '-') throw new Error('Invalid number');
+    return parseFloat(num);
+  }
+
+  function parseFactor(): number {
+    if (expr[pos] === '(') {
+      pos++; // skip '('
+      const result = parseExpression();
+      if (expr[pos] !== ')') throw new Error('Missing closing parenthesis');
+      pos++; // skip ')'
+      return result;
+    }
+    return parseNumber();
+  }
+
+  function parseTerm(): number {
+    let result = parseFactor();
+
+    while (pos < expr.length && (expr[pos] === '*' || expr[pos] === '/')) {
+      const op = expr[pos++];
+      const right = parseFactor();
+      if (op === '*') {
+        result *= right;
+      } else {
+        if (right === 0) throw new Error('Division by zero');
+        result /= right;
+      }
+    }
+
+    return result;
+  }
+
+  function parseExpression(): number {
+    let result = parseTerm();
+
+    while (pos < expr.length && (expr[pos] === '+' || expr[pos] === '-')) {
+      const op = expr[pos++];
+      const right = parseTerm();
+      if (op === '+') {
+        result += right;
+      } else {
+        result -= right;
+      }
+    }
+
+    return result;
+  }
+
+  const result = parseExpression();
+
+  if (pos < expr.length) {
+    throw new Error('Unexpected characters after expression');
+  }
+
+  return result;
 }
 
 serve(async (req) => {
