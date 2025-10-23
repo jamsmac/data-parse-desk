@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -8,18 +8,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Upload, File, X, AlertCircle, CheckCircle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Upload } from 'lucide-react';
 import type { ParseResult } from '@/utils/fileParser';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAnnounce } from '@/components/accessibility/LiveAnnouncer';
-import { ImportModeSelector } from './ImportModeSelector';
-import { DuplicateStrategySelector } from './DuplicateStrategySelector';
 import { ImportPreview, ColumnDefinition } from './ImportPreview';
+import { FileUploadZone } from './FileUploadZone';
+import { ImportOptionsStep } from './ImportOptionsStep';
 
 export interface ImportSuccessData {
   fileName: string;
@@ -47,7 +43,6 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
   const acceptedFormats = ['.csv', '.xlsx', '.xls'];
   const maxSize = 10;
   const [file, setFile] = useState<File | null>(null);
-  const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -57,65 +52,6 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
   // Preview state
   const [showPreview, setShowPreview] = useState(false);
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
-
-  const handleDrag = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.type === 'dragenter' || e.type === 'dragover') {
-      setDragActive(true);
-    } else if (e.type === 'dragleave') {
-      setDragActive(false);
-    }
-  }, []);
-
-  const validateFile = (file: File): string | null => {
-    const fileSizeMB = file.size / (1024 * 1024);
-    if (fileSizeMB > maxSize) {
-      return `Файл слишком большой. Максимальный размер: ${maxSize}MB`;
-    }
-
-    const extension = '.' + file.name.split('.').pop()?.toLowerCase();
-    if (!acceptedFormats.includes(extension)) {
-      return `Неподдерживаемый формат. Разрешены: ${acceptedFormats.join(', ')}`;
-    }
-
-    return null;
-  };
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragActive(false);
-    setError(null);
-
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const droppedFile = e.dataTransfer.files[0];
-      const validationError = validateFile(droppedFile);
-      
-      if (validationError) {
-        setError(validationError);
-        return;
-      }
-
-      setFile(droppedFile);
-    }
-  }, []);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setError(null);
-    if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
-      const validationError = validateFile(selectedFile);
-      
-      if (validationError) {
-        setError(validationError);
-        e.target.value = '';
-        return;
-      }
-
-      setFile(selectedFile);
-    }
-  };
 
   const handleParseAndPreview = async () => {
     if (!file) return;
@@ -450,11 +386,6 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
     onOpenChange(true); // Reopen upload dialog
   };
 
-  const handleRemoveFile = () => {
-    setFile(null);
-    setError(null);
-  };
-
   const handleClose = () => {
     if (!uploading) {
       setFile(null);
@@ -463,151 +394,65 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
     }
   };
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-  };
-
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Загрузить файл</DialogTitle>
-          <DialogDescription>
-            Выберите файл для импорта данных. Поддерживаемые форматы: {acceptedFormats.join(', ')}
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Загрузить файл</DialogTitle>
+            <DialogDescription>
+              Выберите файл для импорта данных. Поддерживаемые форматы: {acceptedFormats.join(', ')}
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-4 py-4">
-          {/* Import Mode Selector */}
-          <div className="space-y-2">
-            <Label>Режим импорта</Label>
-            <ImportModeSelector value={importMode} onChange={setImportMode} />
+          <div className="space-y-4 py-4">
+            {/* Import Options */}
+            <ImportOptionsStep
+              importMode={importMode}
+              duplicateStrategy={duplicateStrategy}
+              onImportModeChange={setImportMode}
+              onDuplicateStrategyChange={setDuplicateStrategy}
+            />
+
+            {/* File Upload Zone */}
+            <FileUploadZone
+              file={file}
+              onFileSelect={setFile}
+              onError={setError}
+              error={error}
+              disabled={uploading || parsing}
+              acceptedFormats={acceptedFormats}
+              maxSize={maxSize}
+            />
           </div>
 
-          {/* Duplicate Strategy Selector (only for data mode) */}
-          {importMode === 'data' && (
-            <div className="space-y-2">
-              <Label>Обработка дубликатов</Label>
-              <DuplicateStrategySelector value={duplicateStrategy} onChange={setDuplicateStrategy} />
-            </div>
-          )}
-
-          {/* Drag & Drop Zone */}
-          <div
-            className={cn(
-              'border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors',
-              dragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50',
-              file ? 'bg-muted/50' : ''
-            )}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-            onClick={() => !file && document.getElementById('file-input')?.click()}
-          >
-            {!file ? (
-              <div className="space-y-3">
-                <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-                  <Upload className="w-6 h-6 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">
-                    Перетащите файл сюда или кликните для выбора
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Максимальный размер: {maxSize}MB
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-6 h-6 text-green-600" />
-                </div>
-                <div className="flex items-center justify-center gap-2">
-                  <File className="w-4 h-4" />
-                  <span className="text-sm font-medium">{file.name}</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleRemoveFile();
-                    }}
-                    disabled={uploading}
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-                <p className="text-xs text-muted-foreground">{formatFileSize(file.size)}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Hidden File Input */}
-          <Input
-            id="file-input"
-            type="file"
-            accept={acceptedFormats.join(',')}
-            onChange={handleFileChange}
-            className="hidden"
-            disabled={uploading}
-          />
-
-          {/* Error Message */}
-          {error && (
-            <Alert variant="destructive">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
-          {/* File Info */}
-          {file && !error && (
-            <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-              <div className="flex items-start gap-2">
-                <File className="w-4 h-4 text-blue-600 mt-0.5" />
-                <div className="flex-1 text-sm">
-                  <p className="font-medium text-blue-900 dark:text-blue-100">Файл готов к загрузке</p>
-                  <p className="text-blue-700 dark:text-blue-300 text-xs mt-1">
-                    {file.name} ({formatFileSize(file.size)})
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <DialogFooter>
-          <Button
-            variant="outline"
-            onClick={handleClose}
-            disabled={parsing || uploading}
-          >
-            Отмена
-          </Button>
-          <Button
-            onClick={handleParseAndPreview}
-            disabled={!file || parsing || uploading}
-          >
-            {parsing ? (
-              <>
-                <span className="animate-spin mr-2">⏳</span>
-                Парсинг...
-              </>
-            ) : (
-              <>
-                <Upload className="w-4 h-4 mr-2" />
-                Предпросмотр
-              </>
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleClose}
+              disabled={parsing || uploading}
+            >
+              Отмена
+            </Button>
+            <Button
+              onClick={handleParseAndPreview}
+              disabled={!file || parsing || uploading}
+            >
+              {parsing ? (
+                <>
+                  <span className="animate-spin mr-2">⏳</span>
+                  Парсинг...
+                </>
+              ) : (
+                <>
+                  <Upload className="w-4 h-4 mr-2" />
+                  Предпросмотр
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Import Preview Dialog */}
       {showPreview && parseResult && (
@@ -622,6 +467,6 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
           onCancel={handleCancelPreview}
         />
       )}
-    </Dialog>
+    </>
   );
 };
