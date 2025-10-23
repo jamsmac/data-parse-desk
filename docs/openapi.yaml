@@ -1,0 +1,457 @@
+openapi: 3.0.3
+info:
+  title: DataParseDesk API
+  description: |
+    DataParseDesk REST API for managing databases, rows, projects, and more.
+
+    ## Authentication
+
+    The API supports two authentication methods:
+
+    1. **API Key Authentication** (Recommended for programmatic access)
+       - Header: `x-api-key: your-api-key-here`
+       - Generate keys in Settings → API Keys
+       - Rate limited per key (default: 1000 req/hour)
+
+    2. **JWT Bearer Token** (For user sessions)
+       - Header: `Authorization: Bearer your-jwt-token`
+       - Obtained via Supabase Auth login
+       - Auto-refreshed by Supabase SDK
+
+    ## Rate Limiting
+
+    - Default: 1000 requests per hour per API key
+    - Configurable per key in dashboard
+    - Response headers include:
+      - `X-RateLimit-Limit`: Total requests allowed
+      - `X-RateLimit-Remaining`: Requests remaining
+      - `X-RateLimit-Reset`: Timestamp when limit resets
+
+    ## Error Responses
+
+    All errors follow this format:
+    ```json
+    {
+      "error": "Error message here",
+      "success": false
+    }
+    ```
+
+    ## Pagination
+
+    List endpoints support pagination:
+    - `page`: Page number (default: 1)
+    - `limit`: Items per page (default: 20, max: 100)
+
+    Response includes:
+    ```json
+    {
+      "data": [ ... ],
+      "pagination": {
+        "page": 1,
+        "limit": 20,
+        "total": 150,
+        "totalPages": 8
+      }
+    }
+    ```
+
+  version: 2.0.0
+  contact:
+    name: DataParseDesk Support
+    email: support@dataparsedesk.com
+    url: https://dataparsedesk.com/support
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://puavudiivxuknvtbnotv.supabase.co/functions/v1
+    description: Production server
+  - url: http://localhost:54321/functions/v1
+    description: Local development server
+
+tags:
+  - name: Databases
+    description: Database management operations
+  - name: Rows
+    description: Data row operations
+  - name: Projects
+    description: Project management
+  - name: Columns
+    description: Column schema operations
+  - name: Relations
+    description: Database relationships
+  - name: AI
+    description: AI-powered features
+  - name: Webhooks
+    description: Webhook management
+  - name: API Keys
+    description: API key management
+
+security:
+  - ApiKeyAuth: []
+  - BearerAuth: []
+
+paths:
+  # ============================================================================
+  # DATABASES
+  # ============================================================================
+  /rest-api/databases:
+    get:
+      tags: [Databases]
+      summary: List databases
+      description: Retrieve a paginated list of databases owned by or shared with the authenticated user
+      operationId: listDatabases
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Database'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+    post:
+      tags: [Databases]
+      summary: Create database
+      description: Create a new database
+      operationId: createDatabase
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatabaseInput'
+      responses:
+        '201':
+          description: Database created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Database'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /rest-api/databases/{id}:
+    get:
+      tags: [Databases]
+      summary: Get database
+      description: Retrieve a single database by ID
+      operationId: getDatabase
+      parameters:
+        - $ref: '#/components/parameters/DatabaseId'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Database'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Databases]
+      summary: Update database
+      description: Update an existing database
+      operationId: updateDatabase
+      parameters:
+        - $ref: '#/components/parameters/DatabaseId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatabaseInput'
+      responses:
+        '200':
+          description: Database updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Database'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags: [Databases]
+      summary: Delete database
+      description: Delete a database and all its data
+      operationId: deleteDatabase
+      parameters:
+        - $ref: '#/components/parameters/DatabaseId'
+      responses:
+        '200':
+          description: Database deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Database deleted successfully
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ============================================================================
+  # ROWS
+  # ============================================================================
+  /rest-api/rows:
+    get:
+      tags: [Rows]
+      summary: List rows
+      description: Retrieve rows from a database with pagination
+      operationId: listRows
+      parameters:
+        - name: database_id
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Database ID to fetch rows from
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Row'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+components:
+  # ============================================================================
+  # SECURITY SCHEMES
+  # ============================================================================
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+      description: API key for authentication
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from Supabase Auth
+
+  # ============================================================================
+  # PARAMETERS
+  # ============================================================================
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: Page number (1-indexed)
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+
+    Limit:
+      name: limit
+      in: query
+      description: Number of items per page
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+    DatabaseId:
+      name: id
+      in: path
+      required: true
+      description: Database UUID
+      schema:
+        type: string
+        format: uuid
+
+  # ============================================================================
+  # SCHEMAS
+  # ============================================================================
+  schemas:
+    Database:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        name:
+          type: string
+          example: "Sales Database"
+        description:
+          type: string
+          example: "Q4 2024 sales data"
+        project_id:
+          type: string
+          format: uuid
+        created_by:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    DatabaseInput:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          example: "My Database"
+        description:
+          type: string
+          maxLength: 1000
+          example: "Database description"
+        project_id:
+          type: string
+          format: uuid
+
+    Row:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        database_id:
+          type: string
+          format: uuid
+        data:
+          type: object
+          additionalProperties: true
+          description: Row data as JSON object
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        total:
+          type: integer
+          example: 150
+        totalPages:
+          type: integer
+          example: 8
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Error message"
+        success:
+          type: boolean
+          example: false
+
+  # ============================================================================
+  # RESPONSES
+  # ============================================================================
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Invalid request parameters"
+            success: false
+
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "API key required. Provide it in x-api-key header."
+            success: false
+
+    Forbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Permission denied: databases.write required"
+            success: false
+
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Resource not found"
+            success: false
+
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: "Rate limit exceeded"
+            limit: 1000
+            success: false

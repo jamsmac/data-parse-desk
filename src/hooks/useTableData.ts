@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Filter } from '@/components/database/FilterBuilder';
@@ -33,11 +33,26 @@ export function useTableData({
   const [resolving, setResolving] = useState(false);
   const [computing, setComputing] = useState(false);
 
-  useEffect(() => {
-    loadData();
-  }, [databaseId, page, pageSize, filters, sort, search, searchColumns]);
+  // Memoize filters hash to prevent unnecessary re-renders
+  const filtersHash = useMemo(() => {
+    return JSON.stringify(filters.map(f => ({
+      column: f.column,
+      operator: f.operator,
+      value: f.value
+    })));
+  }, [filters]);
 
-  const loadData = async () => {
+  // Memoize sort hash
+  const sortHash = useMemo(() => {
+    return JSON.stringify({ column: sort.column, direction: sort.direction });
+  }, [sort.column, sort.direction]);
+
+  // Memoize search columns hash
+  const searchColumnsHash = useMemo(() => {
+    return JSON.stringify(searchColumns);
+  }, [searchColumns]);
+
+  const loadData = useCallback(async () => {
     try {
       console.log('useTableData: Starting loadData for database:', databaseId);
       setLoading(true);
@@ -189,7 +204,11 @@ export function useTableData({
     } finally {
       setLoading(false);
     }
-  };
+  }, [databaseId, page, pageSize, filtersHash, sortHash, search, searchColumnsHash, includeRelations, includeComputedColumns]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   return { data, totalCount, loading, resolving, computing, refresh: loadData };
 }
