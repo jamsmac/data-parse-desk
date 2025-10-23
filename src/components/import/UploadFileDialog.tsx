@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Upload, File, X, AlertCircle, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { parseFile, ParseResult } from '@/utils/fileParser';
+import type { ParseResult } from '@/utils/fileParser';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { ImportModeSelector } from './ImportModeSelector';
@@ -124,6 +124,9 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
     try {
       console.log('Starting file parse:', file.name);
 
+      // Lazy load fileParser only when needed
+      const { parseFile } = await import('@/utils/fileParser');
+
       // Parse file
       const result = await parseFile(file);
       console.log('Parse result:', {
@@ -177,7 +180,7 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
           database_id: databaseId,
           filename: parseResult.fileName,
           file_type: parseResult.fileName.split('.').pop()?.toLowerCase(),
-          file_size: parseResult.fileSize,
+          file_size: file?.size || 0,
           uploaded_by: user.id,
           import_mode: importMode,
           duplicate_strategy: duplicateStrategy,

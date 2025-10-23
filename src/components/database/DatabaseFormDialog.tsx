@@ -13,7 +13,6 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { parseFile } from '@/utils/fileParser';
 import type { Database } from '@/types/database';
 
 interface DatabaseFormDialogProps {
@@ -63,8 +62,10 @@ export const DatabaseFormDialog: React.FC<DatabaseFormDialogProps> = ({
       .trim();
 
     try {
+      // Lazy load fileParser only when needed
+      const { parseFile } = await import('@/utils/fileParser');
       const parsed = await parseFile(selectedFile);
-      
+
       setFormData(prev => ({
         ...prev,
         name: prev.name || suggestedName,
