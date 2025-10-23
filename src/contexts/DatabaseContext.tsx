@@ -25,6 +25,34 @@ import type { ImportSuccessData } from '@/components/import/UploadFileDialog';
 
 export type ViewType = 'table' | 'calendar' | 'kanban' | 'gallery';
 
+export type CellValue = string | number | boolean | null | Date;
+export type RowData = Record<string, CellValue>;
+
+export interface TableRow {
+  id: string;
+  data: RowData;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface Comment {
+  id: string;
+  content: string;
+  created_at: string;
+  user_id: string;
+  database_id?: string;
+  row_id?: string;
+}
+
+export interface HistoryAction {
+  action: 'update' | 'insert' | 'delete';
+  tableName: string;
+  rowId: string;
+  columnName?: string;
+  before?: RowData;
+  after?: RowData;
+}
+
 export interface DatabaseContextType {
   // IDs
   projectId: string | null;
@@ -36,7 +64,7 @@ export interface DatabaseContextType {
   loading: boolean;
 
   // Table data
-  tableData: any[];
+  tableData: TableRow[];
   totalCount: number;
   dataLoading: boolean;
 
@@ -68,7 +96,7 @@ export interface DatabaseContextType {
   preferencesLoading: boolean;
 
   // Comments
-  comments: any[];
+  comments: Comment[];
   commentsLoading: boolean;
   addComment: (content: string, rowId?: string) => Promise<void>;
   updateComment: (commentId: string, content: string) => Promise<void>;
@@ -100,8 +128,8 @@ export interface DatabaseContextType {
   refreshData: () => void;
 
   // Row operations
-  handleAddRow: (rowData: any) => Promise<void>;
-  handleUpdateRow: (rowId: string, updates: any) => Promise<void>;
+  handleAddRow: (rowData: RowData) => Promise<void>;
+  handleUpdateRow: (rowId: string, updates: RowData) => Promise<void>;
   handleDeleteRow: (rowId: string) => Promise<void>;
   handleDuplicateRow: (rowId: string) => Promise<void>;
   handleInsertRowAbove: (rowId: string) => Promise<void>;
@@ -112,14 +140,14 @@ export interface DatabaseContextType {
   // Bulk operations
   handleBulkDelete: (rowIds: string[]) => Promise<void>;
   handleBulkDuplicate: (rowIds: string[]) => Promise<void>;
-  handleBulkEdit: (rowIds: string[], column: string, value: any) => Promise<void>;
+  handleBulkEdit: (rowIds: string[], column: string, value: CellValue) => Promise<void>;
 
   // Database actions
   handleClearData: () => Promise<void>;
   handleDeleteDatabase: () => Promise<void>;
 
   // Undo/Redo
-  addToHistory: (action: any) => void;
+  addToHistory: (action: HistoryAction) => void;
 }
 
 const DatabaseContext = createContext<DatabaseContextType | undefined>(undefined);
@@ -237,11 +265,12 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
 
       if (error) throw error;
       setDatabase(data);
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
       toast({
         variant: 'destructive',
         title: 'Ошибка',
-        description: error.message,
+        description: errorMessage,
       });
     } finally {
       setLoading(false);
@@ -257,8 +286,8 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
       });
 
       if (error) throw error;
-      setSchemas((data || []) as any);
-    } catch (error: any) {
+      setSchemas((data || []) as TableSchema[]);
+    } catch (error) {
       console.error('Error loading schemas:', error);
     }
   }, [databaseId]);
@@ -271,7 +300,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
   // ROW OPERATIONS
   // ============================================
 
-  const handleAddRow = useCallback(async (rowData: any) => {
+  const handleAddRow = useCallback(async (rowData: RowData) => {
     if (!databaseId) return;
 
     try {
@@ -287,16 +316,17 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
       });
 
       refresh();
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Не удалось добавить запись';
       toast({
         variant: 'destructive',
         title: 'Ошибка',
-        description: error.message,
+        description: errorMessage,
       });
     }
   }, [databaseId, toast, refresh]);
 
-  const handleUpdateRow = useCallback(async (rowId: string, updates: any) => {
+  const handleUpdateRow = useCallback(async (rowId: string, updates: RowData) => {
     try {
       // Get current data before update
       const { data: currentRow } = await supabase
@@ -383,11 +413,12 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
       });
 
       refresh();
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Не удалось обновить запись';
       toast({
         variant: 'destructive',
         title: 'Ошибка',
-        description: error.message,
+        description: errorMessage,
       });
     }
   }, [databaseId, user, toast, refresh, addToHistory]);
@@ -405,18 +436,19 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
       });
 
       refresh();
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Не удалось удалить запись';
       toast({
         variant: 'destructive',
         title: 'Ошибка',
-        description: error.message,
+        description: errorMessage,
       });
     }
   }, [toast, refresh]);
 
   const handleDuplicateRow = useCallback(async (rowId: string) => {
     try {
-      const row = tableData.find((r: any) => r.id === rowId);
+      const row = tableData.find(r => r.id === rowId);
       if (!row) return;
 
       await handleAddRow(row.data);
@@ -424,11 +456,12 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
       toast({
         title: 'Запись дублирована',
       });
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Не удалось дублировать запись';
       toast({
         variant: 'destructive',
         title: 'Ошибка',
-        description: error.message,
+        description: errorMessage,
       });
     }
   }, [tableData, handleAddRow, toast]);
@@ -439,11 +472,12 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
       toast({
         title: 'Новая строка добавлена выше',
       });
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Не удалось добавить строку';
       toast({
         variant: 'destructive',
         title: 'Ошибка',
-        description: error.message,
+        description: errorMessage,
       });
     }
   }, [handleAddRow, toast]);
@@ -454,17 +488,18 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
       toast({
         title: 'Новая строка добавлена ниже',
       });
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Не удалось добавить строку';
       toast({
         variant: 'destructive',
         title: 'Ошибка',
-        description: error.message,
+        description: errorMessage,
       });
     }
   }, [handleAddRow, toast]);
 
   const handleRowView = useCallback((rowId: string) => {
-    const row = tableData.find((r: any) => r.id === rowId);
+    const row = tableData.find(r => r.id === rowId);
     if (row) {
       console.log('View row:', row);
       toast({
@@ -492,7 +527,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
         await supabase.rpc('delete_table_row', { p_id: rowId });
       }
       refresh();
-    } catch (error: any) {
+    } catch (error) {
       throw new Error('Не удалось удалить записи');
     }
   }, [refresh]);
@@ -500,21 +535,21 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
   const handleBulkDuplicate = useCallback(async (rowIds: string[]) => {
     try {
       for (const rowId of rowIds) {
-        const row = tableData.find((r: any) => r.id === rowId);
+        const row = tableData.find(r => r.id === rowId);
         if (row) {
           await handleAddRow(row.data);
         }
       }
       refresh();
-    } catch (error: any) {
+    } catch (error) {
       throw new Error('Не удалось дублировать записи');
     }
   }, [tableData, handleAddRow, refresh]);
 
-  const handleBulkEdit = useCallback(async (rowIds: string[], column: string, value: any) => {
+  const handleBulkEdit = useCallback(async (rowIds: string[], column: string, value: CellValue) => {
     try {
       for (const rowId of rowIds) {
-        const row = tableData.find((r: any) => r.id === rowId);
+        const row = tableData.find(r => r.id === rowId);
         if (row) {
           const updatedData = {
             ...row.data,
@@ -524,7 +559,7 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
         }
       }
       refresh();
-    } catch (error: any) {
+    } catch (error) {
       throw new Error('Не удалось обновить записи');
     }
   }, [tableData, handleUpdateRow, refresh]);
@@ -549,11 +584,12 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
       });
 
       refresh();
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Не удалось очистить данные';
       toast({
         variant: 'destructive',
         title: 'Ошибка',
-        description: error.message,
+        description: errorMessage,
       });
     }
   }, [databaseId, toast, refresh]);
@@ -574,11 +610,12 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
       });
 
       navigate(`/projects/${projectId}`);
-    } catch (error: any) {
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Не удалось удалить базу данных';
       toast({
         variant: 'destructive',
         title: 'Ошибка',
-        description: error.message,
+        description: errorMessage,
       });
     }
   }, [databaseId, projectId, navigate, toast]);

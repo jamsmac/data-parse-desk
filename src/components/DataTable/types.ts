@@ -4,11 +4,13 @@
 
 import { NormalizedRow, GroupedData } from '@/utils/parseData';
 
+export type CellValue = string | number | boolean | null | Date;
+
 export interface DataTableProps {
   data?: NormalizedRow[] | GroupedData[];
   headers?: string[];
   isGrouped?: boolean;
-  onCellUpdate?: (rowId: string, column: string, value: any) => Promise<void>;
+  onCellUpdate?: (rowId: string, column: string, value: CellValue) => Promise<void>;
   columnTypes?: Record<string, string>;
   databaseId?: string;
   onRowEdit?: (rowId: string) => void;
@@ -20,7 +22,7 @@ export interface DataTableProps {
   onInsertRowBelow?: (rowId: string) => void;
   onBulkDelete?: (rowIds: string[]) => Promise<void>;
   onBulkDuplicate?: (rowIds: string[]) => Promise<void>;
-  onBulkEdit?: (rowIds: string[], column: string, value: any) => Promise<void>;
+  onBulkEdit?: (rowIds: string[], column: string, value: CellValue) => Promise<void>;
 }
 
 export type SortDirection = 'asc' | 'desc' | null;
@@ -43,7 +45,7 @@ export interface DataTableState {
 }
 
 export interface DataTableHandlers {
-  handleCellUpdate: (rowId: string, column: string, value: any) => Promise<void>;
+  handleCellUpdate: (rowId: string, column: string, value: CellValue) => Promise<void>;
   handleRowView?: (rowId: string) => void;
   handleRowEdit?: (rowId: string) => void;
   handleRowDuplicate?: (rowId: string) => void;
@@ -53,5 +55,5 @@ export interface DataTableHandlers {
   handleInsertRowBelow?: (rowId: string) => void;
   handleBulkDelete?: (rowIds: string[]) => Promise<void>;
   handleBulkDuplicate?: (rowIds: string[]) => Promise<void>;
-  handleBulkEdit?: (rowIds: string[], column: string, value: any) => Promise<void>;
+  handleBulkEdit?: (rowIds: string[], column: string, value: CellValue) => Promise<void>;
 }

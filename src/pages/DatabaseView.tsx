@@ -33,7 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import { DatabaseProvider, useDatabaseContext } from '@/contexts/DatabaseContext';
+import { DatabaseProvider, useDatabaseContext, type ViewType } from '@/contexts/DatabaseContext';
 import { useNavigate } from 'react-router-dom';
 
 function DatabaseViewContent() {
@@ -112,7 +112,7 @@ function DatabaseViewContent() {
   const [showAIAssistant, setShowAIAssistant] = useState(false);
 
   // Helper function for Kanban columns
-  const getKanbanColumns = (rows: any[]) => {
+  const getKanbanColumns = (rows: Array<{ id: string; [key: string]: unknown }>) => {
     // Find status column
     const statusColumn = schemas.find(col =>
       col.column_type === 'status' ||
@@ -127,8 +127,8 @@ function DatabaseViewContent() {
           title: 'To Do',
           cards: rows.slice(0, Math.ceil(rows.length / 3)).map(r => ({
             id: r.id,
-            title: r.name || r.title || 'Без названия',
-            description: r.description,
+            title: String(r.name || r.title || 'Без названия'),
+            description: r.description ? String(r.description) : undefined,
           })),
         },
         {
@@ -136,8 +136,8 @@ function DatabaseViewContent() {
           title: 'In Progress',
           cards: rows.slice(Math.ceil(rows.length / 3), Math.ceil(rows.length * 2 / 3)).map(r => ({
             id: r.id,
-            title: r.name || r.title || 'Без названия',
-            description: r.description,
+            title: String(r.name || r.title || 'Без названия'),
+            description: r.description ? String(r.description) : undefined,
           })),
         },
         {
@@ -145,8 +145,8 @@ function DatabaseViewContent() {
           title: 'Done',
           cards: rows.slice(Math.ceil(rows.length * 2 / 3)).map(r => ({
             id: r.id,
-            title: r.name || r.title || 'Без названия',
-            description: r.description,
+            title: String(r.name || r.title || 'Без названия'),
+            description: r.description ? String(r.description) : undefined,
           })),
         },
       ];
@@ -156,15 +156,15 @@ function DatabaseViewContent() {
     const statuses = [...new Set(rows.map(r => r[statusColumn.column_name]))].filter(Boolean);
 
     return statuses.map(status => ({
-      id: status,
-      title: status,
+      id: String(status),
+      title: String(status),
       cards: rows
         .filter(r => r[statusColumn.column_name] === status)
         .map(r => ({
           id: r.id,
-          title: r.name || r.title || 'Без названия',
-          description: r.description,
-          status: r[statusColumn.column_name],
+          title: String(r.name || r.title || 'Без названия'),
+          description: r.description ? String(r.description) : undefined,
+          status: r[statusColumn.column_name] ? String(r[statusColumn.column_name]) : undefined,
         })),
     }));
   };
@@ -347,7 +347,7 @@ function DatabaseViewContent() {
         </section>
 
         {/* View Type Selector */}
-        <Tabs value={viewType} onValueChange={(v: any) => setViewType(v)} className="mb-4">
+        <Tabs value={viewType} onValueChange={(v) => setViewType(v as ViewType)} className="mb-4">
           <TabsList role="tablist" aria-label="Выбор типа отображения данных">
             <TabsTrigger value="table">
               <Table className="h-4 w-4 mr-2" aria-hidden="true" />
@@ -387,7 +387,7 @@ function DatabaseViewContent() {
 
           {viewType === 'calendar' && (
             <CalendarView
-              data={tableData.map((row: any) => ({
+              data={tableData.map(row => ({
                 id: row.id,
                 ...row.data,
                 created_at: row.created_at,
@@ -422,7 +422,7 @@ function DatabaseViewContent() {
 
           {viewType === 'kanban' && (
             <KanbanView
-              columns={getKanbanColumns(tableData.map((row: any) => ({
+              columns={getKanbanColumns(tableData.map(row => ({
                 id: row.id,
                 ...row.data,
               })))}
@@ -437,7 +437,7 @@ function DatabaseViewContent() {
 
                 if (statusColumn) {
                   // Find the row
-                  const row = tableData.find((r: any) => r.id === cardId);
+                  const row = tableData.find(r => r.id === cardId);
                   if (row) {
                     const previousStatus = row.data[statusColumn.column_name];
 
@@ -494,11 +494,11 @@ function DatabaseViewContent() {
 
           {viewType === 'gallery' && (
             <GalleryView
-              items={tableData.map((row: any) => ({
+              items={tableData.map(row => ({
                 id: row.id,
-                title: row.data?.name || row.data?.title || 'Без названия',
-                description: row.data?.description || '',
-                imageUrl: row.data?.image || row.data?.photo || row.data?.avatar,
+                title: String(row.data?.name || row.data?.title || 'Без названия'),
+                description: row.data?.description ? String(row.data.description) : '',
+                imageUrl: row.data?.image ? String(row.data.image) : (row.data?.photo ? String(row.data.photo) : (row.data?.avatar ? String(row.data.avatar) : undefined)),
                 metadata: {
                   created_at: row.created_at,
                   ...row.data,

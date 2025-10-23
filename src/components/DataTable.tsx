@@ -28,11 +28,13 @@ import { DataTableHeader } from './DataTable/DataTableHeader';
 import { DataTableRow } from './DataTable/DataTableRow';
 import { DataTablePagination } from './DataTable/DataTablePagination';
 
+type CellValue = string | number | boolean | null | Date;
+
 interface DataTableProps {
   data?: NormalizedRow[] | GroupedData[];
   headers?: string[];
   isGrouped?: boolean;
-  onCellUpdate?: (rowId: string, column: string, value: any) => Promise<void>;
+  onCellUpdate?: (rowId: string, column: string, value: CellValue) => Promise<void>;
   columnTypes?: Record<string, string>;
   databaseId?: string;
   onRowEdit?: (rowId: string) => void;
@@ -44,7 +46,7 @@ interface DataTableProps {
   onInsertRowBelow?: (rowId: string) => void;
   onBulkDelete?: (rowIds: string[]) => Promise<void>;
   onBulkDuplicate?: (rowIds: string[]) => Promise<void>;
-  onBulkEdit?: (rowIds: string[], column: string, value: any) => Promise<void>;
+  onBulkEdit?: (rowIds: string[], column: string, value: CellValue) => Promise<void>;
 }
 
 type SortDirection = 'asc' | 'desc' | null;
@@ -79,7 +81,7 @@ export function DataTable({
   }
 
   // Use context values if available, otherwise use props
-  const data = dataProp ?? (ctx?.tableData.map((row: any) => ({
+  const data = dataProp ?? (ctx?.tableData.map(row => ({
     id: row.id,
     ...row.data,
     created_at: row.created_at,
@@ -96,9 +98,9 @@ export function DataTable({
   }, {} as Record<string, string>) || {});
 
   // Handlers - use context if available, otherwise use props
-  const handleCellUpdate = onCellUpdateProp ?? (async (rowId: string, column: string, value: any) => {
+  const handleCellUpdate = onCellUpdateProp ?? (async (rowId: string, column: string, value: CellValue) => {
     if (!ctx) return;
-    const row = ctx.tableData.find((r: any) => r.id === rowId);
+    const row = ctx.tableData.find(r => r.id === rowId);
     if (!row) return;
     const updatedData = { ...row.data, [column]: value };
     await ctx.handleUpdateRow(rowId, updatedData);
@@ -111,9 +113,9 @@ export function DataTable({
   const handleRowHistory = onRowHistoryProp ?? ctx?.handleRowHistory;
   const handleInsertRowAbove = onInsertRowAboveProp ?? ctx?.handleInsertRowAbove;
   const handleInsertRowBelow = onInsertRowBelowProp ?? ctx?.handleInsertRowBelow;
-  const handleBulkDelete = onBulkDeleteProp ?? ctx?.handleBulkDelete;
-  const handleBulkDuplicate = onBulkDuplicateProp ?? ctx?.handleBulkDuplicate;
-  const handleBulkEdit = onBulkEditProp ?? ctx?.handleBulkEdit;
+  const handleBulkDeleteAction = onBulkDeleteProp ?? ctx?.handleBulkDelete;
+  const handleBulkDuplicateAction = onBulkDuplicateProp ?? ctx?.handleBulkDuplicate;
+  const handleBulkEditAction = onBulkEditProp ?? ctx?.handleBulkEdit;
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(50);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -156,10 +158,10 @@ export function DataTable({
 
   // Bulk delete handler
   const handleBulkDelete = async () => {
-    if (!onBulkDelete || selectedRowIds.size === 0) return;
+    if (!handleBulkDeleteAction || selectedRowIds.size === 0) return;
 
     try {
-      await onBulkDelete(Array.from(selectedRowIds));
+      await handleBulkDeleteAction(Array.from(selectedRowIds));
       setSelectedRowIds(new Set());
       setShowBulkDeleteConfirm(false);
       toast({
@@ -177,10 +179,10 @@ export function DataTable({
 
   // Bulk duplicate handler
   const handleBulkDuplicate = async () => {
-    if (!onBulkDuplicate || selectedRowIds.size === 0) return;
+    if (!handleBulkDuplicateAction || selectedRowIds.size === 0) return;
 
     try {
-      await onBulkDuplicate(Array.from(selectedRowIds));
+      await handleBulkDuplicateAction(Array.from(selectedRowIds));
       setSelectedRowIds(new Set());
       toast({
         title: 'Дублировано',
@@ -196,11 +198,11 @@ export function DataTable({
   };
 
   // Bulk edit handler
-  const handleBulkEditSave = async (column: string, value: any) => {
-    if (!onBulkEdit || selectedRowIds.size === 0) return;
+  const handleBulkEditSave = async (column: string, value: CellValue) => {
+    if (!handleBulkEditAction || selectedRowIds.size === 0) return;
 
     try {
-      await onBulkEdit(Array.from(selectedRowIds), column, value);
+      await handleBulkEditAction(Array.from(selectedRowIds), column, value);
       setSelectedRowIds(new Set());
       toast({
         title: 'Обновлено',
@@ -359,7 +361,7 @@ export function DataTable({
     }
   };
 
-  const handleCellSave = async (value: any) => {
+  const handleCellSave = async (value: CellValue) => {
     if (!editingCell || !handleCellUpdate) return;
 
     await handleCellUpdate(editingCell.rowId, editingCell.column, value);
@@ -370,18 +372,18 @@ export function DataTable({
     setEditingCell(null);
   };
 
-  const formatCellValue = (value: any, header: string) => {
+  const formatCellValue = (value: CellValue, header: string) => {
     if (value === null || value === undefined || value === '') return '—';
-    
-    if (header === 'amount_num') return formatAmount(value);
+
+    if (header === 'amount_num' && typeof value === 'number') return formatAmount(value);
     if (header === 'date_iso' && typeof value === 'string') {
-      return new Date(value).toLocaleString('en-US', { 
+      return new Date(value).toLocaleString('en-US', {
         timeZone: 'Asia/Tashkent',
         dateStyle: 'medium',
         timeStyle: 'short'
       });
     }
-    
+
     return String(value);
   };
 

@@ -17,13 +17,17 @@ import { PercentCell } from '@/components/cells/PercentCell';
 import { BarcodeCell } from '@/components/cells/BarcodeCell';
 import { QRCell } from '@/components/cells/QRCell';
 
+type CellValue = string | number | boolean | null | Date;
+type ColumnConfig = Record<string, unknown>;
+type RowData = Record<string, CellValue>;
+
 interface EditableCellProps {
-  value: any;
+  value: CellValue;
   columnType: string;
-  onSave: (value: any) => void;
+  onSave: (value: CellValue) => void;
   onCancel: () => void;
-  columnConfig?: any;  // Config for special column types
-  rowData?: Record<string, any>;  // Full row data for button actions
+  columnConfig?: ColumnConfig;  // Config for special column types
+  rowData?: RowData;  // Full row data for button actions
 }
 
 export function EditableCell({ value, columnType, onSave, onCancel, columnConfig, rowData }: EditableCellProps) {

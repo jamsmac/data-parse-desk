@@ -16,13 +16,23 @@ interface VersionComparisonDialogProps {
   onClose: () => void;
 }
 
+interface SchemaColumn {
+  name: string;
+  type: string;
+}
+
+interface SchemaTable {
+  name: string;
+  columns?: SchemaColumn[];
+}
+
 interface SchemaDiff {
-  added_tables: any[];
-  removed_tables: any[];
+  added_tables: SchemaTable[];
+  removed_tables: SchemaTable[];
   modified_tables: Array<{
     table_name: string;
-    before: any;
-    after: any;
+    before: SchemaTable;
+    after: SchemaTable;
   }>;
   total_changes: number;
 }
@@ -112,7 +122,7 @@ export function VersionComparisonDialog({
                       <p className="font-semibold text-green-900">{table.name}</p>
                       {table.columns && (
                         <div className="mt-2 space-y-1">
-                          {table.columns.map((col: any, colIdx: number) => (
+                          {table.columns.map((col, colIdx) => (
                             <div
                               key={colIdx}
                               className="text-sm text-green-700 flex items-center gap-2"
@@ -147,7 +157,7 @@ export function VersionComparisonDialog({
                       <p className="font-semibold text-red-900">{table.name}</p>
                       {table.columns && (
                         <div className="mt-2 space-y-1">
-                          {table.columns.map((col: any, colIdx: number) => (
+                          {table.columns.map((col, colIdx) => (
                             <div
                               key={colIdx}
                               className="text-sm text-red-700 flex items-center gap-2"
@@ -188,7 +198,7 @@ export function VersionComparisonDialog({
                             Before
                           </p>
                           <div className="bg-white rounded p-2 space-y-1">
-                            {change.before.columns?.map((col: any, colIdx: number) => (
+                            {change.before.columns?.map((col, colIdx) => (
                               <div
                                 key={colIdx}
                                 className="text-sm flex items-center gap-2"
@@ -206,7 +216,7 @@ export function VersionComparisonDialog({
                             After
                           </p>
                           <div className="bg-white rounded p-2 space-y-1">
-                            {change.after.columns?.map((col: any, colIdx: number) => (
+                            {change.after.columns?.map((col, colIdx) => (
                               <div
                                 key={colIdx}
                                 className="text-sm flex items-center gap-2"

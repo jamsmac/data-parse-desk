@@ -38,7 +38,7 @@ interface CustomPerformanceEntry {
   name: string;
   duration: number;
   startTime: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -136,8 +136,9 @@ function initializeWebVitals() {
     // First Input Delay (FID)
     const fidObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
-      entries.forEach((entry: any) => {
-        reportMetric('FID', entry.processingStart - entry.startTime);
+      entries.forEach((entry) => {
+        const fidEntry = entry as PerformanceEventTiming;
+        reportMetric('FID', fidEntry.processingStart - fidEntry.startTime);
       });
     });
 

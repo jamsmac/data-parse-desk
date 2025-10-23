@@ -7,6 +7,21 @@ import { useAuth } from '@/contexts/AuthContext';
 import { rateLimitedSupabaseCall, RateLimitConfigs } from '@/lib/rateLimit';
 import { toast } from 'sonner';
 
+interface RateLimitError extends Error {
+  code: string;
+  resetTime?: number;
+  remaining?: number;
+}
+
+function isRateLimitError(error: unknown): error is RateLimitError {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'code' in error &&
+    (error as RateLimitError).code === 'RATE_LIMIT_EXCEEDED'
+  );
+}
+
 /**
  * Enhanced mutation hook with rate limiting
  */
@@ -26,18 +41,18 @@ export function useRateLimitedMutation<TData, TError, TVariables, TContext>(
           user?.id,
           () => mutationFn(variables)
         );
-      } catch (error: any) {
-        if (error.code === 'RATE_LIMIT_EXCEEDED') {
+      } catch (error) {
+        if (isRateLimitError(error)) {
           toast.error(`Слишком много запросов`, {
-            description: `Попробуйте снова через ${Math.ceil(error.resetTime / 1000)} секунд`,
+            description: `Попробуйте снова через ${Math.ceil((error.resetTime || 0) / 1000)} секунд`,
           });
         }
         throw error;
       }
     },
-    onError: (error: any, variables, context) => {
+    onError: (error, variables, context) => {
       // Handle rate limit errors specially
-      if (error.code === 'RATE_LIMIT_EXCEEDED') {
+      if (isRateLimitError(error)) {
         console.warn('Rate limit exceeded:', {
           operation,
           remaining: error.remaining,
@@ -56,18 +71,19 @@ export function useRateLimitedMutation<TData, TError, TVariables, TContext>(
 /**
  * Rate-limited database operations
  */
-export function useRateLimitedDatabaseMutation<T>(
+export function useRateLimitedDatabaseMutation<T, TVariables = unknown>(
   operation: 'createDatabase' | 'updateDatabase' | 'deleteDatabase',
-  mutationFn: (variables: any) => Promise<T>
+  mutationFn: (variables: TVariables) => Promise<T>
 ) {
   return useRateLimitedMutation(operation, mutationFn, {
     onSuccess: () => {
       toast.success('Операция выполнена успешно');
     },
-    onError: (error: any) => {
-      if (error.code !== 'RATE_LIMIT_EXCEEDED') {
+    onError: (error) => {
+      if (!isRateLimitError(error)) {
+        const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
         toast.error('Ошибка операции', {
-          description: error.message,
+          description: errorMessage,
         });
       }
     },
@@ -77,15 +93,16 @@ export function useRateLimitedDatabaseMutation<T>(
 /**
  * Rate-limited data operations
  */
-export function useRateLimitedDataMutation<T>(
+export function useRateLimitedDataMutation<T, TVariables = unknown>(
   operation: 'insertData' | 'bulkOperations',
-  mutationFn: (variables: any) => Promise<T>
+  mutationFn: (variables: TVariables) => Promise<T>
 ) {
   return useRateLimitedMutation(operation, mutationFn, {
-    onError: (error: any) => {
-      if (error.code !== 'RATE_LIMIT_EXCEEDED') {
+    onError: (error) => {
+      if (!isRateLimitError(error)) {
+        const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
         toast.error('Ошибка при работе с данными', {
-          description: error.message,
+          description: errorMessage,
         });
       }
     },
@@ -95,15 +112,16 @@ export function useRateLimitedDataMutation<T>(
 /**
  * Rate-limited file operations
  */
-export function useRateLimitedFileMutation<T>(
+export function useRateLimitedFileMutation<T, TVariables = unknown>(
   operation: 'fileUpload' | 'fileDownload',
-  mutationFn: (variables: any) => Promise<T>
+  mutationFn: (variables: TVariables) => Promise<T>
 ) {
   return useRateLimitedMutation(operation, mutationFn, {
-    onError: (error: any) => {
-      if (error.code !== 'RATE_LIMIT_EXCEEDED') {
+    onError: (error) => {
+      if (!isRateLimitError(error)) {
+        const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
         toast.error('Ошибка при работе с файлом', {
-          description: error.message,
+          description: errorMessage,
         });
       }
     },
@@ -113,21 +131,22 @@ export function useRateLimitedFileMutation<T>(
 /**
  * Rate-limited authentication operations
  */
-export function useRateLimitedAuthMutation<T>(
+export function useRateLimitedAuthMutation<T, TVariables = unknown>(
   operation: 'login' | 'register' | 'passwordReset',
-  mutationFn: (variables: any) => Promise<T>
+  mutationFn: (variables: TVariables) => Promise<T>
 ) {
   return useRateLimitedMutation(operation, mutationFn, {
-    onError: (error: any) => {
-      if (error.code === 'RATE_LIMIT_EXCEEDED') {
+    onError: (error) => {
+      if (isRateLimitError(error)) {
         toast.error('Слишком много попыток', {
           description: `В целях безопасности, попробуйте снова через ${Math.ceil(
-            error.resetTime / 1000
+            (error.resetTime || 0) / 1000
           )} секунд`,
         });
       } else {
+        const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
         toast.error('Ошибка аутентификации', {
-          description: error.message,
+          description: errorMessage,
         });
       }
     },

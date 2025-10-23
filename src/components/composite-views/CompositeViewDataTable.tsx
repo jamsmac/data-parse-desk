@@ -17,6 +17,44 @@ interface CompositeViewDataTableProps {
   compositeViewId: string;
 }
 
+interface ViewConfig {
+  custom_columns?: CustomColumn[];
+  columns?: RegularColumn[];
+}
+
+interface CustomColumn {
+  id?: string;
+  name: string;
+  type: 'checklist' | 'status' | 'progress' | 'formula';
+  config?: {
+    expression?: string;
+    return_type?: string;
+    dependencies?: string[];
+    options?: StatusOption[];
+  };
+}
+
+interface RegularColumn {
+  alias: string;
+  visible: boolean;
+}
+
+interface StatusOption {
+  value: string;
+  label: string;
+  color: string;
+}
+
+interface ChecklistItem {
+  text?: string;
+  checked: boolean;
+}
+
+interface RowData {
+  row_num: number;
+  [key: string]: unknown;
+}
+
 export function CompositeViewDataTable({ compositeViewId }: CompositeViewDataTableProps) {
   const [page, setPage] = useState(1);
   const [pageSize] = useState(100);
@@ -84,7 +122,7 @@ export function CompositeViewDataTable({ compositeViewId }: CompositeViewDataTab
     rowIdentifier: string,
     columnName: string,
     columnType: string,
-    newData: any
+    newData: unknown
   ) => {
     try {
       const { error } = await supabase.functions.invoke('composite-views-update-custom-data', {
@@ -101,9 +139,10 @@ export function CompositeViewDataTable({ compositeViewId }: CompositeViewDataTab
 
       toast.success('Обновлено');
       refetch();
-    } catch (error: any) {
+    } catch (error) {
       console.error('Update error:', error);
-      toast.error('Ошибка обновления: ' + error.message);
+      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
+      toast.error('Ошибка обновления: ' + errorMessage);
     }
   };
 
@@ -114,9 +153,9 @@ export function CompositeViewDataTable({ compositeViewId }: CompositeViewDataTab
       // Headers
       Object.keys(queryResult.rows[0]).join(','),
       // Data rows
-      ...queryResult.rows.map((row: any) =>
+      ...queryResult.rows.map((row: RowData) =>
         Object.values(row)
-          .map((val) => (typeof val === 'object' ? JSON.stringify(val) : val))
+          .map((val) => (typeof val === 'object' && val !== null ? JSON.stringify(val) : val))
           .join(',')
       ),
     ].join('\n');
@@ -144,9 +183,9 @@ export function CompositeViewDataTable({ compositeViewId }: CompositeViewDataTab
     );
   }
 
-  const config = viewConfig?.config as any;
+  const config = viewConfig?.config as ViewConfig | undefined;
   const customColumns = config?.custom_columns || [];
-  const regularColumns = config?.columns?.filter((c: any) => c.visible) || [];
+  const regularColumns = config?.columns?.filter(c => c.visible) || [];
 
   return (
     <div className="space-y-4">
@@ -175,96 +214,104 @@ export function CompositeViewDataTable({ compositeViewId }: CompositeViewDataTab
         <Table>
           <TableHeader>
             <TableRow>
-              {regularColumns.map((col: any) => (
+              {regularColumns.map((col) => (
                 <TableHead key={col.alias}>{col.alias}</TableHead>
               ))}
-              {customColumns.map((col: any) => (
+              {customColumns.map((col) => (
                 <TableHead key={col.name}>{col.name}</TableHead>
               ))}
             </TableRow>
           </TableHeader>
           <TableBody>
             {queryResult?.rows
-              ?.filter((row: any) =>
+              ?.filter((row: RowData) =>
                 searchTerm
                   ? Object.values(row).some((val) =>
                       String(val).toLowerCase().includes(searchTerm.toLowerCase())
                     )
                   : true
               )
-              .map((row: any, idx: number) => (
+              .map((row: RowData, idx: number) => (
                 <TableRow key={idx}>
-                  {regularColumns.map((col: any) => (
-                    <TableCell key={col.alias}>{row[col.alias]}</TableCell>
+                  {regularColumns.map((col) => (
+                    <TableCell key={col.alias}>{String(row[col.alias] ?? '')}</TableCell>
                   ))}
-                  {customColumns.map((col: any) => (
+                  {customColumns.map((col) => (
                     <TableCell key={col.name}>
-                      {col.type === 'checklist' && (
-                        <ChecklistColumn
-                          data={{
-                            items: row[col.name]?.items || [],
-                            completed: row[col.name]?.completed,
-                            total: row[col.name]?.total,
-                          }}
-                          compositeViewId={compositeViewId}
-                          rowIdentifier={row.row_num.toString()}
-                          columnName={col.name}
-                          onToggle={async (itemIndex) => {
-                            const updatedItems = [...(row[col.name]?.items || [])];
-                            updatedItems[itemIndex] = {
-                              ...updatedItems[itemIndex],
-                              checked: !updatedItems[itemIndex].checked,
-                            };
-                            await handleCustomDataUpdate(row.row_num.toString(), col.name, 'checklist', {
-                              items: updatedItems,
-                            });
-                          }}
-                          onCompleteAll={async () => {
-                            const updatedItems = (row[col.name]?.items || []).map((item: any) => ({
-                              ...item,
-                              checked: true,
-                            }));
-                            await handleCustomDataUpdate(row.row_num.toString(), col.name, 'checklist', {
-                              items: updatedItems,
-                            });
-                          }}
-                          onReset={async () => {
-                            const updatedItems = (row[col.name]?.items || []).map((item: any) => ({
-                              ...item,
-                              checked: false,
-                            }));
-                            await handleCustomDataUpdate(row.row_num.toString(), col.name, 'checklist', {
-                              items: updatedItems,
-                            });
-                          }}
-                        />
-                      )}
-                      {col.type === 'status' && (
-                        <StatusCombobox
-                          value={row[col.name]?.value || 'pending'}
-                          options={col.config?.options || []}
-                          columnId={col.id || col.name}
-                          onChange={async (newStatus) => {
-                            await handleCustomDataUpdate(row.row_num.toString(), col.name, 'status', {
-                              value: newStatus,
-                            });
-                          }}
-                          onCreateNew={async (newLabel, newColor) => {
-                            // Add new status to column config
-                            const newOption = {
-                              value: newLabel.toLowerCase().replace(/\s+/g, '_'),
-                              label: newLabel,
-                              color: newColor
-                            };
+                      {col.type === 'checklist' && (() => {
+                        const checklistData = row[col.name] as { items?: ChecklistItem[]; completed?: number; total?: number } | undefined;
+                        return (
+                          <ChecklistColumn
+                            data={{
+                              items: checklistData?.items || [],
+                              completed: checklistData?.completed,
+                              total: checklistData?.total,
+                            }}
+                            compositeViewId={compositeViewId}
+                            rowIdentifier={row.row_num.toString()}
+                            columnName={col.name}
+                            onToggle={async (itemIndex) => {
+                              const items = checklistData?.items || [];
+                              const updatedItems = [...items];
+                              updatedItems[itemIndex] = {
+                                ...updatedItems[itemIndex],
+                                checked: !updatedItems[itemIndex].checked,
+                              };
+                              await handleCustomDataUpdate(row.row_num.toString(), col.name, 'checklist', {
+                                items: updatedItems,
+                              });
+                            }}
+                            onCompleteAll={async () => {
+                              const items = checklistData?.items || [];
+                              const updatedItems = items.map(item => ({
+                                ...item,
+                                checked: true,
+                              }));
+                              await handleCustomDataUpdate(row.row_num.toString(), col.name, 'checklist', {
+                                items: updatedItems,
+                              });
+                            }}
+                            onReset={async () => {
+                              const items = checklistData?.items || [];
+                              const updatedItems = items.map(item => ({
+                                ...item,
+                                checked: false,
+                              }));
+                              await handleCustomDataUpdate(row.row_num.toString(), col.name, 'checklist', {
+                                items: updatedItems,
+                              });
+                            }}
+                          />
+                        );
+                      })()}
+                      {col.type === 'status' && (() => {
+                        const statusData = row[col.name] as { value?: string } | undefined;
+                        return (
+                          <StatusCombobox
+                            value={statusData?.value || 'pending'}
+                            options={col.config?.options || []}
+                            columnId={col.id || col.name}
+                            onChange={async (newStatus) => {
+                              await handleCustomDataUpdate(row.row_num.toString(), col.name, 'status', {
+                                value: newStatus,
+                              });
+                            }}
+                            onCreateNew={async (newLabel, newColor) => {
+                              // Add new status to column config
+                              const newOption = {
+                                value: newLabel.toLowerCase().replace(/\s+/g, '_'),
+                                label: newLabel,
+                                color: newColor
+                              };
 
-                            const updatedOptions = [...(col.config?.options || []), newOption];
+                              const updatedOptions = [...(col.config?.options || []), newOption];
 
-                            // Update composite view config
-                            const updatedCustomColumns = customColumns.map((c: any) =>
-                              c.name === col.name
-                                ? { ...c, config: { ...c.config, options: updatedOptions } }
-                                : c
-                            );
+                              // Update composite view config
+                              const updatedCustomColumns = customColumns.map(c =>
+                                c.name === col.name
+                                  ? { ...c, config: { ...c.config, options: updatedOptions } }
+                                  : c
+                              );
 
                             const { error } = await supabase
                               .from('composite_views')
@@ -287,42 +334,49 @@ export function CompositeViewDataTable({ compositeViewId }: CompositeViewDataTab
                             refetch();
                           }}
                         />
-                      )}
-                      {col.type === 'progress' && (
-                        <ProgressBarColumn
-                          data={{
-                            value: row[col.name]?.value || 0,
-                            auto_calculate: row[col.name]?.auto_calculate,
-                            source_checklist: row[col.name]?.source_checklist,
-                          }}
-                          onChange={async (newValue) => {
-                            await handleCustomDataUpdate(row.row_num.toString(), col.name, 'progress', {
-                              value: newValue,
-                            });
-                          }}
-                        />
-                      )}
-                      {col.type === 'formula' && (
-                        <FormulaColumn
-                          data={{
-                            expression: col.config?.expression || row[col.name]?.expression || '',
-                            result: row[col.name]?.result,
-                            return_type: col.config?.return_type || row[col.name]?.return_type || 'text',
-                            dependencies: col.config?.dependencies || row[col.name]?.dependencies || [],
-                            calculated_at: row[col.name]?.calculated_at,
-                          }}
-                          compositeViewId={compositeViewId}
-                          rowIdentifier={row.row_num.toString()}
-                          columnName={col.name}
-                          onRecalculate={async () => {
-                            await handleCustomDataUpdate(row.row_num.toString(), col.name, 'formula', {
-                              expression: col.config?.expression,
-                              return_type: col.config?.return_type,
-                              dependencies: col.config?.dependencies,
-                            });
-                          }}
-                        />
-                      )}
+                        );
+                      })()}
+                      {col.type === 'progress' && (() => {
+                        const progressData = row[col.name] as { value?: number; auto_calculate?: boolean; source_checklist?: string } | undefined;
+                        return (
+                          <ProgressBarColumn
+                            data={{
+                              value: progressData?.value || 0,
+                              auto_calculate: progressData?.auto_calculate,
+                              source_checklist: progressData?.source_checklist,
+                            }}
+                            onChange={async (newValue) => {
+                              await handleCustomDataUpdate(row.row_num.toString(), col.name, 'progress', {
+                                value: newValue,
+                              });
+                            }}
+                          />
+                        );
+                      })()}
+                      {col.type === 'formula' && (() => {
+                        const formulaData = row[col.name] as { expression?: string; result?: unknown; return_type?: string; dependencies?: string[]; calculated_at?: string } | undefined;
+                        return (
+                          <FormulaColumn
+                            data={{
+                              expression: col.config?.expression || formulaData?.expression || '',
+                              result: formulaData?.result,
+                              return_type: col.config?.return_type || formulaData?.return_type || 'text',
+                              dependencies: col.config?.dependencies || formulaData?.dependencies || [],
+                              calculated_at: formulaData?.calculated_at,
+                            }}
+                            compositeViewId={compositeViewId}
+                            rowIdentifier={row.row_num.toString()}
+                            columnName={col.name}
+                            onRecalculate={async () => {
+                              await handleCustomDataUpdate(row.row_num.toString(), col.name, 'formula', {
+                                expression: col.config?.expression,
+                                return_type: col.config?.return_type,
+                                dependencies: col.config?.dependencies,
+                              });
+                            }}
+                          />
+                        );
+                      })()}
                     </TableCell>
                   ))}
                 </TableRow>

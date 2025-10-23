@@ -3,14 +3,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 
+type RowData = Record<string, unknown>;
+
 export interface HistoryEntry {
   id: string;
   action: 'update' | 'delete' | 'create';
   tableName: string;
   rowId: string;
   columnName?: string;
-  before: any;
-  after: any;
+  before: RowData;
+  after: RowData;
   timestamp: number;
 }
 
@@ -136,11 +138,12 @@ export const useUndoRedo = (databaseId?: string) => {
           </Button>
         ),
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Undo failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
       toast({
         title: 'Ошибка отмены',
-        description: error.message,
+        description: errorMessage,
         variant: 'destructive',
       });
     }
@@ -197,11 +200,12 @@ export const useUndoRedo = (databaseId?: string) => {
           ? `${entry.columnName}: ${JSON.stringify(entry.before)} → ${JSON.stringify(entry.after)}`
           : undefined,
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Redo failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
       toast({
         title: 'Ошибка возврата',
-        description: error.message,
+        description: errorMessage,
         variant: 'destructive',
       });
     }

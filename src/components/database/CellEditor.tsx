@@ -10,10 +10,12 @@ import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
 import type { ColumnType, TableSchema } from '@/types/database';
 
+type CellValue = string | number | boolean | null | Date;
+
 export interface CellEditorProps {
   column: TableSchema;
-  value: any;
-  onSave: (value: any) => void;
+  value: CellValue;
+  onSave: (value: CellValue) => void;
   onCancel: () => void;
   selectOptions?: string[];
   relationOptions?: Array<{ id: string; label: string }>;
@@ -37,7 +39,7 @@ export default function CellEditor({
     setValue(initialValue);
   }, [initialValue]);
 
-  const validate = (val: any): boolean => {
+  const validate = (val: CellValue): boolean => {
     switch (columnType) {
       case 'email':
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
