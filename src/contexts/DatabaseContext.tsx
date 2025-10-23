@@ -1,275 +1,670 @@
 /**
- * DatabaseContext - Centralized state management for database views
- * Eliminates props drilling by providing shared state and actions
+ * DatabaseContext - Centralized state management for database operations
+ * Eliminates props drilling from DatabaseView to DataTable and other components
+ * Manages all database state, operations, and UI state in one place
  */
 
-import { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
-import type { TableSchema, ColumnConfig, ColumnValue, TableRow } from '@/types/database';
+import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { useTableData } from '@/hooks/useTableData';
+import { useViewPreferences } from '@/hooks/useViewPreferences';
+import { useComments } from '@/hooks/useComments';
+import { useUndoRedo } from '@/hooks/useUndoRedo';
+import { useDebounce } from '@/hooks/useDebounce';
+import type { Database, TableSchema } from '@/types/database';
 import type { Filter } from '@/components/database/FilterBuilder';
 import type { SortConfig } from '@/components/database/SortControls';
+import type { ImportSuccessData } from '@/components/import/UploadFileDialog';
 
-// View types for different data visualizations
-export type ViewType = 'table' | 'kanban' | 'calendar' | 'gallery';
+// ============================================
+// TYPES
+// ============================================
 
-// Selection state for bulk actions
-export interface SelectionState {
-  selectedRows: Set<string>;
-  isAllSelected: boolean;
-}
+export type ViewType = 'table' | 'calendar' | 'kanban' | 'gallery';
 
-// Pagination state
-export interface PaginationState {
-  currentPage: number;
-  pageSize: number;
-  totalCount: number;
-}
-
-// Database context type definition
-interface DatabaseContextType {
-  // Data state
-  databaseId: string | null;
+export interface DatabaseContextType {
+  // IDs
   projectId: string | null;
-  schemas: TableSchema[];
-  columns: ColumnConfig[];
+  databaseId: string | null;
 
-  // View state
+  // Database metadata
+  database: Database | null;
+  schemas: TableSchema[];
+  loading: boolean;
+
+  // Table data
+  tableData: any[];
+  totalCount: number;
+  dataLoading: boolean;
+
+  // Pagination
+  page: number;
+  pageSize: number;
+  totalPages: number;
+  setPage: (page: number) => void;
+  setPageSize: (size: number) => void;
+
+  // Filters & Sorting
+  filters: Filter[];
+  sort: SortConfig;
+  setFilters: (filters: Filter[]) => void;
+  setSort: (sort: SortConfig) => void;
+  updateFilters: (filters: Filter[]) => void;
+  updateSort: (sort: SortConfig) => void;
+  updatePageSize: (size: number) => void;
+
+  // Search
+  searchQuery: string;
+  searchColumns: string[];
+  setSearchQuery: (query: string) => void;
+  setSearchColumns: (columns: string[]) => void;
+
+  // View preferences
   viewType: ViewType;
   setViewType: (type: ViewType) => void;
+  preferencesLoading: boolean;
 
-  // Filter & Sort state
-  filters: Filter[];
-  setFilters: (filters: Filter[]) => void;
-  sorting: SortConfig[];
-  setSorting: (sorting: SortConfig[]) => void;
+  // Comments
+  comments: any[];
+  commentsLoading: boolean;
+  addComment: (content: string, rowId?: string) => Promise<void>;
+  updateComment: (commentId: string, content: string) => Promise<void>;
+  deleteComment: (commentId: string) => Promise<void>;
 
-  // Search state
-  searchQuery: string;
-  setSearchQuery: (query: string) => void;
+  // Dialogs
+  showClearDialog: boolean;
+  showDeleteDialog: boolean;
+  isUploadDialogOpen: boolean;
+  showSuccessScreen: boolean;
+  importSuccessData: ImportSuccessData | null;
+  showFilters: boolean;
+  showAIChat: boolean;
+  showInsights: boolean;
+  showCollabPanel: boolean;
+  setShowClearDialog: (show: boolean) => void;
+  setShowDeleteDialog: (show: boolean) => void;
+  setIsUploadDialogOpen: (open: boolean) => void;
+  setShowSuccessScreen: (show: boolean) => void;
+  setImportSuccessData: (data: ImportSuccessData | null) => void;
+  setShowFilters: (show: boolean) => void;
+  setShowAIChat: (show: boolean) => void;
+  setShowInsights: (show: boolean) => void;
+  setShowCollabPanel: (show: boolean) => void;
 
-  // Selection state
-  selection: SelectionState;
-  toggleRowSelection: (rowId: string) => void;
-  toggleAllRowsSelection: () => void;
-  clearSelection: () => void;
+  // Database operations
+  loadDatabase: () => Promise<void>;
+  loadSchemas: () => Promise<void>;
+  refreshData: () => void;
 
-  // Pagination state
-  pagination: PaginationState;
-  setCurrentPage: (page: number) => void;
-  setPageSize: (size: number) => void;
-  setTotalCount: (count: number) => void;
+  // Row operations
+  handleAddRow: (rowData: any) => Promise<void>;
+  handleUpdateRow: (rowId: string, updates: any) => Promise<void>;
+  handleDeleteRow: (rowId: string) => Promise<void>;
+  handleDuplicateRow: (rowId: string) => Promise<void>;
+  handleInsertRowAbove: (rowId: string) => Promise<void>;
+  handleInsertRowBelow: (rowId: string) => Promise<void>;
+  handleRowView: (rowId: string) => void;
+  handleRowHistory: (rowId: string) => void;
 
-  // Actions
-  actions: {
-    onRowEdit: (rowId: string, data: Partial<TableRow>) => Promise<void>;
-    onRowDelete: (rowId: string) => Promise<void>;
-    onBulkDelete: (rowIds: string[]) => Promise<void>;
-    onCellEdit: (rowId: string, columnId: string, value: ColumnValue) => Promise<void>;
-    onColumnAdd: (column: TableSchema) => Promise<void>;
-    onColumnEdit: (columnId: string, updates: Partial<TableSchema>) => Promise<void>;
-    onColumnDelete: (columnId: string) => Promise<void>;
-    onExport: (format: 'csv' | 'excel' | 'json') => Promise<void>;
-  };
+  // Bulk operations
+  handleBulkDelete: (rowIds: string[]) => Promise<void>;
+  handleBulkDuplicate: (rowIds: string[]) => Promise<void>;
+  handleBulkEdit: (rowIds: string[], column: string, value: any) => Promise<void>;
 
-  // UI state
-  ui: {
-    isLoading: boolean;
-    setIsLoading: (loading: boolean) => void;
-    sidebarOpen: boolean;
-    setSidebarOpen: (open: boolean) => void;
-    activePanel: 'comments' | 'ai' | 'insights' | 'activity' | null;
-    setActivePanel: (panel: 'comments' | 'ai' | 'insights' | 'activity' | null) => void;
-  };
+  // Database actions
+  handleClearData: () => Promise<void>;
+  handleDeleteDatabase: () => Promise<void>;
+
+  // Undo/Redo
+  addToHistory: (action: any) => void;
 }
 
 const DatabaseContext = createContext<DatabaseContextType | undefined>(undefined);
 
+// ============================================
+// PROVIDER
+// ============================================
+
 interface DatabaseProviderProps {
   children: ReactNode;
-  databaseId: string;
-  projectId: string;
-  initialSchemas?: TableSchema[];
-  onRowEdit?: (rowId: string, data: Partial<TableRow>) => Promise<void>;
-  onRowDelete?: (rowId: string) => Promise<void>;
-  onBulkDelete?: (rowIds: string[]) => Promise<void>;
-  onCellEdit?: (rowId: string, columnId: string, value: ColumnValue) => Promise<void>;
-  onColumnAdd?: (column: TableSchema) => Promise<void>;
-  onColumnEdit?: (columnId: string, updates: Partial<TableSchema>) => Promise<void>;
-  onColumnDelete?: (columnId: string) => Promise<void>;
-  onExport?: (format: 'csv' | 'excel' | 'json') => Promise<void>;
 }
 
-export function DatabaseProvider({
-  children,
-  databaseId,
-  projectId,
-  initialSchemas = [],
-  onRowEdit = async () => {},
-  onRowDelete = async () => {},
-  onBulkDelete = async () => {},
-  onCellEdit = async () => {},
-  onColumnAdd = async () => {},
-  onColumnEdit = async () => {},
-  onColumnDelete = async () => {},
-  onExport = async () => {},
-}: DatabaseProviderProps) {
-  // View state
-  const [viewType, setViewType] = useState<ViewType>('table');
-  const [schemas] = useState<TableSchema[]>(initialSchemas);
+export function DatabaseProvider({ children }: DatabaseProviderProps) {
+  const { projectId, databaseId } = useParams<{ projectId: string; databaseId: string }>();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  // Filter & Sort state
-  const [filters, setFilters] = useState<Filter[]>([]);
-  const [sorting, setSorting] = useState<SortConfig[]>([]);
+  // ============================================
+  // STATE
+  // ============================================
+
+  // Database metadata
+  const [database, setDatabase] = useState<Database | null>(null);
+  const [schemas, setSchemas] = useState<TableSchema[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Dialogs
+  const [showClearDialog, setShowClearDialog] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
+  const [showSuccessScreen, setShowSuccessScreen] = useState(false);
+  const [importSuccessData, setImportSuccessData] = useState<ImportSuccessData | null>(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showAIChat, setShowAIChat] = useState(false);
+  const [showInsights, setShowInsights] = useState(false);
+  const [showCollabPanel, setShowCollabPanel] = useState(false);
+  const [viewType, setViewType] = useState<ViewType>('table');
+
+  // Initialize Undo/Redo
+  const { addToHistory } = useUndoRedo(databaseId);
+
+  // Load comments
+  const {
+    comments,
+    loading: commentsLoading,
+    addComment,
+    updateComment,
+    deleteComment
+  } = useComments(databaseId || '');
+
+  // Load view preferences
+  const {
+    preferences,
+    loading: preferencesLoading,
+    updateFilters,
+    updateSort,
+    updatePageSize
+  } = useViewPreferences(databaseId || '');
+
+  // Pagination, Filters & Sorting state
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(preferences.pageSize);
+  const [filters, setFilters] = useState<Filter[]>(preferences.filters);
+  const [sort, setSort] = useState<SortConfig>(preferences.sort);
+
+  // Debounce filters
+  const debouncedFilters = useDebounce(filters, 500);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchColumns, setSearchColumns] = useState<string[]>([]);
 
-  // Selection state
-  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
-  const [isAllSelected, setIsAllSelected] = useState(false);
-
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
-  const [totalCount, setTotalCount] = useState(0);
-
-  // UI state
-  const [isLoading, setIsLoading] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [activePanel, setActivePanel] = useState<'comments' | 'ai' | 'insights' | 'activity' | null>(null);
-
-  // Selection handlers
-  const toggleRowSelection = useCallback((rowId: string) => {
-    setSelectedRows((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(rowId)) {
-        newSet.delete(rowId);
-      } else {
-        newSet.add(rowId);
-      }
-      return newSet;
-    });
-  }, []);
-
-  const toggleAllRowsSelection = useCallback(() => {
-    setIsAllSelected((prev) => !prev);
-    if (!isAllSelected) {
-      // Select all logic would need row IDs from parent
-      // For now, just toggle the flag
-    } else {
-      setSelectedRows(new Set());
+  // Update local state when preferences load
+  useEffect(() => {
+    if (!preferencesLoading) {
+      setPageSize(preferences.pageSize);
+      setFilters(preferences.filters);
+      setSort(preferences.sort);
     }
-  }, [isAllSelected]);
+  }, [preferencesLoading, preferences]);
 
-  const clearSelection = useCallback(() => {
-    setSelectedRows(new Set());
-    setIsAllSelected(false);
-  }, []);
+  // Save debounced filters to preferences
+  useEffect(() => {
+    if (!preferencesLoading && debouncedFilters !== preferences.filters) {
+      updateFilters(debouncedFilters);
+    }
+  }, [debouncedFilters, preferencesLoading, preferences.filters, updateFilters]);
 
-  // Derive columns from schemas
-  const columns = useMemo(() => {
-    return schemas.map((schema) => ({
-      id: schema.column_name,
-      name: schema.column_name,
-      type: schema.data_type,
-      visible: true,
-      width: 150,
-    }));
-  }, [schemas]);
+  // Use hook for data fetching
+  const { data: tableData, totalCount, loading: dataLoading, refresh } = useTableData({
+    databaseId: databaseId || '',
+    page,
+    pageSize,
+    filters: debouncedFilters,
+    sort,
+    search: searchQuery,
+    searchColumns,
+  });
 
-  // Memoize context value to prevent unnecessary re-renders
-  const value = useMemo<DatabaseContextType>(
-    () => ({
-      // Data state
-      databaseId,
-      projectId,
-      schemas,
-      columns,
+  const totalPages = Math.ceil(totalCount / pageSize);
 
-      // View state
-      viewType,
-      setViewType,
+  // ============================================
+  // DATABASE OPERATIONS
+  // ============================================
 
-      // Filter & Sort
-      filters,
-      setFilters,
-      sorting,
-      setSorting,
+  const loadDatabase = useCallback(async () => {
+    if (!databaseId || !user) return;
 
-      // Search
-      searchQuery,
-      setSearchQuery,
+    try {
+      setLoading(true);
+      const { data, error } = await supabase.rpc('get_database', {
+        p_id: databaseId,
+      });
 
-      // Selection
-      selection: {
-        selectedRows,
-        isAllSelected,
-      },
-      toggleRowSelection,
-      toggleAllRowsSelection,
-      clearSelection,
+      if (error) throw error;
+      setDatabase(data);
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка',
+        description: error.message,
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [databaseId, user, toast]);
 
-      // Pagination
-      pagination: {
-        currentPage,
-        pageSize,
-        totalCount,
-      },
-      setCurrentPage,
-      setPageSize,
-      setTotalCount,
+  const loadSchemas = useCallback(async () => {
+    if (!databaseId) return;
 
-      // Actions
-      actions: {
-        onRowEdit,
-        onRowDelete,
-        onBulkDelete,
-        onCellEdit,
-        onColumnAdd,
-        onColumnEdit,
-        onColumnDelete,
-        onExport,
-      },
+    try {
+      const { data, error } = await supabase.rpc('get_table_schemas', {
+        p_database_id: databaseId,
+      });
 
-      // UI state
-      ui: {
-        isLoading,
-        setIsLoading,
-        sidebarOpen,
-        setSidebarOpen,
-        activePanel,
-        setActivePanel,
-      },
-    }),
-    [
-      databaseId,
-      projectId,
-      schemas,
-      columns,
-      viewType,
-      filters,
-      sorting,
-      searchQuery,
-      selectedRows,
-      isAllSelected,
-      currentPage,
-      pageSize,
-      totalCount,
-      isLoading,
-      sidebarOpen,
-      activePanel,
-      toggleRowSelection,
-      toggleAllRowsSelection,
-      clearSelection,
-      onRowEdit,
-      onRowDelete,
-      onBulkDelete,
-      onCellEdit,
-      onColumnAdd,
-      onColumnEdit,
-      onColumnDelete,
-      onExport,
-    ]
-  );
+      if (error) throw error;
+      setSchemas((data || []) as any);
+    } catch (error: any) {
+      console.error('Error loading schemas:', error);
+    }
+  }, [databaseId]);
+
+  const refreshData = useCallback(() => {
+    refresh();
+  }, [refresh]);
+
+  // ============================================
+  // ROW OPERATIONS
+  // ============================================
+
+  const handleAddRow = useCallback(async (rowData: any) => {
+    if (!databaseId) return;
+
+    try {
+      const { error } = await supabase.rpc('insert_table_row', {
+        p_database_id: databaseId,
+        p_data: rowData,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Запись добавлена',
+      });
+
+      refresh();
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка',
+        description: error.message,
+      });
+    }
+  }, [databaseId, toast, refresh]);
+
+  const handleUpdateRow = useCallback(async (rowId: string, updates: any) => {
+    try {
+      // Get current data before update
+      const { data: currentRow } = await supabase
+        .from('table_data')
+        .select('data')
+        .eq('id', rowId)
+        .single();
+
+      // Add to undo/redo history BEFORE making changes
+      if (currentRow?.data && databaseId) {
+        const changedColumns = Object.keys(updates).filter(
+          key => JSON.stringify(currentRow.data[key]) !== JSON.stringify(updates[key])
+        );
+
+        // Add each changed column to history
+        changedColumns.forEach(columnName => {
+          addToHistory({
+            action: 'update',
+            tableName: databaseId,
+            rowId,
+            columnName,
+            before: { [columnName]: currentRow.data[columnName] },
+            after: { [columnName]: updates[columnName] },
+          });
+        });
+      }
+
+      // Update the row
+      const { error } = await supabase.rpc('update_table_row', {
+        p_id: rowId,
+        p_data: updates,
+      });
+
+      if (error) throw error;
+
+      // Track history for changed columns
+      if (currentRow?.data && databaseId) {
+        const changedColumns = Object.keys(updates).filter(
+          key => JSON.stringify(currentRow.data[key]) !== JSON.stringify(updates[key])
+        );
+
+        for (const columnName of changedColumns) {
+          // Get or create cell metadata
+          const { data: cellMeta } = await supabase
+            .from('cell_metadata')
+            .select('id')
+            .eq('row_id', rowId)
+            .eq('column_name', columnName)
+            .maybeSingle();
+
+          let metadataId = cellMeta?.id;
+
+          // Create metadata if doesn't exist
+          if (!metadataId) {
+            const { data: newMeta } = await supabase
+              .from('cell_metadata')
+              .insert({
+                database_id: databaseId,
+                row_id: rowId,
+                column_name: columnName,
+                imported_by: user?.id,
+              })
+              .select('id')
+              .single();
+
+            metadataId = newMeta?.id;
+          }
+
+          // Create history record
+          if (metadataId) {
+            await supabase.from('cell_history').insert({
+              cell_metadata_id: metadataId,
+              old_value: currentRow.data[columnName],
+              new_value: updates[columnName],
+              change_type: 'updated',
+              changed_by: user?.id,
+            });
+          }
+        }
+      }
+
+      toast({
+        title: 'Запись обновлена',
+      });
+
+      refresh();
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка',
+        description: error.message,
+      });
+    }
+  }, [databaseId, user, toast, refresh, addToHistory]);
+
+  const handleDeleteRow = useCallback(async (rowId: string) => {
+    try {
+      const { error } = await supabase.rpc('delete_table_row', {
+        p_id: rowId,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Запись удалена',
+      });
+
+      refresh();
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка',
+        description: error.message,
+      });
+    }
+  }, [toast, refresh]);
+
+  const handleDuplicateRow = useCallback(async (rowId: string) => {
+    try {
+      const row = tableData.find((r: any) => r.id === rowId);
+      if (!row) return;
+
+      await handleAddRow(row.data);
+
+      toast({
+        title: 'Запись дублирована',
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка',
+        description: error.message,
+      });
+    }
+  }, [tableData, handleAddRow, toast]);
+
+  const handleInsertRowAbove = useCallback(async (rowId: string) => {
+    try {
+      await handleAddRow({});
+      toast({
+        title: 'Новая строка добавлена выше',
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка',
+        description: error.message,
+      });
+    }
+  }, [handleAddRow, toast]);
+
+  const handleInsertRowBelow = useCallback(async (rowId: string) => {
+    try {
+      await handleAddRow({});
+      toast({
+        title: 'Новая строка добавлена ниже',
+      });
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка',
+        description: error.message,
+      });
+    }
+  }, [handleAddRow, toast]);
+
+  const handleRowView = useCallback((rowId: string) => {
+    const row = tableData.find((r: any) => r.id === rowId);
+    if (row) {
+      console.log('View row:', row);
+      toast({
+        title: 'Просмотр записи',
+        description: 'Функция просмотра в разработке',
+      });
+    }
+  }, [tableData, toast]);
+
+  const handleRowHistory = useCallback((rowId: string) => {
+    console.log('Show history for row:', rowId);
+    toast({
+      title: 'История изменений',
+      description: 'Функция истории в разработке',
+    });
+  }, [toast]);
+
+  // ============================================
+  // BULK OPERATIONS
+  // ============================================
+
+  const handleBulkDelete = useCallback(async (rowIds: string[]) => {
+    try {
+      for (const rowId of rowIds) {
+        await supabase.rpc('delete_table_row', { p_id: rowId });
+      }
+      refresh();
+    } catch (error: any) {
+      throw new Error('Не удалось удалить записи');
+    }
+  }, [refresh]);
+
+  const handleBulkDuplicate = useCallback(async (rowIds: string[]) => {
+    try {
+      for (const rowId of rowIds) {
+        const row = tableData.find((r: any) => r.id === rowId);
+        if (row) {
+          await handleAddRow(row.data);
+        }
+      }
+      refresh();
+    } catch (error: any) {
+      throw new Error('Не удалось дублировать записи');
+    }
+  }, [tableData, handleAddRow, refresh]);
+
+  const handleBulkEdit = useCallback(async (rowIds: string[], column: string, value: any) => {
+    try {
+      for (const rowId of rowIds) {
+        const row = tableData.find((r: any) => r.id === rowId);
+        if (row) {
+          const updatedData = {
+            ...row.data,
+            [column]: value,
+          };
+          await handleUpdateRow(rowId, updatedData);
+        }
+      }
+      refresh();
+    } catch (error: any) {
+      throw new Error('Не удалось обновить записи');
+    }
+  }, [tableData, handleUpdateRow, refresh]);
+
+  // ============================================
+  // DATABASE ACTIONS
+  // ============================================
+
+  const handleClearData = useCallback(async () => {
+    if (!databaseId) return;
+
+    try {
+      const { error } = await supabase.rpc('clear_database_data', {
+        p_database_id: databaseId,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Данные очищены',
+        description: 'Все записи удалены из базы данных',
+      });
+
+      refresh();
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка',
+        description: error.message,
+      });
+    }
+  }, [databaseId, toast, refresh]);
+
+  const handleDeleteDatabase = useCallback(async () => {
+    if (!databaseId) return;
+
+    try {
+      const { error } = await supabase.rpc('delete_database', {
+        p_id: databaseId,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'База данных удалена',
+        description: 'База данных успешно удалена',
+      });
+
+      navigate(`/projects/${projectId}`);
+    } catch (error: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Ошибка',
+        description: error.message,
+      });
+    }
+  }, [databaseId, projectId, navigate, toast]);
+
+  // ============================================
+  // LOAD DATA ON MOUNT
+  // ============================================
+
+  useEffect(() => {
+    loadDatabase();
+    loadSchemas();
+  }, [loadDatabase, loadSchemas]);
+
+  // ============================================
+  // CONTEXT VALUE
+  // ============================================
+
+  const value: DatabaseContextType = {
+    projectId: projectId || null,
+    databaseId: databaseId || null,
+    database,
+    schemas,
+    loading,
+    tableData,
+    totalCount,
+    dataLoading,
+    page,
+    pageSize,
+    totalPages,
+    setPage,
+    setPageSize,
+    filters,
+    sort,
+    setFilters,
+    setSort,
+    updateFilters,
+    updateSort,
+    updatePageSize,
+    searchQuery,
+    searchColumns,
+    setSearchQuery,
+    setSearchColumns,
+    viewType,
+    setViewType,
+    preferencesLoading,
+    comments,
+    commentsLoading,
+    addComment,
+    updateComment,
+    deleteComment,
+    showClearDialog,
+    showDeleteDialog,
+    isUploadDialogOpen,
+    showSuccessScreen,
+    importSuccessData,
+    showFilters,
+    showAIChat,
+    showInsights,
+    showCollabPanel,
+    setShowClearDialog,
+    setShowDeleteDialog,
+    setIsUploadDialogOpen,
+    setShowSuccessScreen,
+    setImportSuccessData,
+    setShowFilters,
+    setShowAIChat,
+    setShowInsights,
+    setShowCollabPanel,
+    loadDatabase,
+    loadSchemas,
+    refreshData,
+    handleAddRow,
+    handleUpdateRow,
+    handleDeleteRow,
+    handleDuplicateRow,
+    handleInsertRowAbove,
+    handleInsertRowBelow,
+    handleRowView,
+    handleRowHistory,
+    handleBulkDelete,
+    handleBulkDuplicate,
+    handleBulkEdit,
+    handleClearData,
+    handleDeleteDatabase,
+    addToHistory,
+  };
 
   return (
     <DatabaseContext.Provider value={value}>
@@ -285,53 +680,7 @@ export function DatabaseProvider({
 export function useDatabaseContext() {
   const context = useContext(DatabaseContext);
   if (context === undefined) {
-    throw new Error('useDatabaseContext must be used within a DatabaseProvider');
+    throw new Error('useDatabaseContext must be used within DatabaseProvider');
   }
   return context;
-}
-
-/**
- * Hook to use only database actions
- * Convenient shorthand for accessing actions
- */
-export function useDatabaseActions() {
-  const { actions } = useDatabaseContext();
-  return actions;
-}
-
-/**
- * Hook to use only selection state
- * Convenient shorthand for accessing selection
- */
-export function useDatabaseSelection() {
-  const { selection, toggleRowSelection, toggleAllRowsSelection, clearSelection } = useDatabaseContext();
-  return {
-    ...selection,
-    toggleRowSelection,
-    toggleAllRowsSelection,
-    clearSelection,
-  };
-}
-
-/**
- * Hook to use only pagination state
- * Convenient shorthand for accessing pagination
- */
-export function useDatabasePagination() {
-  const { pagination, setCurrentPage, setPageSize, setTotalCount } = useDatabaseContext();
-  return {
-    ...pagination,
-    setCurrentPage,
-    setPageSize,
-    setTotalCount,
-  };
-}
-
-/**
- * Hook to use only UI state
- * Convenient shorthand for accessing UI state
- */
-export function useDatabaseUI() {
-  const { ui } = useDatabaseContext();
-  return ui;
 }
