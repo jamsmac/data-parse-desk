@@ -1,12 +1,8 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { ArrowLeft, Upload, Trash2, Plus, Filter as FilterIcon, Sparkles, MessageSquare, History, FileText, Lightbulb, Table, Calendar, Columns, Image } from 'lucide-react';
 import { CalendarView } from '@/components/views/CalendarView';
 import { KanbanView } from '@/components/views/KanbanView';
 import { GalleryView } from '@/components/views/GalleryView';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { DataTable } from '@/components/DataTable';
@@ -17,17 +13,12 @@ import { KanbanSkeleton } from '@/components/common/KanbanSkeleton';
 import { Breadcrumbs } from '@/components/common/Breadcrumbs';
 import { EmptyState } from '@/components/common/EmptyState';
 import { ColumnManager } from '@/components/database/ColumnManager';
-import { UploadFileDialog, ImportSuccessData } from '@/components/import/UploadFileDialog';
+import { UploadFileDialog } from '@/components/import/UploadFileDialog';
 import { ImportSuccessScreen } from '@/components/import/ImportSuccessScreen';
 import { ExportButton } from '@/components/database/ExportButton';
 import { PaginationControls } from '@/components/database/PaginationControls';
-import { FilterBuilder, type Filter } from '@/components/database/FilterBuilder';
-import { SortControls, type SortConfig } from '@/components/database/SortControls';
-import { useTableData } from '@/hooks/useTableData';
-import { useViewPreferences } from '@/hooks/useViewPreferences';
-import { useComments } from '@/hooks/useComments';
-import { useUndoRedo } from '@/hooks/useUndoRedo';
-import { useDebounce } from '@/hooks/useDebounce';
+import { FilterBuilder } from '@/components/database/FilterBuilder';
+import { SortControls } from '@/components/database/SortControls';
 import { UndoRedoToolbar } from '@/components/database/UndoRedoToolbar';
 import { TableSearch } from '@/components/database/TableSearch';
 import { ActionBar } from '@/components/database/ActionBar';
@@ -42,441 +33,83 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
-import type { Database, TableSchema } from '@/types/database';
+import { DatabaseProvider, useDatabaseContext } from '@/contexts/DatabaseContext';
+import { useNavigate } from 'react-router-dom';
 
-export default function DatabaseView() {
-  const { projectId, databaseId } = useParams<{ projectId: string; databaseId: string }>();
+function DatabaseViewContent() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const [database, setDatabase] = useState<Database | null>(null);
-  const [schemas, setSchemas] = useState<TableSchema[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [showClearDialog, setShowClearDialog] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false);
-  const [showSuccessScreen, setShowSuccessScreen] = useState(false);
-  const [importSuccessData, setImportSuccessData] = useState<ImportSuccessData | null>(null);
-  const [showFilters, setShowFilters] = useState(false);
-  const [showAIAssistant, setShowAIAssistant] = useState(false);
-  const [showAIChat, setShowAIChat] = useState(false);
-  const [showInsights, setShowInsights] = useState(false);
-  const [showCollabPanel, setShowCollabPanel] = useState(false);
-  const [viewType, setViewType] = useState<'table' | 'calendar' | 'kanban' | 'gallery'>('table');
+  const ctx = useDatabaseContext();
 
-  // Initialize Undo/Redo
-  const { addToHistory } = useUndoRedo(databaseId);
-
-  // Load comments for the database (not tied to specific row)
+  // Destructure all values from context
   const {
-    comments,
-    loading: commentsLoading,
-    addComment,
-    updateComment,
-    deleteComment
-  } = useComments(databaseId || '');
-
-  // Load view preferences (filters, sort, pageSize are auto-restored)
-  const { 
-    preferences, 
-    loading: preferencesLoading,
-    updateFilters,
-    updateSort,
-    updatePageSize 
-  } = useViewPreferences(databaseId || '');
-
-  // Pagination, Filters & Sorting state - initialize from preferences
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(preferences.pageSize);
-  const [filters, setFilters] = useState<Filter[]>(preferences.filters);
-  const [sort, setSort] = useState<SortConfig>(preferences.sort);
-
-  // Debounce filters to avoid too many API calls while user is typing
-  const debouncedFilters = useDebounce(filters, 500);
-
-  // Search state
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchColumns, setSearchColumns] = useState<string[]>([]);
-
-  // Update local state when preferences load
-  useEffect(() => {
-    if (!preferencesLoading) {
-      setPageSize(preferences.pageSize);
-      setFilters(preferences.filters);
-      setSort(preferences.sort);
-    }
-  }, [preferencesLoading, preferences]);
-
-  // Save debounced filters to preferences
-  useEffect(() => {
-    if (!preferencesLoading && debouncedFilters !== preferences.filters) {
-      updateFilters(debouncedFilters);
-    }
-  }, [debouncedFilters]);
-
-  // Use new hook for data fetching with filters & sorting
-  const { data: tableData, totalCount, loading: dataLoading, refresh } = useTableData({
-    databaseId: databaseId || '',
+    projectId,
+    databaseId,
+    database,
+    schemas,
+    loading,
+    tableData,
+    totalCount,
+    dataLoading,
     page,
     pageSize,
-    filters: debouncedFilters,
+    totalPages,
+    setPage,
+    setPageSize,
+    filters,
     sort,
-    search: searchQuery,
+    setFilters,
+    setSort,
+    updateFilters,
+    updateSort,
+    updatePageSize,
+    searchQuery,
     searchColumns,
-  });
+    setSearchQuery,
+    setSearchColumns,
+    viewType,
+    setViewType,
+    comments,
+    commentsLoading,
+    addComment,
+    updateComment,
+    deleteComment,
+    showClearDialog,
+    showDeleteDialog,
+    isUploadDialogOpen,
+    showSuccessScreen,
+    importSuccessData,
+    showFilters,
+    showAIChat,
+    showInsights,
+    showCollabPanel,
+    setShowClearDialog,
+    setShowDeleteDialog,
+    setIsUploadDialogOpen,
+    setShowSuccessScreen,
+    setImportSuccessData,
+    setShowFilters,
+    setShowAIChat,
+    setShowInsights,
+    setShowCollabPanel,
+    loadSchemas,
+    refreshData,
+    handleAddRow,
+    handleUpdateRow,
+    handleDeleteRow,
+    handleDuplicateRow,
+    handleInsertRowAbove,
+    handleInsertRowBelow,
+    handleRowView,
+    handleRowHistory,
+    handleBulkDelete,
+    handleBulkDuplicate,
+    handleBulkEdit,
+    handleClearData,
+    handleDeleteDatabase,
+  } = ctx;
 
-  useEffect(() => {
-    loadDatabase();
-    loadSchemas();
-  }, [databaseId, user]);
-
-  const loadDatabase = async () => {
-    if (!databaseId || !user) return;
-
-    try {
-      setLoading(true);
-      const { data, error } = await supabase.rpc('get_database', {
-        p_id: databaseId,
-      });
-
-      if (error) throw error;
-      setDatabase(data);
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Ошибка',
-        description: error.message,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadSchemas = async () => {
-    if (!databaseId) return;
-
-    try {
-      const { data, error } = await supabase.rpc('get_table_schemas', {
-        p_database_id: databaseId,
-      });
-
-      if (error) throw error;
-      setSchemas((data || []) as any);
-    } catch (error: any) {
-      console.error('Error loading schemas:', error);
-    }
-  };
-
-  // Data is now loaded via useTableData hook
-
-  const handleClearData = async () => {
-    if (!databaseId) return;
-
-    try {
-      const { error } = await supabase.rpc('clear_database_data', {
-        p_database_id: databaseId,
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: 'Данные очищены',
-        description: 'Все записи удалены из базы данных',
-      });
-
-      refresh();
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Ошибка',
-        description: error.message,
-      });
-    }
-  };
-
-  const handleDeleteDatabase = async () => {
-    if (!databaseId) return;
-
-    try {
-      const { error } = await supabase.rpc('delete_database', {
-        p_id: databaseId,
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: 'База данных удалена',
-        description: 'База данных успешно удалена',
-      });
-
-      navigate(`/projects/${projectId}`);
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Ошибка',
-        description: error.message,
-      });
-    }
-  };
-
-  const handleAddRow = async (rowData: any) => {
-    if (!databaseId) return;
-
-    try {
-      const { error } = await supabase.rpc('insert_table_row', {
-        p_database_id: databaseId,
-        p_data: rowData,
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: 'Запись добавлена',
-      });
-
-      refresh();
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Ошибка',
-        description: error.message,
-      });
-    }
-  };
-
-  const handleUpdateRow = async (rowId: string, updates: any) => {
-    try {
-      // Get current data before update
-      const { data: currentRow } = await supabase
-        .from('table_data')
-        .select('data')
-        .eq('id', rowId)
-        .single();
-
-      // Add to undo/redo history BEFORE making changes
-      if (currentRow?.data && databaseId) {
-        const changedColumns = Object.keys(updates).filter(
-          key => JSON.stringify(currentRow.data[key]) !== JSON.stringify(updates[key])
-        );
-
-        // Add each changed column to history
-        changedColumns.forEach(columnName => {
-          addToHistory({
-            action: 'update',
-            tableName: databaseId,
-            rowId,
-            columnName,
-            before: { [columnName]: currentRow.data[columnName] },
-            after: { [columnName]: updates[columnName] },
-          });
-        });
-      }
-
-      // Update the row
-      const { error } = await supabase.rpc('update_table_row', {
-        p_id: rowId,
-        p_data: updates,
-      });
-
-      if (error) throw error;
-
-      // Track history for changed columns
-      if (currentRow?.data && databaseId) {
-        const changedColumns = Object.keys(updates).filter(
-          key => JSON.stringify(currentRow.data[key]) !== JSON.stringify(updates[key])
-        );
-
-        for (const columnName of changedColumns) {
-          // Get or create cell metadata
-          const { data: cellMeta, error: metaError } = await supabase
-            .from('cell_metadata')
-            .select('id')
-            .eq('row_id', rowId)
-            .eq('column_name', columnName)
-            .maybeSingle();
-
-          let metadataId = cellMeta?.id;
-
-          // Create metadata if doesn't exist
-          if (!metadataId) {
-            const { data: newMeta } = await supabase
-              .from('cell_metadata')
-              .insert({
-                database_id: databaseId,
-                row_id: rowId,
-                column_name: columnName,
-                imported_by: user?.id,
-              })
-              .select('id')
-              .single();
-
-            metadataId = newMeta?.id;
-          }
-
-          // Create history record
-          if (metadataId) {
-            await supabase.from('cell_history').insert({
-              cell_metadata_id: metadataId,
-              old_value: currentRow.data[columnName],
-              new_value: updates[columnName],
-              change_type: 'updated',
-              changed_by: user?.id,
-            });
-          }
-        }
-      }
-
-      toast({
-        title: 'Запись обновлена',
-      });
-
-      refresh();
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Ошибка',
-        description: error.message,
-      });
-    }
-  };
-
-  const handleDeleteRow = async (rowId: string) => {
-    try {
-      const { error } = await supabase.rpc('delete_table_row', {
-        p_id: rowId,
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: 'Запись удалена',
-      });
-
-      refresh();
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Ошибка',
-        description: error.message,
-      });
-    }
-  };
-
-  const handleDuplicateRow = async (rowId: string) => {
-    try {
-      // Find the row to duplicate
-      const row = tableData.find((r: any) => r.id === rowId);
-      if (!row) return;
-
-      // Insert a new row with the same data
-      await handleAddRow(row.data);
-
-      toast({
-        title: 'Запись дублирована',
-      });
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Ошибка',
-        description: error.message,
-      });
-    }
-  };
-
-  const handleInsertRowAbove = async (rowId: string) => {
-    try {
-      await handleAddRow({});
-      toast({
-        title: 'Новая строка добавлена выше',
-      });
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Ошибка',
-        description: error.message,
-      });
-    }
-  };
-
-  const handleInsertRowBelow = async (rowId: string) => {
-    try {
-      await handleAddRow({});
-      toast({
-        title: 'Новая строка добавлена ниже',
-      });
-    } catch (error: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Ошибка',
-        description: error.message,
-      });
-    }
-  };
-
-  const handleRowView = (rowId: string) => {
-    const row = tableData.find((r: any) => r.id === rowId);
-    if (row) {
-      // TODO: Open row detail view/modal
-      console.log('View row:', row);
-      toast({
-        title: 'Просмотр записи',
-        description: 'Функция просмотра в разработке',
-      });
-    }
-  };
-
-  const handleRowHistory = (rowId: string) => {
-    // TODO: Open row history panel
-    console.log('Show history for row:', rowId);
-    toast({
-      title: 'История изменений',
-      description: 'Функция истории в разработке',
-    });
-  };
-
-  // Bulk operations
-  const handleBulkDelete = async (rowIds: string[]) => {
-    try {
-      for (const rowId of rowIds) {
-        await supabase.rpc('delete_table_row', { p_id: rowId });
-      }
-      refresh();
-    } catch (error: any) {
-      throw new Error('Не удалось удалить записи');
-    }
-  };
-
-  const handleBulkDuplicate = async (rowIds: string[]) => {
-    try {
-      for (const rowId of rowIds) {
-        const row = tableData.find((r: any) => r.id === rowId);
-        if (row) {
-          await handleAddRow(row.data);
-        }
-      }
-      refresh();
-    } catch (error: any) {
-      throw new Error('Не удалось дублировать записи');
-    }
-  };
-
-  const handleBulkEdit = async (rowIds: string[], column: string, value: any) => {
-    try {
-      for (const rowId of rowIds) {
-        const row = tableData.find((r: any) => r.id === rowId);
-        if (row) {
-          const updatedData = {
-            ...row.data,
-            [column]: value,
-          };
-          await handleUpdateRow(rowId, updatedData);
-        }
-      }
-      refresh();
-    } catch (error: any) {
-      throw new Error('Не удалось обновить записи');
-    }
-  };
+  // Local state for AI assistant (old version, might be removed)
+  const [showAIAssistant, setShowAIAssistant] = useState(false);
 
   // Helper function for Kanban columns
   const getKanbanColumns = (rows: any[]) => {
@@ -557,8 +190,6 @@ export default function DatabaseView() {
         return <TableSkeleton rows={pageSize} columns={schemas.length || 5} />;
     }
   };
-
-  const totalPages = Math.ceil(totalCount / pageSize);
 
   return (
     <div className="min-h-screen bg-background">
@@ -751,53 +382,7 @@ export default function DatabaseView() {
               }}
             />
           ) : viewType === 'table' && (
-            <DataTable
-            data={tableData.map((row: any) => ({
-              id: row.id,
-              ...row.data,
-              created_at: row.created_at,
-              updated_at: row.updated_at,
-            }))}
-            headers={schemas.map(s => s.column_name)}
-            isGrouped={false}
-            databaseId={databaseId}
-            onCellUpdate={async (rowId, column, value) => {
-              // Find the row
-              const row = tableData.find((r: any) => r.id === rowId);
-              if (!row) return;
-
-              // Update the row data
-              const updatedData = {
-                ...row.data,
-                [column]: value,
-              };
-
-              await handleUpdateRow(rowId, updatedData);
-            }}
-            columnTypes={schemas.reduce((acc, s) => {
-              acc[s.column_name] = s.column_type;
-              return acc;
-            }, {} as Record<string, string>)}
-            onRowView={handleRowView}
-            onRowEdit={(rowId) => {
-              // TODO: Open edit modal
-              const row = tableData.find((r: any) => r.id === rowId);
-              if (row) {
-                toast({
-                  title: 'Редактирование записи',
-                  description: 'Дважды кликните на ячейку для редактирования',
-                });
-              }
-            }}
-            onRowDuplicate={handleDuplicateRow}
-            onRowDelete={handleDeleteRow}
-            onRowHistory={handleRowHistory}
-            onInsertRowAbove={handleInsertRowAbove}
-            onInsertRowBelow={handleInsertRowBelow}
-            onBulkDelete={handleBulkDelete}
-            onBulkDuplicate={handleBulkDuplicate}
-            onBulkEdit={handleBulkEdit}
-          />
+            <DataTable />
           )}
 
           {viewType === 'calendar' && (
@@ -976,8 +561,8 @@ export default function DatabaseView() {
               // Small delay to ensure DB transaction is committed
               await new Promise(resolve => setTimeout(resolve, 500));
 
-              console.log('Calling refresh() and loadSchemas()...');
-              refresh();
+              console.log('Calling refreshData() and loadSchemas()...');
+              refreshData();
               loadSchemas();
 
               // Show success screen if data import was successful
@@ -1093,5 +678,14 @@ export default function DatabaseView() {
         </main>
       </div>
     </div>
+  );
+}
+
+// Wrapper component that provides context
+export default function DatabaseView() {
+  return (
+    <DatabaseProvider>
+      <DatabaseViewContent />
+    </DatabaseProvider>
   );
 }

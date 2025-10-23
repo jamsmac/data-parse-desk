@@ -30,6 +30,7 @@ import { BulkActionsToolbar } from '@/components/database/BulkActionsToolbar';
 import { BulkEditDialog } from '@/components/database/BulkEditDialog';
 import { useKeyboardNavigation, CellPosition } from '@/hooks/useKeyboardNavigation';
 import { useToast } from '@/hooks/use-toast';
+import { useDatabaseContext } from '@/contexts/DatabaseContext';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,9 +43,9 @@ import {
 } from '@/components/ui/alert-dialog';
 
 interface DataTableProps {
-  data: NormalizedRow[] | GroupedData[];
-  headers: string[];
-  isGrouped: boolean;
+  data?: NormalizedRow[] | GroupedData[];
+  headers?: string[];
+  isGrouped?: boolean;
   onCellUpdate?: (rowId: string, column: string, value: any) => Promise<void>;
   columnTypes?: Record<string, string>;
   databaseId?: string;
@@ -63,24 +64,70 @@ interface DataTableProps {
 type SortDirection = 'asc' | 'desc' | null;
 
 export function DataTable({
-  data,
-  headers,
-  isGrouped,
-  onCellUpdate,
-  columnTypes = {},
-  databaseId,
-  onRowEdit,
-  onRowView,
-  onRowDuplicate,
-  onRowDelete,
-  onRowHistory,
-  onInsertRowAbove,
-  onInsertRowBelow,
-  onBulkDelete,
-  onBulkDuplicate,
-  onBulkEdit,
+  data: dataProp,
+  headers: headersProp,
+  isGrouped: isGroupedProp = false,
+  onCellUpdate: onCellUpdateProp,
+  columnTypes: columnTypesProp = {},
+  databaseId: databaseIdProp,
+  onRowEdit: onRowEditProp,
+  onRowView: onRowViewProp,
+  onRowDuplicate: onRowDuplicateProp,
+  onRowDelete: onRowDeleteProp,
+  onRowHistory: onRowHistoryProp,
+  onInsertRowAbove: onInsertRowAboveProp,
+  onInsertRowBelow: onInsertRowBelowProp,
+  onBulkDelete: onBulkDeleteProp,
+  onBulkDuplicate: onBulkDuplicateProp,
+  onBulkEdit: onBulkEditProp,
 }: DataTableProps) {
   const { toast } = useToast();
+
+  // Try to get context, but don't fail if not available
+  let ctx;
+  try {
+    ctx = useDatabaseContext();
+  } catch {
+    // Context not available - will use props only
+    ctx = null;
+  }
+
+  // Use context values if available, otherwise use props
+  const data = dataProp ?? (ctx?.tableData.map((row: any) => ({
+    id: row.id,
+    ...row.data,
+    created_at: row.created_at,
+    updated_at: row.updated_at,
+  })) || []);
+
+  const headers = headersProp ?? (ctx?.schemas.map(s => s.column_name) || []);
+  const isGrouped = isGroupedProp;
+  const databaseId = databaseIdProp ?? ctx?.databaseId ?? undefined;
+
+  const columnTypes = columnTypesProp ?? (ctx?.schemas.reduce((acc, s) => {
+    acc[s.column_name] = s.column_type;
+    return acc;
+  }, {} as Record<string, string>) || {});
+
+  // Handlers - use context if available, otherwise use props
+  const handleCellUpdate = onCellUpdateProp ?? (async (rowId: string, column: string, value: any) => {
+    if (!ctx) return;
+    const row = ctx.tableData.find((r: any) => r.id === rowId);
+    if (!row) return;
+    const updatedData = { ...row.data, [column]: value };
+    await ctx.handleUpdateRow(rowId, updatedData);
+  });
+
+  const handleRowView = onRowViewProp ?? ctx?.handleRowView;
+  const handleRowEdit = onRowEditProp;
+  const handleRowDuplicate = onRowDuplicateProp ?? ctx?.handleDuplicateRow;
+  const handleRowDelete = onRowDeleteProp ?? ctx?.handleDeleteRow;
+  const handleRowHistory = onRowHistoryProp ?? ctx?.handleRowHistory;
+  const handleInsertRowAbove = onInsertRowAboveProp ?? ctx?.handleInsertRowAbove;
+  const handleInsertRowBelow = onInsertRowBelowProp ?? ctx?.handleInsertRowBelow;
+  const handleBulkDelete = onBulkDeleteProp ?? ctx?.handleBulkDelete;
+  const handleBulkDuplicate = onBulkDuplicateProp ?? ctx?.handleBulkDuplicate;
+  const handleBulkEdit = onBulkEditProp ?? ctx?.handleBulkEdit;
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(50);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
@@ -268,9 +315,9 @@ export function DataTable({
     onPaste: async (position, data) => {
       const row = paginatedData[position.rowIndex] as NormalizedRow;
       const column = visibleHeaders[position.columnIndex];
-      if (row && column && onCellUpdate) {
+      if (row && column && handleCellUpdate) {
         try {
-          await onCellUpdate(row.id, column, data);
+          await handleCellUpdate(row.id, column, data);
           toast({
             title: 'Вставлено',
             description: `Значение вставлено в ${column}`,
@@ -321,15 +368,15 @@ export function DataTable({
   };
 
   const handleCellDoubleClick = (rowId: string, column: string) => {
-    if (onCellUpdate) {
+    if (handleCellUpdate) {
       setEditingCell({ rowId, column });
     }
   };
 
   const handleCellSave = async (value: any) => {
-    if (!editingCell || !onCellUpdate) return;
-    
-    await onCellUpdate(editingCell.rowId, editingCell.column, value);
+    if (!editingCell || !handleCellUpdate) return;
+
+    await handleCellUpdate(editingCell.rowId, editingCell.column, value);
     setEditingCell(null);
   };
 
@@ -482,7 +529,7 @@ export function DataTable({
                               ) : (
                                 <div className="flex items-center justify-between group">
                                   <span>{formatCellValue(value, header)}</span>
-                                  {onCellUpdate && (
+                                  {handleCellUpdate && (
                                     <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
                                   )}
                                 </div>
@@ -504,13 +551,13 @@ export function DataTable({
                   return (
                     <RowContextMenu
                       key={idx}
-                      onEdit={() => onRowEdit?.(row.id)}
-                      onView={() => onRowView?.(row.id)}
-                      onDuplicate={() => onRowDuplicate?.(row.id)}
-                      onDelete={() => onRowDelete?.(row.id)}
-                      onHistory={() => onRowHistory?.(row.id)}
-                      onInsertAbove={() => onInsertRowAbove?.(row.id)}
-                      onInsertBelow={() => onInsertRowBelow?.(row.id)}
+                      onEdit={() => handleRowEdit?.(row.id)}
+                      onView={() => handleRowView?.(row.id)}
+                      onDuplicate={() => handleRowDuplicate?.(row.id)}
+                      onDelete={() => handleRowDelete?.(row.id)}
+                      onHistory={() => handleRowHistory?.(row.id)}
+                      onInsertAbove={() => handleInsertRowAbove?.(row.id)}
+                      onInsertBelow={() => handleInsertRowBelow?.(row.id)}
                     >
                       <TableRow
                         className="cursor-pointer hover:bg-table-row-hover"
@@ -560,7 +607,7 @@ export function DataTable({
                               <ContextMenuTrigger asChild>
                                 <div className="flex items-center justify-between group w-full">
                                   <span>{formatCellValue(value, header)}</span>
-                                  {onCellUpdate && (
+                                  {handleCellUpdate && (
                                     <Edit2 className="h-3 w-3 opacity-0 group-hover:opacity-50 transition-opacity" />
                                   )}
                                 </div>
