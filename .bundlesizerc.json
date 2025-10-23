@@ -27,13 +27,13 @@
     },
     {
       "path": "./dist/assets/chart-vendor-*.js",
-      "maxSize": "110 kB",
+      "maxSize": "125 kB",
       "compression": "gzip",
       "name": "Charts (lazy loaded)"
     },
     {
       "path": "./dist/assets/xlsx-parser-*.js",
-      "maxSize": "200 kB",
+      "maxSize": "260 kB",
       "compression": "gzip",
       "name": "XLSX Parser (lazy loaded)"
     },

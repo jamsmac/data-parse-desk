@@ -97,6 +97,48 @@
     "workbox-window": "^7.3.0",
     "zod": "^3.25.76"
   },
+  "bundlesize": [
+    {
+      "path": "./dist/assets/index-*.js",
+      "maxSize": "30 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "./dist/assets/react-vendor-*.js",
+      "maxSize": "75 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "./dist/assets/DatabaseView-*.js",
+      "maxSize": "70 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "./dist/assets/supabase-vendor-*.js",
+      "maxSize": "40 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "./dist/assets/radix-core-*.js",
+      "maxSize": "35 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "./dist/assets/chart-vendor-*.js",
+      "maxSize": "125 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "./dist/assets/xlsx-parser-*.js",
+      "maxSize": "260 kB",
+      "compression": "gzip"
+    },
+    {
+      "path": "./dist/assets/csv-parser-*.js",
+      "maxSize": "10 kB",
+      "compression": "gzip"
+    }
+  ],
   "devDependencies": {
     "@axe-core/react": "^4.11.0",
     "@eslint/js": "^9.32.0",

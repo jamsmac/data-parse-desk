@@ -140,6 +140,10 @@ jobs:
           ls -lh dist/
           du -sh dist/
 
+      - name: Check bundle size limits
+        run: npx bundlesize
+        continue-on-error: false
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
