@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import type { ParseResult } from '@/utils/fileParser';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAnnounce } from '@/components/accessibility/LiveAnnouncer';
 import { ImportModeSelector } from './ImportModeSelector';
 import { DuplicateStrategySelector } from './DuplicateStrategySelector';
 import { ImportPreview, ColumnDefinition } from './ImportPreview';
@@ -42,6 +43,7 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
   databaseId,
 }) => {
   const { toast } = useToast();
+  const announce = useAnnounce();
   const acceptedFormats = ['.csv', '.xlsx', '.xls'];
   const maxSize = 10;
   const [file, setFile] = useState<File | null>(null);
@@ -235,6 +237,8 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
           description: `Создано ${createdCount} новых колонок`,
         });
 
+        announce(`Схема импортирована успешно. Создано ${createdCount} новых колонок`, 'polite');
+
         // Clear state for schema-only import
         setFile(null);
         setParseResult(null);
@@ -400,6 +404,8 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
           description: `Импортировано: ${rowsImported} строк${rowsSkipped > 0 ? `, Пропущено: ${rowsSkipped}` : ''}${duplicatesFound > 0 ? `, Дубликатов: ${duplicatesFound}` : ''}`,
         });
 
+        announce(`Импорт завершен успешно. Импортировано ${rowsImported} строк из файла ${parseResult.fileName}`, 'polite');
+
         // Calculate duration and prepare success data
         const duration = Date.now() - startTime;
         const successData: ImportSuccessData = {
@@ -431,6 +437,8 @@ export const UploadFileDialog: React.FC<UploadFileDialogProps> = ({
         description: errorMessage,
         variant: 'destructive',
       });
+
+      announce(`Ошибка импорта: ${errorMessage}`, 'assertive');
     } finally {
       setUploading(false);
     }

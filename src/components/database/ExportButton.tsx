@@ -11,6 +11,7 @@ import {
 import { ExportDataDialog } from '@/components/export/ExportDataDialog';
 import { toast } from 'sonner';
 import { loadPapaParse, loadExcelJS, loadFileSaver } from '@/utils/lazyFileParser';
+import { useAnnounce } from '@/components/accessibility/LiveAnnouncer';
 
 interface ExportButtonProps {
   data: Record<string, unknown>[];
@@ -21,6 +22,7 @@ interface ExportButtonProps {
 export function ExportButton({ data, fileName, columns }: ExportButtonProps) {
   const [exporting, setExporting] = useState(false);
   const [showAdvancedDialog, setShowAdvancedDialog] = useState(false);
+  const announce = useAnnounce();
 
   const exportToCSV = async () => {
     try {
@@ -31,8 +33,10 @@ export function ExportButton({ data, fileName, columns }: ExportButtonProps) {
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       downloadBlob(blob, `${fileName}.csv`);
       toast.success('CSV экспортирован');
+      announce(`CSV файл ${fileName} успешно экспортирован. Экспортировано ${data.length} записей`, 'polite');
     } catch (_error) {
       toast.error('Ошибка экспорта CSV');
+      announce('Ошибка при экспорте CSV файла', 'assertive');
     } finally {
       setExporting(false);
     }
@@ -85,8 +89,10 @@ export function ExportButton({ data, fileName, columns }: ExportButtonProps) {
       });
       downloadBlob(blob, `${fileName}.xlsx`);
       toast.success('Excel экспортирован');
+      announce(`Excel файл ${fileName} успешно экспортирован. Экспортировано ${data.length} записей`, 'polite');
     } catch (_error) {
       toast.error('Ошибка экспорта Excel');
+      announce('Ошибка при экспорте Excel файла', 'assertive');
     } finally {
       setExporting(false);
     }
@@ -99,8 +105,10 @@ export function ExportButton({ data, fileName, columns }: ExportButtonProps) {
       const blob = new Blob([jsonString], { type: 'application/json' });
       downloadBlob(blob, `${fileName}.json`);
       toast.success('JSON экспортирован');
+      announce(`JSON файл ${fileName} успешно экспортирован. Экспортировано ${data.length} записей`, 'polite');
     } catch (_error) {
       toast.error('Ошибка экспорта JSON');
+      announce('Ошибка при экспорте JSON файла', 'assertive');
     } finally {
       setExporting(false);
     }

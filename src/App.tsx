@@ -10,6 +10,7 @@ import { Loader2 } from "lucide-react";
 import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 import { InstallPWA as InstallPWAPrompt } from "@/components/pwa/InstallPWA";
 import { ErrorBoundary } from "@/lib/errorBoundary";
+import { AnnouncementProvider } from "@/components/accessibility/LiveAnnouncer";
 
 // Eagerly load only auth pages for fastest initial load
 import LoginPage from "./pages/LoginPage";
@@ -55,12 +56,13 @@ const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <OfflineIndicator />
-        <InstallPWAPrompt />
-        <BrowserRouter>
-          <AuthProvider>
+        <AnnouncementProvider>
+          <Toaster />
+          <Sonner />
+          <OfflineIndicator />
+          <InstallPWAPrompt />
+          <BrowserRouter>
+            <AuthProvider>
             <Suspense fallback={<PageLoader />}>
               <Routes>
               {/* Public routes - Eagerly loaded for fast access */}
@@ -235,6 +237,7 @@ const App = () => (
             </Suspense>
           </AuthProvider>
         </BrowserRouter>
+        </AnnouncementProvider>
       </TooltipProvider>
     </QueryClientProvider>
   </ErrorBoundary>
