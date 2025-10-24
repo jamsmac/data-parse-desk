@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Loader2 } from "lucide-react";
 import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
@@ -56,15 +57,16 @@ const queryClient = new QueryClient({
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <AnnouncementProvider>
-          <NotificationProvider>
-            <Toaster />
-            <Sonner />
-            <OfflineIndicator />
-            <InstallPWAPrompt />
-            <BrowserRouter>
-              <AuthProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <AnnouncementProvider>
+            <NotificationProvider>
+              <Toaster />
+              <Sonner />
+              <OfflineIndicator />
+              <InstallPWAPrompt />
+              <BrowserRouter>
+                <AuthProvider>
               <Suspense fallback={<PageLoader />}>
                 <Routes>
               {/* Public routes - Eagerly loaded for fast access */}
@@ -237,11 +239,12 @@ const App = () => (
               />
                 </Routes>
               </Suspense>
-            </AuthProvider>
-          </BrowserRouter>
-          </NotificationProvider>
-        </AnnouncementProvider>
-      </TooltipProvider>
+              </AuthProvider>
+            </BrowserRouter>
+            </NotificationProvider>
+          </AnnouncementProvider>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   </ErrorBoundary>
 );
