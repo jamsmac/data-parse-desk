@@ -384,6 +384,11 @@ describe('useAIChat', () => {
         result.current.sendMessage('Test');
       });
 
+      // Wait for the request to start (loading becomes true)
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(true);
+      });
+
       act(() => {
         result.current.cancelRequest();
       });

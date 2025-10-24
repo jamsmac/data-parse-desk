@@ -10,6 +10,7 @@ import {
   useRateLimitedAuthMutation,
 } from '../useRateLimitedMutation';
 import { toast } from 'sonner';
+import { rateLimitedSupabaseCall } from '@/lib/rateLimit';
 
 // Mock dependencies
 vi.mock('@/contexts/AuthContext', () => ({
@@ -41,6 +42,9 @@ vi.mock('sonner', () => ({
   },
 }));
 
+// Get typed mock
+const mockRateLimitedCall = vi.mocked(rateLimitedSupabaseCall);
+
 const createWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -56,6 +60,8 @@ const createWrapper = () => {
 describe('useRateLimitedMutation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset mock to default implementation (call the function)
+    mockRateLimitedCall.mockImplementation((operation, userId, fn) => fn());
   });
 
   it('should execute mutation successfully', async () => {
@@ -66,9 +72,7 @@ describe('useRateLimitedMutation', () => {
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => {
-      result.current.mutate({ name: 'test' });
-    });
+    result.current.mutate({ name: 'test' });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -78,13 +82,11 @@ describe('useRateLimitedMutation', () => {
   });
 
   it('should handle rate limit error with toast', async () => {
-    const { rateLimitedSupabaseCall } = await import('@/lib/rateLimit');
-
     const rateLimitError = new Error('Rate limit exceeded');
     (rateLimitError as any).code = 'RATE_LIMIT_EXCEEDED';
     (rateLimitError as any).resetTime = 5000;
 
-    (rateLimitedSupabaseCall as any).mockRejectedValue(rateLimitError);
+    mockRateLimitedCall.mockRejectedValue(rateLimitError);
 
     const mockMutationFn = vi.fn();
 
@@ -93,9 +95,7 @@ describe('useRateLimitedMutation', () => {
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => {
-      result.current.mutate({ name: 'test' });
-    });
+    result.current.mutate({ name: 'test' });
 
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
@@ -152,10 +152,8 @@ describe('useRateLimitedMutation', () => {
   });
 
   it('should handle non-rate-limit errors', async () => {
-    const { rateLimitedSupabaseCall } = await import('@/lib/rateLimit');
-
     const regularError = new Error('Regular error');
-    (rateLimitedSupabaseCall as any).mockRejectedValue(regularError);
+    mockRateLimitedCall.mockRejectedValue(regularError);
 
     const mockMutationFn = vi.fn();
 
@@ -164,22 +162,22 @@ describe('useRateLimitedMutation', () => {
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => {
-      result.current.mutate({ name: 'test' });
-    });
+    result.current.mutate({ name: 'test' });
 
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
     });
 
-    // Should show rate limit toast
-    expect(toast.error).toHaveBeenCalled();
+    // Should NOT show toast for non-rate-limit errors (only for rate-limit errors)
+    expect(toast.error).not.toHaveBeenCalled();
   });
 });
 
 describe('useRateLimitedDatabaseMutation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset mock to default implementation (call the function)
+    mockRateLimitedCall.mockImplementation((operation, userId, fn) => fn());
   });
 
   it('should show success toast on successful operation', async () => {
@@ -190,9 +188,7 @@ describe('useRateLimitedDatabaseMutation', () => {
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => {
-      result.current.mutate({ name: 'test' });
-    });
+    result.current.mutate({ name: 'test' });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -202,10 +198,8 @@ describe('useRateLimitedDatabaseMutation', () => {
   });
 
   it('should show error toast on failure', async () => {
-    const { rateLimitedSupabaseCall } = await import('@/lib/rateLimit');
-
     const error = new Error('Database error');
-    (rateLimitedSupabaseCall as any).mockRejectedValue(error);
+    mockRateLimitedCall.mockRejectedValue(error);
 
     const mockMutationFn = vi.fn();
 
@@ -214,9 +208,7 @@ describe('useRateLimitedDatabaseMutation', () => {
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => {
-      result.current.mutate({ name: 'test' });
-    });
+    result.current.mutate({ name: 'test' });
 
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
@@ -231,13 +223,11 @@ describe('useRateLimitedDatabaseMutation', () => {
   });
 
   it('should not show error toast for rate limit errors', async () => {
-    const { rateLimitedSupabaseCall } = await import('@/lib/rateLimit');
-
     const rateLimitError = new Error('Rate limit exceeded');
     (rateLimitError as any).code = 'RATE_LIMIT_EXCEEDED';
     (rateLimitError as any).resetTime = 5000;
 
-    (rateLimitedSupabaseCall as any).mockRejectedValue(rateLimitError);
+    mockRateLimitedCall.mockRejectedValue(rateLimitError);
 
     const mockMutationFn = vi.fn();
 
@@ -246,9 +236,7 @@ describe('useRateLimitedDatabaseMutation', () => {
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => {
-      result.current.mutate({ name: 'test' });
-    });
+    result.current.mutate({ name: 'test' });
 
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
@@ -270,9 +258,7 @@ describe('useRateLimitedDatabaseMutation', () => {
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => {
-      result.current.mutate({ id: '123', name: 'updated' });
-    });
+    result.current.mutate({ id: '123', name: 'updated' });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -289,9 +275,7 @@ describe('useRateLimitedDatabaseMutation', () => {
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => {
-      result.current.mutate({ id: '123' });
-    });
+    result.current.mutate({ id: '123' });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -304,6 +288,8 @@ describe('useRateLimitedDatabaseMutation', () => {
 describe('useRateLimitedDataMutation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset mock to default implementation (call the function)
+    mockRateLimitedCall.mockImplementation((operation, userId, fn) => fn());
   });
 
   it('should handle insertData operation', async () => {
@@ -314,9 +300,7 @@ describe('useRateLimitedDataMutation', () => {
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => {
-      result.current.mutate({ data: [1, 2, 3] });
-    });
+    result.current.mutate({ data: [1, 2, 3] });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -333,9 +317,7 @@ describe('useRateLimitedDataMutation', () => {
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => {
-      result.current.mutate({ operations: [] });
-    });
+    result.current.mutate({ operations: [] });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -375,6 +357,8 @@ describe('useRateLimitedDataMutation', () => {
 describe('useRateLimitedFileMutation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset mock to default implementation (call the function)
+    mockRateLimitedCall.mockImplementation((operation, userId, fn) => fn());
   });
 
   it('should handle fileUpload operation', async () => {
@@ -385,9 +369,7 @@ describe('useRateLimitedFileMutation', () => {
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => {
-      result.current.mutate({ file: new Blob() });
-    });
+    result.current.mutate({ file: new Blob() });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -402,9 +384,7 @@ describe('useRateLimitedFileMutation', () => {
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => {
-      result.current.mutate({ fileId: '123' });
-    });
+    result.current.mutate({ fileId: '123' });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -444,6 +424,8 @@ describe('useRateLimitedFileMutation', () => {
 describe('useRateLimitedAuthMutation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset mock to default implementation (call the function)
+    mockRateLimitedCall.mockImplementation((operation, userId, fn) => fn());
   });
 
   it('should handle login operation', async () => {
@@ -454,9 +436,7 @@ describe('useRateLimitedAuthMutation', () => {
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => {
-      result.current.mutate({ email: 'test@example.com', password: 'password' });
-    });
+    result.current.mutate({ email: 'test@example.com', password: 'password' });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -471,9 +451,7 @@ describe('useRateLimitedAuthMutation', () => {
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => {
-      result.current.mutate({ email: 'test@example.com', password: 'password' });
-    });
+    result.current.mutate({ email: 'test@example.com', password: 'password' });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -488,9 +466,7 @@ describe('useRateLimitedAuthMutation', () => {
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => {
-      result.current.mutate({ email: 'test@example.com' });
-    });
+    result.current.mutate({ email: 'test@example.com' });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
@@ -543,9 +519,7 @@ describe('useRateLimitedAuthMutation', () => {
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => {
-      result.current.mutate({ email: 'test@example.com', password: 'wrong' });
-    });
+    result.current.mutate({ email: 'test@example.com', password: 'wrong' });
 
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
@@ -563,6 +537,8 @@ describe('useRateLimitedAuthMutation', () => {
 describe('Edge cases', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset mock to default implementation (call the function)
+    mockRateLimitedCall.mockImplementation((operation, userId, fn) => fn());
   });
 
   it('should handle unknown error type', async () => {
@@ -577,9 +553,7 @@ describe('Edge cases', () => {
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => {
-      result.current.mutate({ name: 'test' });
-    });
+    result.current.mutate({ name: 'test' });
 
     await waitFor(() => {
       expect(result.current.isError).toBe(true);
@@ -594,7 +568,6 @@ describe('Edge cases', () => {
   });
 
   it('should pass user ID to rate limiter', async () => {
-    const { rateLimitedSupabaseCall } = await import('@/lib/rateLimit');
     const mockMutationFn = vi.fn().mockResolvedValue({ success: true });
 
     const { result } = renderHook(
@@ -602,15 +575,13 @@ describe('Edge cases', () => {
       { wrapper: createWrapper() }
     );
 
-    await waitFor(() => {
-      result.current.mutate({ name: 'test' });
-    });
+    result.current.mutate({ name: 'test' });
 
     await waitFor(() => {
       expect(result.current.isSuccess).toBe(true);
     });
 
-    expect(rateLimitedSupabaseCall).toHaveBeenCalledWith(
+    expect(mockRateLimitedCall).toHaveBeenCalledWith(
       'createDatabase',
       'user-123',
       expect.any(Function)
