@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Loader2 } from "lucide-react";
 import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
@@ -57,14 +58,15 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <AnnouncementProvider>
-          <Toaster />
-          <Sonner />
-          <OfflineIndicator />
-          <InstallPWAPrompt />
-          <BrowserRouter>
-            <AuthProvider>
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
+          <NotificationProvider>
+            <Toaster />
+            <Sonner />
+            <OfflineIndicator />
+            <InstallPWAPrompt />
+            <BrowserRouter>
+              <AuthProvider>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
               {/* Public routes - Eagerly loaded for fast access */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
@@ -233,10 +235,11 @@ const App = () => (
                   </Suspense>
                 }
               />
-              </Routes>
-            </Suspense>
-          </AuthProvider>
-        </BrowserRouter>
+                </Routes>
+              </Suspense>
+            </AuthProvider>
+          </BrowserRouter>
+          </NotificationProvider>
         </AnnouncementProvider>
       </TooltipProvider>
     </QueryClientProvider>
