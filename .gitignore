@@ -46,3 +46,4 @@ test-results/
 # tasks.json
 # tasks/ 
 .vercel
+coverage/
