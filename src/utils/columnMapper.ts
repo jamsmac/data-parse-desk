@@ -53,12 +53,40 @@ export function calculateSimilarity(str1: string, str2: string): number {
   const normalized1 = normalizeString(str1);
   const normalized2 = normalizeString(str2);
 
+  // Handle empty strings - both empty = 0, one empty > 0
+  if (normalized1.length === 0 && normalized2.length === 0) return 0;
+
   if (normalized1 === normalized2) return 1.0;
+
+  // Boost similarity if one string contains the other (substring match)
+  if (normalized1.includes(normalized2) || normalized2.includes(normalized1)) {
+    const minLength = Math.min(normalized1.length, normalized2.length);
+    const maxLength = Math.max(normalized1.length, normalized2.length);
+    // Give higher similarity for substring matches (at least 0.7)
+    return Math.max(0.7, minLength / maxLength);
+  }
+
+  // Check for common prefix (e.g., 'col' in 'col1' and 'column1')
+  let commonPrefixLength = 0;
+  for (let i = 0; i < Math.min(normalized1.length, normalized2.length); i++) {
+    if (normalized1[i] === normalized2[i]) {
+      commonPrefixLength++;
+    } else {
+      break;
+    }
+  }
 
   const distance = levenshteinDistance(normalized1, normalized2);
   const maxLength = Math.max(normalized1.length, normalized2.length);
+  const baseSimilarity = maxLength > 0 ? 1 - distance / maxLength : 0;
 
-  return maxLength > 0 ? 1 - distance / maxLength : 0;
+  // Boost similarity if there's a significant common prefix (at least 3 chars)
+  if (commonPrefixLength >= 3) {
+    const prefixBoost = (commonPrefixLength / maxLength) * 0.2; // up to 20% boost
+    return Math.min(1.0, baseSimilarity + prefixBoost);
+  }
+
+  return baseSimilarity;
 }
 
 /**
@@ -132,6 +160,44 @@ export function inferColumnType(values: any[]): string {
 
   if (nonNullValues.length === 0) return 'text';
 
+  // Проверяем email (very specific pattern)
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const allEmails = nonNullValues.every(v => emailRegex.test(String(v)));
+
+  if (allEmails) return 'email';
+
+  // Проверяем URL (very specific pattern)
+  const urlRegex = /^https?:\/\/.+/;
+  const allUrls = nonNullValues.every(v => urlRegex.test(String(v)));
+
+  if (allUrls) return 'url';
+
+  // Проверяем, все ли значения даты (BEFORE phone and numbers)
+  const dateRegex = /^\d{4}-\d{2}-\d{2}/; // ISO date format
+  const allDates = nonNullValues.every(v => {
+    const str = String(v);
+    // Check if it looks like a date format (must have date-like separators)
+    if (!dateRegex.test(str) && !str.includes('/')) {
+      return false;
+    }
+    const date = new Date(v);
+    return !isNaN(date.getTime());
+  });
+
+  if (allDates) return 'date';
+
+  // Проверяем телефон (must have phone-like patterns, not date patterns)
+  const phoneRegex = /^[\d\s\-\+\(\)]+$/;
+  const allPhones = nonNullValues.every(v => {
+    const str = String(v);
+    const cleaned = str.replace(/[\s\-\(\)]/g, '');
+    // Must not look like a date (no year-like 4 digits at start)
+    const looksLikeDate = /^\d{4}-\d{2}/.test(str);
+    return phoneRegex.test(str) && cleaned.length >= 7 && cleaned.length <= 20 && !looksLikeDate;
+  });
+
+  if (allPhones) return 'phone';
+
   // Проверяем, все ли значения числа
   const allNumbers = nonNullValues.every(v => {
     const num = typeof v === 'number' ? v : parseFloat(v);
@@ -140,14 +206,6 @@ export function inferColumnType(values: any[]): string {
 
   if (allNumbers) return 'number';
 
-  // Проверяем, все ли значения даты
-  const allDates = nonNullValues.every(v => {
-    const date = new Date(v);
-    return !isNaN(date.getTime());
-  });
-
-  if (allDates) return 'date';
-
   // Проверяем, все ли значения boolean
   const allBooleans = nonNullValues.every(v => {
     const str = String(v).toLowerCase();
@@ -155,27 +213,6 @@ export function inferColumnType(values: any[]): string {
   });
 
   if (allBooleans) return 'boolean';
-
-  // Проверяем email
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  const allEmails = nonNullValues.every(v => emailRegex.test(String(v)));
-
-  if (allEmails) return 'email';
-
-  // Проверяем URL
-  const urlRegex = /^https?:\/\/.+/;
-  const allUrls = nonNullValues.every(v => urlRegex.test(String(v)));
-
-  if (allUrls) return 'url';
-
-  // Проверяем телефон
-  const phoneRegex = /^[\d\s\-\+\(\)]+$/;
-  const allPhones = nonNullValues.every(v => {
-    const str = String(v).replace(/\s/g, '');
-    return phoneRegex.test(str) && str.length >= 7 && str.length <= 20;
-  });
-
-  if (allPhones) return 'phone';
 
   return 'text';
 }
@@ -304,44 +341,47 @@ export function createDefaultMapping(
     const normalized = normalizeString(fileColumn);
     let matched = false;
 
-    // Проверяем паттерны
-    for (const [schemaCol, variants] of Object.entries(patterns)) {
-      if (schemaColumns.includes(schemaCol)) {
-        for (const variant of variants) {
-          if (normalized.includes(normalizeString(variant))) {
-            mappings.push({
-              sourceColumn: fileColumn,
-              targetColumn: schemaCol,
-              confidence: 0.9,
-            });
-            matched = true;
-            break;
+    // First check for exact match (highest confidence)
+    const exactMatch = schemaColumns.find(
+      col => normalizeString(col) === normalized
+    );
+
+    if (exactMatch) {
+      mappings.push({
+        sourceColumn: fileColumn,
+        targetColumn: exactMatch,
+        confidence: 1.0,
+      });
+      matched = true;
+    }
+
+    // Then check patterns if no exact match
+    if (!matched) {
+      for (const [schemaCol, variants] of Object.entries(patterns)) {
+        if (schemaColumns.includes(schemaCol)) {
+          for (const variant of variants) {
+            if (normalized.includes(normalizeString(variant))) {
+              mappings.push({
+                sourceColumn: fileColumn,
+                targetColumn: schemaCol,
+                confidence: 0.9,
+              });
+              matched = true;
+              break;
+            }
           }
         }
+        if (matched) break;
       }
-      if (matched) break;
     }
 
     if (!matched) {
-      // Точное совпадение
-      const exactMatch = schemaColumns.find(
-        col => normalizeString(col) === normalized
-      );
-
-      if (exactMatch) {
-        mappings.push({
-          sourceColumn: fileColumn,
-          targetColumn: exactMatch,
-          confidence: 1.0,
-        });
-      } else {
-        // Без маппинга
-        mappings.push({
-          sourceColumn: fileColumn,
-          targetColumn: '',
-          confidence: 0,
-        });
-      }
+      // Без маппинга
+      mappings.push({
+        sourceColumn: fileColumn,
+        targetColumn: '',
+        confidence: 0,
+      });
     }
   }
 
