@@ -25,10 +25,11 @@ describe('RLS Policies Security Tests', () => {
   beforeAll(async () => {
     const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Create first test user
+    // Create first test user with strong password
+    const timestamp = Date.now();
     const { data: data1, error: error1 } = await supabase.auth.signUp({
-      email: `user1-${Date.now()}@example.com`,
-      password: 'TestPassword123!',
+      email: `user1-${timestamp}@example.com`,
+      password: `SecureTestP@ss${timestamp}!User1`,
     });
 
     if (error1 || !data1.user || !data1.session) {
@@ -42,10 +43,10 @@ describe('RLS Policies Security Tests', () => {
       },
     });
 
-    // Create second test user
+    // Create second test user with strong password
     const { data: data2, error: error2 } = await supabase.auth.signUp({
-      email: `user2-${Date.now()}@example.com`,
-      password: 'TestPassword123!',
+      email: `user2-${timestamp + 1}@example.com`,
+      password: `SecureTestP@ss${timestamp}!User2`,
     });
 
     if (error2 || !data2.user || !data2.session) {

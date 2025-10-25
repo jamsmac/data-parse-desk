@@ -1,7 +1,8 @@
 // AI-powered import suggestions for column type detection and mapping
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
 import { IMPORT_SUGGESTIONS_PROMPT, getModelConfig, callAIWithRetry } from '../_shared/prompts.ts';
+import { getCorsHeaders, handleCorsPrelight } from '../_shared/security.ts';
 
 const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 const AI_API_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
@@ -30,15 +31,12 @@ interface AISuggestion {
 }
 
 serve(async (req) => {
-  // CORS headers
+  // Get secure CORS headers based on origin
+  const corsHeaders = getCorsHeaders(req);
+
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', {
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-      },
-    });
+    return handleCorsPrelight(req);
   }
 
   try {
@@ -189,8 +187,8 @@ serve(async (req) => {
       }),
       {
         headers: {
+          ...corsHeaders,
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
         },
       }
     );
@@ -205,8 +203,8 @@ serve(async (req) => {
       {
         status: 500,
         headers: {
+          ...corsHeaders,
           'Content-Type': 'application/json',
-          'Access-Control-Allow-Origin': '*',
         },
       }
     );

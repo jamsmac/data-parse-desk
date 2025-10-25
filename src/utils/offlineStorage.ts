@@ -26,6 +26,8 @@ interface PendingChange {
   originalData?: TableRow;
   synced: boolean;
   error?: string;
+  retryCount?: number;
+  lastRetryAt?: number;
 }
 
 interface SyncQueueItem<T = unknown> {
@@ -311,6 +313,31 @@ class OfflineStorage {
         const change = request.result;
         if (change) {
           change.synced = true;
+          const updateRequest = store.put(change);
+          updateRequest.onsuccess = () => resolve();
+          updateRequest.onerror = () => reject(updateRequest.error);
+        } else {
+          resolve();
+        }
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
+
+  /**
+   * Update retry information for a pending change
+   */
+  async updateRetryInfo(changeId: string, retryCount: number, lastRetryAt: number): Promise<void> {
+    await this.init();
+    const store = this.getStore(STORES.PENDING_CHANGES, 'readwrite');
+    const request = store.get(changeId);
+
+    return new Promise((resolve, reject) => {
+      request.onsuccess = () => {
+        const change = request.result;
+        if (change) {
+          change.retryCount = retryCount;
+          change.lastRetryAt = lastRetryAt;
           const updateRequest = store.put(change);
           updateRequest.onsuccess = () => resolve();
           updateRequest.onerror = () => reject(updateRequest.error);

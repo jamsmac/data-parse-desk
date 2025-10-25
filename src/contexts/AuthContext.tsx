@@ -26,24 +26,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Получаем текущую сессию
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
+    let mounted = true;
+
+    // Получаем текущую сессию с обработкой ошибок
+    async function initAuth() {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error('Failed to get session:', error);
+
+          if (mounted) {
+            toast({
+              variant: 'destructive',
+              title: 'Ошибка подключения',
+              description: 'Не удалось подключиться к серверу аутентификации. Проверьте интернет-соединение.',
+            });
+          }
+        }
+
+        if (mounted) {
+          setSession(session);
+          setUser(session?.user ?? null);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Failed to initialize auth:', error);
+
+        if (mounted) {
+          setIsLoading(false);
+          toast({
+            variant: 'destructive',
+            title: 'Критическая ошибка',
+            description: 'Не удалось инициализировать систему авторизации.',
+          });
+        }
+      }
+    }
+
+    initAuth();
 
     // Подписываемся на изменения авторизации
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
+      if (mounted) {
+        setSession(session);
+        setUser(session?.user ?? null);
+        setIsLoading(false);
+      }
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [toast]);
 
   const login = async (credentials: LoginCredentials) => {
     const { data, error } = await supabase.auth.signInWithPassword({

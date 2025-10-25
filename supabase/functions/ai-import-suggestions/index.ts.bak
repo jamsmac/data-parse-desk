@@ -1,0 +1,214 @@
+// AI-powered import suggestions for column type detection and mapping
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
+import { IMPORT_SUGGESTIONS_PROMPT, getModelConfig, callAIWithRetry } from '../_shared/prompts.ts';
+
+const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+const AI_API_URL = 'https://ai.gateway.lovable.dev/v1/chat/completions';
+
+interface Column {
+  name: string;
+  type: string;
+}
+
+interface RequestBody {
+  columns: Column[];
+  sampleData: any[];
+  databaseId: string;
+}
+
+interface AISuggestion {
+  column: string;
+  suggestedType: string;
+  confidence: number;
+  reasoning: string;
+  selectOptions?: string[];
+  relationSuggestion?: {
+    targetTable: string;
+    reason: string;
+  };
+}
+
+serve(async (req) => {
+  // CORS headers
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+      },
+    });
+  }
+
+  try {
+    // Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Missing authorization header');
+    }
+
+    // Create Supabase client
+    const supabaseClient = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      {
+        global: {
+          headers: { Authorization: authHeader },
+        },
+      }
+    );
+
+    // Verify user is authenticated
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseClient.auth.getUser();
+
+    if (userError || !user) {
+      throw new Error('Unauthorized');
+    }
+
+    // Parse request body
+    const body: RequestBody = await req.json();
+    const { columns, sampleData, databaseId } = body;
+
+    if (!columns || !sampleData || !databaseId) {
+      throw new Error('Missing required fields: columns, sampleData, databaseId');
+    }
+
+    console.log('Processing AI suggestions for', columns.length, 'columns');
+
+    // Get existing tables in the project for relation suggestions
+    const { data: existingTables } = await supabaseClient
+      .from('databases')
+      .select('id, name, display_name')
+      .neq('id', databaseId);
+
+    const tableNames = existingTables?.map((t) => t.display_name || t.name) || [];
+
+    // Build structured data for AI
+    const columnsData = columns.map((col) => {
+      const samples = sampleData.map(row => row[col.name]).filter(v => v != null).slice(0, 5);
+      return {
+        name: col.name,
+        currentType: col.type,
+        samples: samples
+      };
+    });
+
+    const prompt = IMPORT_SUGGESTIONS_PROMPT(tableNames);
+    const dataContext = `\n\nCOLUMNS TO ANALYZE:\n${JSON.stringify(columnsData, null, 2)}`;
+
+    // Call Lovable AI with retry logic
+    const modelConfig = getModelConfig('classification');
+
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
+    }
+
+    const aiResponse = await callAIWithRetry(
+      AI_API_URL,
+      LOVABLE_API_KEY,
+      {
+        model: modelConfig.model,
+        messages: [
+          { role: 'system', content: prompt },
+          { role: 'user', content: dataContext }
+        ],
+        temperature: modelConfig.temperature,
+        max_tokens: modelConfig.maxOutputTokens,
+      }
+    );
+
+    const aiData = await aiResponse.json();
+    const responseText = aiData.choices?.[0]?.message?.content;
+
+    if (!responseText) {
+      throw new Error('No response from AI model');
+    }
+
+    console.log('Raw AI response:', responseText);
+
+    // Parse JSON from response (handle markdown code blocks)
+    let parsedResponse;
+    try {
+      // Try to extract JSON from markdown code blocks
+      const jsonMatch = responseText.match(/```json\s*([\s\S]*?)\s*```/) ||
+                       responseText.match(/```\s*([\s\S]*?)\s*```/);
+
+      const jsonText = jsonMatch ? jsonMatch[1] : responseText;
+      parsedResponse = JSON.parse(jsonText);
+    } catch (parseError) {
+      console.error('Failed to parse AI response:', parseError);
+      console.error('Response text:', responseText);
+
+      // Return empty suggestions if parsing fails
+      parsedResponse = { suggestions: [] };
+    }
+
+    // Validate and sanitize suggestions
+    const suggestions: AISuggestion[] = (parsedResponse.suggestions || [])
+      .filter((s: any) => s.column && s.suggestedType && s.confidence && s.reasoning)
+      .map((s: any) => ({
+        column: s.column,
+        suggestedType: s.suggestedType,
+        confidence: Math.min(Math.max(s.confidence, 0), 1), // Clamp between 0 and 1
+        reasoning: s.reasoning,
+        selectOptions: s.selectOptions || undefined,
+        relationSuggestion: s.relationSuggestion || undefined,
+      }));
+
+    console.log('Processed suggestions:', suggestions.length);
+
+    // Track AI usage for billing
+    await supabaseClient.from('ai_requests').insert({
+      user_id: user.id,
+      agent_type: 'import_suggestions',
+      input_data: {
+        columnCount: columns.length,
+        sampleRowCount: sampleData.length,
+        databaseId,
+      },
+      output_data: {
+        suggestionCount: suggestions.length,
+      },
+      model: modelConfig.model,
+      tokens_used: responseText.length, // Approximate
+      status: 'completed',
+    });
+
+    return new Response(
+      JSON.stringify({
+        suggestions,
+        metadata: {
+          columnsAnalyzed: columns.length,
+          suggestionsGenerated: suggestions.length,
+          model: modelConfig.model,
+        },
+      }),
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      }
+    );
+  } catch (error) {
+    console.error('Error in ai-import-suggestions:', error);
+
+    return new Response(
+      JSON.stringify({
+        error: error.message || 'Internal server error',
+        suggestions: [], // Return empty suggestions on error
+      }),
+      {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      }
+    );
+  }
+});

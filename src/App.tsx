@@ -13,6 +13,7 @@ import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 import { InstallPWA as InstallPWAPrompt } from "@/components/pwa/InstallPWA";
 import { ErrorBoundary } from "@/lib/errorBoundary";
 import { AnnouncementProvider } from "@/components/accessibility/LiveAnnouncer";
+import { ConnectionMonitor, EnvironmentBadge } from "@/components/ConnectionMonitor";
 
 // Eagerly load only auth pages for fastest initial load
 import LoginPage from "./pages/LoginPage";
@@ -45,11 +46,26 @@ const PageLoader = () => (
   </div>
 );
 
+// Optimized React Query configuration
+// Documentation: PERFORMANCE_CODE_EXAMPLES.md Section 5
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 60000, // 1 минута
-      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes (increased from 1 minute)
+      cacheTime: 10 * 60 * 1000, // 10 minutes
+      retry: 2, // Retry failed requests twice
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+      refetchOnWindowFocus: false, // Disable refetch on window focus for better UX
+      refetchOnMount: false, // Don't refetch data that's already cached
+      refetchOnReconnect: true, // Refetch when network reconnects
+      // Performance optimization: Keep previous data while fetching new data
+      keepPreviousData: true,
+    },
+    mutations: {
+      retry: 1, // Retry mutations once on failure
+      onError: (error: unknown) => {
+        console.error('Mutation error:', error);
+      },
     },
   },
 });
@@ -65,6 +81,8 @@ const App = () => (
               <Sonner />
               <OfflineIndicator />
               <InstallPWAPrompt />
+              <ConnectionMonitor />
+              <EnvironmentBadge />
               <BrowserRouter>
                 <AuthProvider>
               <Suspense fallback={<PageLoader />}>

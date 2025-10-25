@@ -1,0 +1,189 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.0";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
+
+interface CreateVersionRequest {
+  projectId: string;
+  schemaData: any;
+  description?: string;
+  tagName?: string;
+  tagDescription?: string;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      {
+        global: {
+          headers: { Authorization: req.headers.get("Authorization")! },
+        },
+      }
+    );
+
+    // Get user
+    const {
+      data: { user },
+    } = await supabaseClient.auth.getUser();
+
+    if (!user) {
+      throw new Error("Unauthorized");
+    }
+
+    const {
+      projectId,
+      schemaData,
+      description,
+      tagName,
+      tagDescription,
+    }: CreateVersionRequest = await req.json();
+
+    if (!projectId || !schemaData) {
+      throw new Error("projectId and schemaData are required");
+    }
+
+    console.log("[schema-version-create] Creating version for project:", projectId);
+
+    // Calculate checksum
+    const checksum = await crypto.subtle
+      .digest("MD5", new TextEncoder().encode(JSON.stringify(schemaData)))
+      .then((hash) =>
+        Array.from(new Uint8Array(hash))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("")
+      );
+
+    // Get current max version number
+    const { data: maxVersionData, error: maxVersionError } =
+      await supabaseClient
+        .from("schema_versions")
+        .select("version_number")
+        .eq("project_id", projectId)
+        .eq("created_by", user.id)
+        .order("version_number", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+    if (maxVersionError) {
+      console.error("[schema-version-create] Error getting max version:", maxVersionError);
+      throw maxVersionError;
+    }
+
+    const nextVersionNumber = (maxVersionData?.version_number ?? 0) + 1;
+
+    // Check if schema already exists (duplicate checksum)
+    const { data: existingVersion, error: existingError } =
+      await supabaseClient
+        .from("schema_versions")
+        .select("id, version_number")
+        .eq("project_id", projectId)
+        .eq("checksum", checksum)
+        .eq("created_by", user.id)
+        .maybeSingle();
+
+    if (existingError) {
+      console.error("[schema-version-create] Error checking existing:", existingError);
+      throw existingError;
+    }
+
+    if (existingVersion) {
+      console.log("[schema-version-create] Schema already exists as version:", existingVersion.version_number);
+      return new Response(
+        JSON.stringify({
+          success: true,
+          duplicate: true,
+          version: existingVersion,
+          message: `Schema already exists as version ${existingVersion.version_number}`,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
+    }
+
+    // Unset current version flag
+    const { error: unsetError } = await supabaseClient
+      .from("schema_versions")
+      .update({ is_current: false })
+      .eq("project_id", projectId)
+      .eq("created_by", user.id)
+      .eq("is_current", true);
+
+    if (unsetError) {
+      console.error("[schema-version-create] Error unsetting current:", unsetError);
+      throw unsetError;
+    }
+
+    // Create new version
+    const { data: newVersion, error: insertError } = await supabaseClient
+      .from("schema_versions")
+      .insert({
+        project_id: projectId,
+        version_number: nextVersionNumber,
+        schema_data: schemaData,
+        description: description || null,
+        is_current: true,
+        checksum,
+        created_by: user.id,
+      })
+      .select()
+      .single();
+
+    if (insertError) {
+      console.error("[schema-version-create] Insert error:", insertError);
+      throw insertError;
+    }
+
+    console.log("[schema-version-create] Version created:", newVersion.id);
+
+    // Create tag if provided
+    if (tagName && newVersion) {
+      const { error: tagError } = await supabaseClient
+        .from("schema_version_tags")
+        .insert({
+          version_id: newVersion.id,
+          tag_name: tagName,
+          description: tagDescription || null,
+          created_by: user.id,
+        });
+
+      if (tagError) {
+        console.warn("[schema-version-create] Tag creation failed:", tagError);
+        // Don't fail the whole request if tagging fails
+      }
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        version: newVersion,
+        message: `Version ${nextVersionNumber} created successfully`,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
+  } catch (error) {
+    console.error("[schema-version-create] Error:", error);
+    return new Response(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : "Unknown error",
+        success: false,
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
+  }
+});

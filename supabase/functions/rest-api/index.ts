@@ -1,12 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
 import { createHash } from "https://deno.land/std@0.168.0/node/crypto.ts";
+import { getCorsHeaders, handleCorsPrelight } from '../_shared/security.ts';
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-api-key, x-client-info, apikey, content-type',
-  'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-};
 
 interface ApiKeyData {
   id: string;
@@ -102,8 +98,8 @@ function hasPermission(apiKey: ApiKeyData, resource: string, action: string): bo
 serve(async (req) => {
   const startTime = Date.now();
 
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+  if (req.method === "OPTIONS") {
+    return handleCorsPrelight(req);
   }
 
   const supabase = createClient(

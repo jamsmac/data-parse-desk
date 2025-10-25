@@ -1,0 +1,199 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+###############################################################################
+# Pre-commit Security Checks
+# Data Parse Desk 2.0
+#
+# This hook runs security checks before allowing commits
+###############################################################################
+
+echo "🔒 Running pre-commit security checks..."
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+ERRORS=0
+
+# Check 1: Prevent committing sensitive files
+echo "📝 Checking for sensitive files..."
+
+SENSITIVE_FILES=(
+  ".env"
+  ".env.local"
+  ".env.production"
+  ".env.staging"
+  "*.pem"
+  "*.key"
+  "*.p12"
+  "credentials.json"
+  "serviceAccountKey.json"
+)
+
+for pattern in "${SENSITIVE_FILES[@]}"; do
+  if git diff --cached --name-only | grep -q "$pattern"; then
+    echo "${RED}❌ ERROR: Attempting to commit sensitive file matching: $pattern${NC}"
+    echo "   Files found:"
+    git diff --cached --name-only | grep "$pattern" | sed 's/^/   - /'
+    ERRORS=$((ERRORS + 1))
+  fi
+done
+
+# Check 2: Scan for hardcoded secrets
+echo "🔍 Scanning for hardcoded secrets..."
+
+SECRET_PATTERNS=(
+  "sk-ant-api03-"           # Anthropic API keys
+  "sk-proj-"                # OpenAI API keys
+  "pplx-"                   # Perplexity API keys
+  "AKIA[0-9A-Z]{16}"        # AWS Access Key
+  "ghp_[0-9a-zA-Z]{36}"     # GitHub Personal Access Token
+  "postgres://.*:.*@"       # Database connection strings
+  "mongodb://.*:.*@"        # MongoDB connection strings
+  "Bearer [A-Za-z0-9-._~+/]+=*"  # Bearer tokens
+)
+
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx|sql|md)$')
+
+for file in $STAGED_FILES; do
+  if [ -f "$file" ]; then
+    for pattern in "${SECRET_PATTERNS[@]}"; do
+      if grep -qE "$pattern" "$file"; then
+        echo "${RED}❌ ERROR: Potential secret found in $file${NC}"
+        echo "   Pattern: $pattern"
+        echo "   Please remove the secret and use environment variables instead."
+        ERRORS=$((ERRORS + 1))
+      fi
+    done
+  fi
+done
+
+# Check 3: Verify no console.log in production code
+echo "🚫 Checking for console.log statements..."
+
+for file in $STAGED_FILES; do
+  if [[ "$file" =~ \.(ts|tsx|js|jsx)$ ]] && [ -f "$file" ]; then
+    # Skip test files and certain utility files
+    if [[ ! "$file" =~ \.test\. ]] && [[ ! "$file" =~ \.spec\. ]] && [[ ! "$file" =~ /utils/logger\. ]]; then
+      if grep -n "console\.log\|console\.debug" "$file" > /dev/null; then
+        echo "${YELLOW}⚠️  WARNING: console.log found in $file${NC}"
+        grep -n "console\.log\|console\.debug" "$file" | sed 's/^/   Line /'
+        echo "   Consider using the logger utility instead."
+        # This is a warning, not an error
+      fi
+    fi
+  fi
+done
+
+# Check 4: Check for SQL injection vulnerabilities
+echo "💉 Checking for potential SQL injection vulnerabilities..."
+
+SQL_PATTERNS=(
+  '\$\{[^}]*\}.*FROM'       # Template literals in SQL
+  '"\s*\+\s*.*\s*\+\s*".*FROM'  # String concatenation in SQL
+  "'.*\+.*'.*SELECT"        # String concatenation in queries
+)
+
+for file in $STAGED_FILES; do
+  if [[ "$file" =~ \.(ts|tsx|js|jsx|sql)$ ]] && [ -f "$file" ]; then
+    for pattern in "${SQL_PATTERNS[@]}"; do
+      if grep -qE "$pattern" "$file"; then
+        echo "${YELLOW}⚠️  WARNING: Potential SQL injection pattern in $file${NC}"
+        echo "   Pattern: $pattern"
+        echo "   Ensure you're using parameterized queries."
+        # This is a warning, not an error
+      fi
+    done
+  fi
+done
+
+# Check 5: Ensure RLS is enabled on new tables
+echo "🔐 Checking new SQL migrations for RLS..."
+
+NEW_MIGRATIONS=$(git diff --cached --name-only --diff-filter=A | grep 'supabase/migrations/.*\.sql$')
+
+for migration in $NEW_MIGRATIONS; do
+  if [ -f "$migration" ]; then
+    # Check if migration creates tables
+    if grep -q "CREATE TABLE" "$migration"; then
+      # Check if RLS is enabled
+      if ! grep -q "ALTER TABLE.*ENABLE ROW LEVEL SECURITY" "$migration"; then
+        echo "${YELLOW}⚠️  WARNING: New table(s) in $migration may be missing RLS${NC}"
+        grep -n "CREATE TABLE" "$migration" | sed 's/^/   Line /'
+        echo "   Ensure RLS is enabled with: ALTER TABLE [table] ENABLE ROW LEVEL SECURITY;"
+      fi
+    fi
+  fi
+done
+
+# Check 6: Verify SECURITY DEFINER functions have search_path
+echo "🛡️  Checking SECURITY DEFINER functions..."
+
+for file in $STAGED_FILES; do
+  if [[ "$file" =~ \.sql$ ]] && [ -f "$file" ]; then
+    # Find SECURITY DEFINER functions
+    if grep -q "SECURITY DEFINER" "$file"; then
+      # Extract function names and check for search_path
+      while IFS= read -r line; do
+        FUNC_START=$(echo "$line" | cut -d: -f1)
+
+        # Check if this function has SET search_path within next 5 lines
+        if ! sed -n "${FUNC_START},$((FUNC_START + 5))p" "$file" | grep -q "SET search_path"; then
+          echo "${YELLOW}⚠️  WARNING: SECURITY DEFINER function without search_path in $file:$line${NC}"
+          echo "   Add: SET search_path = public, pg_temp"
+        fi
+      done < <(grep -n "SECURITY DEFINER" "$file")
+    fi
+  fi
+done
+
+# Check 7: Ensure TypeScript strict mode
+echo "📘 Checking TypeScript configuration..."
+
+if git diff --cached --name-only | grep -q "tsconfig.json"; then
+  if [ -f "tsconfig.json" ]; then
+    if ! grep -q '"strict":\s*true' tsconfig.json; then
+      echo "${YELLOW}⚠️  WARNING: TypeScript strict mode is not enabled${NC}"
+      echo "   Consider enabling strict mode for better type safety."
+    fi
+  fi
+fi
+
+# Check 8: Verify no TODO/FIXME in critical files
+echo "📝 Checking for TODO/FIXME in critical files..."
+
+CRITICAL_FILES=$(echo "$STAGED_FILES" | grep -E '(Auth|Security|RLS|Permission|api.*Key)')
+
+for file in $CRITICAL_FILES; do
+  if [ -f "$file" ]; then
+    if grep -n "TODO\|FIXME\|XXX\|HACK" "$file" > /dev/null; then
+      echo "${YELLOW}⚠️  WARNING: TODO/FIXME found in critical file $file${NC}"
+      grep -n "TODO\|FIXME\|XXX\|HACK" "$file" | sed 's/^/   Line /'
+      echo "   Please resolve before committing security-critical code."
+    fi
+  fi
+done
+
+# Summary
+echo ""
+if [ $ERRORS -gt 0 ]; then
+  echo "${RED}╔════════════════════════════════════════════════════════╗${NC}"
+  echo "${RED}║  ❌ Pre-commit checks FAILED with $ERRORS error(s)          ║${NC}"
+  echo "${RED}╚════════════════════════════════════════════════════════╝${NC}"
+  echo ""
+  echo "Please fix the errors above before committing."
+  echo "To bypass these checks (NOT RECOMMENDED), use: git commit --no-verify"
+  echo ""
+  exit 1
+else
+  echo "${GREEN}╔════════════════════════════════════════════════════════╗${NC}"
+  echo "${GREEN}║  ✅ All pre-commit security checks passed!            ║${NC}"
+  echo "${GREEN}╚════════════════════════════════════════════════════════╝${NC}"
+  echo ""
+fi
+
+# Run other pre-commit hooks if they exist
+npm run lint-staged 2>/dev/null || true

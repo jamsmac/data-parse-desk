@@ -1,0 +1,270 @@
+name: Security Checks
+
+on:
+  push:
+    branches: [main, develop, staging]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  security-scan:
+    name: Security Vulnerability Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better analysis
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: |
+          echo "🔍 Running npm audit..."
+          npm audit --audit-level=high || echo "⚠️ Vulnerabilities found"
+          npm audit --json > audit-results.json || true
+
+      - name: Check for secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+
+      - name: Scan for hardcoded secrets
+        run: |
+          echo "🔍 Scanning for hardcoded secrets..."
+
+          # Patterns to search for
+          patterns=(
+            "sk-ant-api03-"
+            "sk-proj-"
+            "pplx-"
+            "AKIA[0-9A-Z]{16}"
+            "ghp_[0-9a-zA-Z]{36}"
+            "postgres://.*:.*@"
+            "mongodb://.*:.*@"
+          )
+
+          found=0
+          for pattern in "${patterns[@]}"; do
+            if git grep -E "$pattern" -- '*.ts' '*.tsx' '*.js' '*.jsx' '*.sql' 2>/dev/null; then
+              echo "❌ Found potential secret: $pattern"
+              found=1
+            fi
+          done
+
+          if [ $found -eq 1 ]; then
+            echo "❌ Secrets detected in code!"
+            exit 1
+          else
+            echo "✅ No secrets detected"
+          fi
+
+      - name: Check SQL migrations for RLS
+        run: |
+          echo "🔐 Checking SQL migrations for RLS..."
+
+          migrations=$(find supabase/migrations -name "*.sql" -type f)
+
+          for migration in $migrations; do
+            if grep -q "CREATE TABLE" "$migration"; then
+              if ! grep -q "ENABLE ROW LEVEL SECURITY" "$migration"; then
+                echo "⚠️ Warning: $migration creates table(s) but may be missing RLS"
+              fi
+            fi
+          done
+
+      - name: Verify SECURITY DEFINER functions
+        run: |
+          echo "🛡️ Checking SECURITY DEFINER functions..."
+
+          sql_files=$(find supabase -name "*.sql" -type f)
+
+          for file in $sql_files; do
+            if grep -q "SECURITY DEFINER" "$file"; then
+              if ! grep -A 5 "SECURITY DEFINER" "$file" | grep -q "SET search_path"; then
+                echo "⚠️ Warning: $file has SECURITY DEFINER without search_path"
+              fi
+            fi
+          done
+
+      - name: TypeScript type checking
+        run: npm run type-check
+
+      - name: ESLint security rules
+        run: |
+          npm run lint -- --max-warnings=0
+
+      - name: Check for console.log
+        run: |
+          echo "🚫 Checking for console.log statements..."
+
+          if git grep -n "console\.log\|console\.debug" -- '*.ts' '*.tsx' '*.js' '*.jsx' ':!*.test.*' ':!*.spec.*'; then
+            echo "⚠️ Warning: console.log found in code"
+          else
+            echo "✅ No console.log statements found"
+          fi
+
+      - name: Upload audit results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-audit-results
+          path: audit-results.json
+
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+
+  sast-scan:
+    name: Static Application Security Testing
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/typescript
+            p/react
+            p/sql
+
+  database-security:
+    name: Database Security Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate migrations
+        run: |
+          echo "📋 Validating SQL migrations..."
+
+          # Check migration file naming
+          for migration in supabase/migrations/*.sql; do
+            if [ -f "$migration" ]; then
+              filename=$(basename "$migration")
+
+              # Check naming convention: YYYYMMDDHHMMSS_description.sql
+              if ! [[ $filename =~ ^[0-9]{14}_.+\.sql$ ]]; then
+                echo "❌ Invalid migration filename: $filename"
+                echo "   Expected format: YYYYMMDDHHMMSS_description.sql"
+                exit 1
+              fi
+            fi
+          done
+
+          echo "✅ All migration filenames are valid"
+
+      - name: Check for dangerous SQL operations
+        run: |
+          echo "⚠️ Checking for dangerous SQL operations..."
+
+          dangerous_patterns=(
+            "DROP DATABASE"
+            "DROP SCHEMA"
+            "TRUNCATE.*CASCADE"
+            "DELETE FROM.*WHERE.*1\s*=\s*1"
+            "UPDATE.*SET.*WHERE.*1\s*=\s*1"
+          )
+
+          found=0
+          for pattern in "${dangerous_patterns[@]}"; do
+            if grep -rE "$pattern" supabase/migrations/*.sql 2>/dev/null; then
+              echo "❌ Dangerous SQL pattern found: $pattern"
+              found=1
+            fi
+          done
+
+          if [ $found -eq 1 ]; then
+            echo "❌ Dangerous SQL operations detected!"
+            echo "   Please review and ensure these are intentional."
+            # Don't fail, just warn
+          fi
+
+  security-headers:
+    name: Security Headers Check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check for security headers in edge functions
+        run: |
+          echo "🔒 Checking for security headers in edge functions..."
+
+          edge_functions=$(find supabase/functions -name "index.ts" -type f)
+
+          required_headers=(
+            "X-Content-Type-Options"
+            "X-Frame-Options"
+            "Content-Security-Policy"
+          )
+
+          for func in $edge_functions; do
+            echo "Checking $func..."
+
+            for header in "${required_headers[@]}"; do
+              if ! grep -q "$header" "$func"; then
+                echo "⚠️ Warning: $func missing header: $header"
+              fi
+            done
+          done
+
+  summary:
+    name: Security Summary
+    runs-on: ubuntu-latest
+    needs: [security-scan, sast-scan, database-security]
+    if: always()
+
+    steps:
+      - name: Security Check Summary
+        run: |
+          echo "╔════════════════════════════════════════════════════════╗"
+          echo "║           Security Checks Summary                      ║"
+          echo "╚════════════════════════════════════════════════════════╝"
+          echo ""
+          echo "Security Scan: ${{ needs.security-scan.result }}"
+          echo "SAST Scan: ${{ needs.sast-scan.result }}"
+          echo "Database Security: ${{ needs.database-security.result }}"
+          echo ""
+
+          if [[ "${{ needs.security-scan.result }}" == "failure" ]] || \
+             [[ "${{ needs.sast-scan.result }}" == "failure" ]] || \
+             [[ "${{ needs.database-security.result }}" == "failure" ]]; then
+            echo "❌ Some security checks failed!"
+            exit 1
+          else
+            echo "✅ All security checks passed!"
+          fi

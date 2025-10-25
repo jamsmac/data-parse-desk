@@ -2,7 +2,7 @@
 // Handles incoming messages from Telegram Bot API
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
 
 const TELEGRAM_API_URL = 'https://api.telegram.org/bot';
 

@@ -1,5 +1,5 @@
-import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { corsHeaders } from '../_shared/cors.ts';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.75.0';
+import { getCorsHeaders, handleCorsPrelight } from '../_shared/security.ts';
 
 interface ComputeColumnsRequest {
   databaseId: string;
@@ -34,8 +34,12 @@ interface ComputeColumnsResponse {
 }
 
 Deno.serve(async (req) => {
+  // Get secure CORS headers based on origin
+  const corsHeaders = getCorsHeaders(req);
+
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
+    return handleCorsPrelight(req);
   }
 
   try {

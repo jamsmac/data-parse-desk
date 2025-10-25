@@ -19,7 +19,12 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:debug": "playwright test --debug",
     "test:e2e:report": "playwright show-report",
-    "test:all": "npm run type-check && npm run test && npm run test:e2e"
+    "test:all": "npm run type-check && npm run test && npm run test:e2e",
+    "perf:health": "bash scripts/health-check.sh",
+    "perf:bundle": "node scripts/check-bundle-size.js",
+    "perf:test": "k6 run performance-tests/load-test.js",
+    "perf:analyze": "npm run build && vite-bundle-visualizer",
+    "perf:all": "npm run perf:health && npm run build && npm run perf:bundle"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

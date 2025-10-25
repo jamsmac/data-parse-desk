@@ -1,0 +1,113 @@
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.75.0";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+};
+
+Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    // Get user from auth header
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      throw new Error("Missing authorization header");
+    }
+
+    // Create Supabase client with auth
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      {
+        global: {
+          headers: { Authorization: authHeader },
+        },
+      }
+    );
+
+    // Get authenticated user
+    const {
+      data: { user },
+      error: userError,
+    } = await supabaseClient.auth.getUser();
+
+    if (userError || !user) {
+      throw new Error("Unauthorized");
+    }
+
+    // Parse request body
+    const { attachmentId } = await req.json();
+
+    if (!attachmentId) {
+      throw new Error("Missing attachmentId");
+    }
+
+    console.log("[Attachment Delete] User:", user.id, "Attachment:", attachmentId);
+
+    // Call delete function to get storage paths
+    const { data: deleteResult, error: deleteError } = await supabaseClient
+      .rpc("delete_item_attachment", {
+        p_attachment_id: attachmentId,
+      });
+
+    if (deleteError) {
+      console.error("[Attachment Delete] DB error:", deleteError);
+      throw new Error(`Delete failed: ${deleteError.message}`);
+    }
+
+    // Delete from storage
+    const storagePaths: string[] = [];
+    if (deleteResult.storage_path) {
+      storagePaths.push(deleteResult.storage_path);
+    }
+    if (deleteResult.thumbnail_path) {
+      storagePaths.push(deleteResult.thumbnail_path);
+    }
+
+    if (storagePaths.length > 0) {
+      const { error: storageError } = await supabaseClient.storage
+        .from("item-attachments")
+        .remove(storagePaths);
+
+      if (storageError) {
+        console.error("[Attachment Delete] Storage cleanup error:", storageError);
+        // Don't fail the whole operation if storage cleanup fails
+        // The record is already deleted from DB
+      } else {
+        console.log("[Attachment Delete] Storage cleaned:", storagePaths);
+      }
+    }
+
+    console.log("[Attachment Delete] Success");
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Attachment deleted successfully",
+      }),
+      {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
+  } catch (error) {
+    console.error("[Attachment Delete] Error:", error);
+
+    return new Response(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : "Unknown error",
+        success: false,
+      }),
+      {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
+  }
+});

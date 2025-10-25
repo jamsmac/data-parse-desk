@@ -1,119 +1,71 @@
-# 🚀 Apply Database Migration - QUICK GUIDE
+# 🚀 Применить миграцию производительности СЕЙЧАС
 
-**Updated:** Fixed migration that handles missing tables/columns gracefully
+**⚡ 2-минутное руководство по применению миграции**
 
 ---
 
-## ⚡ Quick Steps (3-5 minutes)
+## Метод 1: Через Supabase Dashboard (РЕКОМЕНДУЕТСЯ) ✅
 
-### 1. Open SQL Editor
-Click this link:
-**https://supabase.com/dashboard/project/uzcmaxfhfcsxzfqvaloz/editor**
+### Шаг 1: Откройте SQL Editor (30 секунд)
 
-### 2. Copy Migration Content
+1. Перейдите на https://app.supabase.com/project/uzcmaxfhfcsxzfqvaloz/sql/new
+2. Вы увидите пустой SQL редактор
 
-**Use the FIXED migration file:**
-```bash
-# Open the fixed migration file
-open supabase/migrations/20251023130001_sync_database_structure_fixed.sql
+### Шаг 2: Скопируйте миграцию (30 секунд)
 
-# Or copy to clipboard directly
-cat supabase/migrations/20251023130001_sync_database_structure_fixed.sql | pbcopy
+1. Откройте файл в вашем редакторе:
+   `supabase/migrations/20251027100000_enable_performance_monitoring.sql`
+2. Скопируйте **ВСЁ** содержимое файла (Cmd+A, Cmd+C)
+3. Вставьте в SQL Editor (Cmd+V)
+
+### Шаг 3: Запустите миграцию (30 секунд)
+
+1. Нажмите кнопку **"Run"** (или Cmd+Enter)
+2. Дождитесь выполнения (обычно 2-5 секунд)
+3. Вы увидите сообщения:
+
+```
+✅ Performance monitoring enabled successfully!
+
+Available functions:
+  - get_performance_metrics() - Current metrics with status
+  - get_slow_queries() - Identify slow queries
+  - get_table_bloat() - Table bloat analysis
+  - take_performance_snapshot() - Manual snapshot
 ```
 
-### 3. Paste and Run
+### Шаг 4: Проверьте что всё работает (30 секунд)
 
-1. Paste the content in SQL Editor (Cmd+V)
-2. Click **"Run"** button or press **F5**
-3. Wait 3-5 minutes
+В том же SQL Editor выполните:
 
-### 4. Verify Success
-
-Run this query to check new columns:
 ```sql
-SELECT column_name, data_type
-FROM information_schema.columns
-WHERE table_schema = 'public' AND table_name = 'files'
-ORDER BY ordinal_position;
+-- Проверка 1: Посмотреть метрики
+SELECT * FROM get_performance_metrics();
+
+-- Проверка 2: Создать snapshot
+SELECT take_performance_snapshot();
+
+-- Проверка 3: Посмотреть созданный snapshot
+SELECT * FROM performance_snapshots ORDER BY snapshot_time DESC LIMIT 1;
 ```
 
-**Expected:** Should see 7 new columns including `storage_filename`, `mime_type`, `upload_date`, `uploaded_by`, `metadata`, `processing_time_ms`, `updated_rows`
+✅ **Готово!** Performance monitoring включен!
 
 ---
 
-## ✅ What This Fixed Migration Does
+## Следующие шаги
 
-### Improvements over original:
-- ✅ **Safe error handling** - Checks if tables/columns exist before creating indexes
-- ✅ **Better notices** - RAISE NOTICE for each successful operation
-- ✅ **Fallback logic** - For audit_log, tries `timestamp` column, falls back to `created_at`
-- ✅ **Graceful skips** - Skips indexes for non-existent tables without errors
+1. **Запустите health check**:
+   ```bash
+   npm run perf:health
+   ```
 
-### What it adds:
-1. **7 new columns to files table**
-2. **4 new tables** (webhooks, api_keys, projects, project_members)
-3. **~40 performance indexes** across all existing tables
-4. **Updated statistics** for query optimization
+2. **Настройте Redis** (опционально):
+   См. PERFORMANCE_START_NOW.md
 
----
-
-## 🎯 Expected Output
-
-You should see messages like:
-```
-NOTICE: Added storage_filename column to files table
-NOTICE: Added mime_type column to files table
-NOTICE: Added upload_date column to files table
-NOTICE: Added uploaded_by column to files table
-NOTICE: Added metadata column to files table
-NOTICE: Added processing_time_ms column to files table
-NOTICE: Added updated_rows column to files table
-NOTICE: Successfully created all indexes
-NOTICE: Successfully updated statistics for all tables
-```
+3. **Обновите Edge Functions**:
+   См. PERFORMANCE_IMPLEMENTATION_COMPLETE.md
 
 ---
 
-## 🚨 Troubleshooting
-
-### If you see "column already exists"
-✅ **This is fine!** The migration checks and skips existing columns.
-
-### If you see "table already exists"
-✅ **This is fine!** Uses CREATE TABLE IF NOT EXISTS.
-
-### If you see "index already exists"
-✅ **This is fine!** Uses CREATE INDEX IF NOT EXISTS.
-
-### If migration takes > 10 minutes
-⏳ **Wait patiently.** Large databases with millions of rows can take time.
-
-### If you get permission errors
-❌ Make sure you're logged in with **owner/admin** access.
-
----
-
-## 📊 After Migration
-
-Query performance will improve:
-- **50-90% faster** filtered/sorted queries
-- **Better pagination** performance
-- **Faster RLS policy** evaluation
-- **Optimized JOIN** operations
-
-Test with some queries to see the improvement!
-
----
-
-## 🎉 Done!
-
-After successful migration, the project is **100% production-ready** with Grade A+ performance!
-
-**Next:** Test the application and monitor query performance improvements.
-
----
-
-**Created:** October 23, 2025
-**File:** `20251023130001_sync_database_structure_fixed.sql`
-**Time:** 3-5 minutes
-**Risk:** Low (safe with IF NOT EXISTS checks)
+**🎉 Миграция применена успешно!**

@@ -15,9 +15,9 @@ import type { Database } from '@/integrations/supabase/types';
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || '';
 
-// Test data
+// Test data - using strong unique password to pass Supabase security checks
 const TEST_EMAIL = `test-${Date.now()}@example.com`;
-const TEST_PASSWORD = 'TestPassword123!';
+const TEST_PASSWORD = `SecureTestP@ss${Date.now()}!xYz`;
 
 describe('Database Integration Tests', () => {
   let supabase: SupabaseClient<Database>;
