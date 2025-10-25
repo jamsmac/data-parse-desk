@@ -26,11 +26,18 @@ dist-ssr
 dev-debug.log
 # Dependency directories
 node_modules/
-# Environment variables
+# Environment variables - CRITICAL: Never commit these!
 .env
-.env.production
 .env.local
+.env.development
+.env.staging
+.env.production
+.env.test
 .env.*.local
+.env.*.backup
+
+# Keep only .env.example
+!.env.example
 .vscode
 # OS specific
 Icon?
