@@ -1,12 +1,22 @@
 /**
  * Error Boundary Component
  * Catches and handles React errors gracefully
+ * Integrates with Sentry for error tracking
  */
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertCircle, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
+// Extend Window interface for Sentry
+declare global {
+  interface Window {
+    Sentry?: {
+      captureException: (error: Error, context?: unknown) => void;
+    };
+  }
+}
 
 interface Props {
   children: ReactNode;
@@ -55,13 +65,28 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   private logErrorToService(error: Error, errorInfo: ErrorInfo): void {
-    // TODO: Integrate with error tracking service (Sentry, LogRocket, etc.)
-    console.error('Production error:', {
-      message: error.message,
-      stack: error.stack,
-      componentStack: errorInfo.componentStack,
-      timestamp: new Date().toISOString(),
-    });
+    // Log to Sentry with component stack trace
+    if (typeof window !== 'undefined' && window.Sentry) {
+      window.Sentry.captureException(error, {
+        contexts: {
+          react: {
+            componentStack: errorInfo.componentStack,
+          },
+        },
+        level: 'error',
+        tags: {
+          errorBoundary: true,
+        },
+      });
+    } else {
+      // Fallback for when Sentry is not initialized
+      console.error('Production error:', {
+        message: error.message,
+        stack: error.stack,
+        componentStack: errorInfo.componentStack,
+        timestamp: new Date().toISOString(),
+      });
+    }
   }
 
   private handleReset = (): void => {

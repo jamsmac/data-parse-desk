@@ -1,0 +1,24 @@
+{
+  "atLeast": 70,
+  "project": "./tsconfig.json",
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx"
+  ],
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/*.spec.ts",
+    "**/*.spec.tsx",
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/*.d.ts"
+  ],
+  "ignoreCatch": false,
+  "strict": true,
+  "cache": false,
+  "ignoreFiles": [
+    "src/vite-env.d.ts",
+    "src/integrations/**/*.d.ts"
+  ]
+}

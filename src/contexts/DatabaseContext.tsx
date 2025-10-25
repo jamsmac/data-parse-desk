@@ -14,7 +14,9 @@ import { useViewPreferences } from '@/hooks/useViewPreferences';
 import { useComments } from '@/hooks/useComments';
 import { useUndoRedo } from '@/hooks/useUndoRedo';
 import { useDebounce } from '@/hooks/useDebounce';
-import type { Database, TableSchema } from '@/types/database';
+import type { Database, TableSchema, ColumnValue, TableRow as DBTableRow, Comment as DBComment } from '@/types/database';
+import type { Result, AsyncResult } from '@/types/api';
+import { isString, assertDefined } from '@/types/guards';
 import type { Filter } from '@/components/database/FilterBuilder';
 import type { SortConfig } from '@/components/database/SortControls';
 import type { ImportSuccessData } from '@/components/import/UploadFileDialog';
@@ -25,9 +27,21 @@ import type { ImportSuccessData } from '@/components/import/UploadFileDialog';
 
 export type ViewType = 'table' | 'calendar' | 'kanban' | 'gallery';
 
-export type CellValue = string | number | boolean | null | Date;
+/**
+ * Type alias for ColumnValue from database types
+ * Represents any valid cell value in a table
+ */
+export type CellValue = ColumnValue;
+
+/**
+ * Row data as a record of column names to values
+ */
 export type RowData = Record<string, CellValue>;
 
+/**
+ * TableRow with data and metadata
+ * Uses DBTableRow as base but extends with data property
+ */
 export interface TableRow {
   id: string;
   data: RowData;
@@ -35,15 +49,15 @@ export interface TableRow {
   updated_at?: string;
 }
 
-export interface Comment {
-  id: string;
-  content: string;
-  created_at: string;
-  user_id: string;
-  database_id?: string;
-  row_id?: string;
-}
+/**
+ * Comment on a database or row
+ * Extends DBComment type
+ */
+export interface Comment extends DBComment {}
 
+/**
+ * History action for undo/redo functionality
+ */
 export interface HistoryAction {
   action: 'update' | 'insert' | 'delete';
   tableName: string;
@@ -123,28 +137,28 @@ export interface DatabaseContextType {
   setShowCollabPanel: (show: boolean) => void;
 
   // Database operations
-  loadDatabase: () => Promise<void>;
-  loadSchemas: () => Promise<void>;
+  loadDatabase: () => AsyncResult<Database>;
+  loadSchemas: () => AsyncResult<TableSchema[]>;
   refreshData: () => void;
 
   // Row operations
-  handleAddRow: (rowData: RowData) => Promise<void>;
-  handleUpdateRow: (rowId: string, updates: RowData) => Promise<void>;
-  handleDeleteRow: (rowId: string) => Promise<void>;
-  handleDuplicateRow: (rowId: string) => Promise<void>;
-  handleInsertRowAbove: (rowId: string) => Promise<void>;
-  handleInsertRowBelow: (rowId: string) => Promise<void>;
+  handleAddRow: (rowData: RowData) => AsyncResult<void>;
+  handleUpdateRow: (rowId: string, updates: RowData) => AsyncResult<void>;
+  handleDeleteRow: (rowId: string) => AsyncResult<void>;
+  handleDuplicateRow: (rowId: string) => AsyncResult<void>;
+  handleInsertRowAbove: (rowId: string) => AsyncResult<void>;
+  handleInsertRowBelow: (rowId: string) => AsyncResult<void>;
   handleRowView: (rowId: string) => void;
   handleRowHistory: (rowId: string) => void;
 
   // Bulk operations
-  handleBulkDelete: (rowIds: string[]) => Promise<void>;
-  handleBulkDuplicate: (rowIds: string[]) => Promise<void>;
-  handleBulkEdit: (rowIds: string[], column: string, value: CellValue) => Promise<void>;
+  handleBulkDelete: (rowIds: string[]) => AsyncResult<void>;
+  handleBulkDuplicate: (rowIds: string[]) => AsyncResult<void>;
+  handleBulkEdit: (rowIds: string[], column: string, value: CellValue) => AsyncResult<void>;
 
   // Database actions
-  handleClearData: () => Promise<void>;
-  handleDeleteDatabase: () => Promise<void>;
+  handleClearData: () => AsyncResult<void>;
+  handleDeleteDatabase: () => AsyncResult<void>;
 
   // Undo/Redo
   addToHistory: (action: HistoryAction) => void;
@@ -254,8 +268,16 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
   // DATABASE OPERATIONS
   // ============================================
 
-  const loadDatabase = useCallback(async () => {
-    if (!databaseId || !user) return;
+  const loadDatabase = useCallback(async (): AsyncResult<Database> => {
+    if (!databaseId || !user) {
+      return {
+        success: false,
+        error: {
+          code: 'MISSING_PARAMS',
+          message: 'Database ID or user not provided',
+        },
+      };
+    }
 
     try {
       setLoading(true);
@@ -263,32 +285,78 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
         p_id: databaseId,
       });
 
-      if (error) throw error;
+      if (error) {
+        const apiError = {
+          code: 'DATABASE_LOAD_ERROR',
+          message: error.message || 'Failed to load database',
+          details: error,
+        };
+        toast({
+          variant: 'destructive',
+          title: 'Ошибка',
+          description: apiError.message,
+        });
+        return { success: false, error: apiError };
+      }
+
       setDatabase(data);
+      return { success: true, data };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Неизвестная ошибка';
+      const apiError = {
+        code: 'UNKNOWN_ERROR',
+        message: error instanceof Error ? error.message : 'Неизвестная ошибка',
+      };
       toast({
         variant: 'destructive',
         title: 'Ошибка',
-        description: errorMessage,
+        description: apiError.message,
       });
+      return { success: false, error: apiError };
     } finally {
       setLoading(false);
     }
   }, [databaseId, user, toast]);
 
-  const loadSchemas = useCallback(async () => {
-    if (!databaseId) return;
+  const loadSchemas = useCallback(async (): AsyncResult<TableSchema[]> => {
+    if (!databaseId) {
+      return {
+        success: false,
+        error: {
+          code: 'MISSING_DATABASE_ID',
+          message: 'Database ID not provided',
+        },
+      };
+    }
 
     try {
       const { data, error } = await supabase.rpc('get_table_schemas', {
         p_database_id: databaseId,
       });
 
-      if (error) throw error;
-      setSchemas((data || []) as TableSchema[]);
+      if (error) {
+        console.error('Error loading schemas:', error);
+        return {
+          success: false,
+          error: {
+            code: 'SCHEMA_LOAD_ERROR',
+            message: error.message || 'Failed to load schemas',
+            details: error,
+          },
+        };
+      }
+
+      const schemas = (data || []) as TableSchema[];
+      setSchemas(schemas);
+      return { success: true, data: schemas };
     } catch (error) {
       console.error('Error loading schemas:', error);
+      return {
+        success: false,
+        error: {
+          code: 'UNKNOWN_ERROR',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        },
+      };
     }
   }, [databaseId]);
 
@@ -300,8 +368,16 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
   // ROW OPERATIONS
   // ============================================
 
-  const handleAddRow = useCallback(async (rowData: RowData) => {
-    if (!databaseId) return;
+  const handleAddRow = useCallback(async (rowData: RowData): AsyncResult<void> => {
+    if (!databaseId) {
+      return {
+        success: false,
+        error: {
+          code: 'MISSING_DATABASE_ID',
+          message: 'Database ID not provided',
+        },
+      };
+    }
 
     try {
       const { error } = await supabase.rpc('insert_table_row', {
@@ -309,24 +385,41 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
         p_data: rowData,
       });
 
-      if (error) throw error;
+      if (error) {
+        const apiError = {
+          code: 'ROW_INSERT_ERROR',
+          message: error.message || 'Не удалось добавить запись',
+          details: error,
+        };
+        toast({
+          variant: 'destructive',
+          title: 'Ошибка',
+          description: apiError.message,
+        });
+        return { success: false, error: apiError };
+      }
 
       toast({
         title: 'Запись добавлена',
       });
 
       refresh();
+      return { success: true, data: undefined };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Не удалось добавить запись';
+      const apiError = {
+        code: 'UNKNOWN_ERROR',
+        message: error instanceof Error ? error.message : 'Не удалось добавить запись',
+      };
       toast({
         variant: 'destructive',
         title: 'Ошибка',
-        description: errorMessage,
+        description: apiError.message,
       });
+      return { success: false, error: apiError };
     }
   }, [databaseId, toast, refresh]);
 
-  const handleUpdateRow = useCallback(async (rowId: string, updates: RowData) => {
+  const handleUpdateRow = useCallback(async (rowId: string, updates: RowData): AsyncResult<void> => {
     try {
       // Get current data before update
       const { data: currentRow } = await supabase
@@ -413,13 +506,18 @@ export function DatabaseProvider({ children }: DatabaseProviderProps) {
       });
 
       refresh();
+      return { success: true, data: undefined };
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Не удалось обновить запись';
+      const apiError = {
+        code: 'ROW_UPDATE_ERROR',
+        message: error instanceof Error ? error.message : 'Не удалось обновить запись',
+      };
       toast({
         variant: 'destructive',
         title: 'Ошибка',
-        description: errorMessage,
+        description: apiError.message,
       });
+      return { success: false, error: apiError };
     }
   }, [databaseId, user, toast, refresh, addToHistory]);
 
